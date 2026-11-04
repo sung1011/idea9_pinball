@@ -253,10 +253,12 @@ export function pickEnemiesOnLine(
   return out;
 }
 
-/** 距内全部敌人（扰锋范围沉默）。无敌不选。 */
-export function pickEnemiesInRange(
+/** 点周围敌人（索爆炸圈）。无敌 / 友军不选。 */
+export function pickEnemiesAround(
   caster: BallBody,
   roster: readonly BallBody[],
+  x: number,
+  y: number,
   range: number,
 ): FanPick[] {
   const out: FanPick[] = [];
@@ -270,13 +272,22 @@ export function pickEnemiesInRange(
     if (other.invincibleRemain > 0) {
       continue;
     }
-    const dist = Math.hypot(other.x - caster.x, other.y - caster.y);
+    const dist = Math.hypot(other.x - x, other.y - y);
     if (dist > range) {
       continue;
     }
     out.push({ target: other, dist });
   }
   return out;
+}
+
+/** 距内全部敌人（扰锋范围沉默）。无敌不选。 */
+export function pickEnemiesInRange(
+  caster: BallBody,
+  roster: readonly BallBody[],
+  range: number,
+): FanPick[] {
+  return pickEnemiesAround(caster, roster, caster.x, caster.y, range);
 }
 
 /** 距内最近敌人（标记回响）。无敌不选。 */

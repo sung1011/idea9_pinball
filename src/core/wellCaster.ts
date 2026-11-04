@@ -1,13 +1,13 @@
 import { applyPin, consumeAimBreak, skillsBlocked, type BallBody } from './ballBody';
+import { clearBoomFlashes, spawnBoomFlash, tickBoomFlashes } from './boomFlashes';
 import type { CollisionHit } from './collisionDamage';
 import type { HeroId } from '../heroes/heroIds';
 import { RING_TRAP } from '../heroes/ringKit';
 import {
-  WELL_HOOK,
+  WELL_BLAST,
   WELL_REEL,
   WELL_STAKE,
   WELL_SWAP,
-  lightPullToward,
   wellIsDisplace,
   wellPoint,
   wellSkillCd,
@@ -17,20 +17,13 @@ import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import { applyHardCc } from './hardCc';
 import type { AimHint, SkillCaster, SkillCds, WindupInfo } from './skillCaster';
 import { applySkillDamage } from './skillHits';
-import { pickEnemiesOnLine, pickNearestEnemy, unitVec } from './skillQuery';
+import { pickEnemiesAround, pickEnemiesOnLine, pickNearestEnemy, unitVec } from './skillQuery';
 import { setFacingFrom } from './skillStub';
 import { clearStake, getStake, placeStake, tickStake } from './ropeStakes';
 import { isInEnemyTrap } from './trapZones';
 import { resolveArenaObstacles } from './wallBounce';
 
 const TIME_EPS = 1e-7;
-const ARRIVE_PAD = 0.12;
-
-type HookLock = {
-  targetId: number;
-  x: number;
-  y: number;
-};
 
 type Effect =
   | {
@@ -43,7 +36,13 @@ type Effect =
       markY: number;
       targetId: number;
     }
-  | { kind: 'hookFly'; destX: number; destY: number; dirX: number; dirY: number };
+  | {
+      kind: 'blast';
+      nextIn: number;
+      index: number;
+      stakeX: number | null;
+      stakeY: number | null;
+    };
 
 function emptyCds(): SkillCds {
   return [0, 0, 0, 0];
@@ -60,12 +59,11 @@ function aimOf(ball: BallBody, sample: ActionSample): { x: number; y: number } {
   return face ?? { x: 1, y: 0 };
 }
 
-/** 井绳施放：按下进瞄可无限持有；双索两段确认（先锁敌再点落点）；释放后才走前摇。 */
+/** 井绳施放：按下进瞄可无限持有；索爆单段即放范围炸；释放后才走前摇。 */
 export function createWellCaster(): SkillCaster {
   let aimingSlot: SkillSlot | 0 = 0;
   const cds = emptyCds();
   let effect: Effect | null = null;
-  let hookLock: HookLock | null = null;
   let ownerId = -1;
   let now = 0;
 
@@ -77,19 +75,63 @@ export function createWellCaster(): SkillCaster {
     cds[slot - 1] = wellSkillCd(slot);
   };
 
-  const clearLock = (): void => {
-    hookLock = null;
-  };
-
   const punishDisplace = (slot: SkillSlot): void => {
     cds[slot - 1] = RING_TRAP.punishCd;
     aimingSlot = 0;
     effect = null;
-    clearLock();
   };
 
   const blockedByTrap = (ball: BallBody, slot: SkillSlot): boolean => {
     return wellIsDisplace(slot) && isInEnemyTrap(ball);
+  };
+
+  const finishBlast = (ball: BallBody, stakeX: number | null): void => {
+    if (stakeX !== null) {
+      clearStake(ball.id);
+    }
+    effect = null;
+  };
+
+  const resolveBlastPulse = (
+    ball: BallBody,
+    roster: readonly BallBody[],
+    stakeX: number | null,
+    stakeY: number | null,
+  ): CollisionHit[] => {
+    const hits: CollisionHit[] = [];
+    const applyAt = (x: number, y: number): void => {
+      spawnBoomFlash(ball.id, x, y, WELL_BLAST.radius);
+      for (const item of pickEnemiesAround(ball, roster, x, y, WELL_BLAST.radius)) {
+        const dmg = applySkillDamage(item.target, ball, WELL_BLAST.damage);
+        if (dmg) {
+          hits.push(dmg);
+        }
+      }
+    };
+    applyAt(ball.x, ball.y);
+    if (stakeX !== null && stakeY !== null) {
+      applyAt(stakeX, stakeY);
+    }
+    return hits;
+  };
+
+  const startBlast = (ball: BallBody, roster: readonly BallBody[]): CollisionHit[] => {
+    const stake = getStake(ball.id);
+    const stakeX = stake ? stake.x : null;
+    const stakeY = stake ? stake.y : null;
+    const hits = resolveBlastPulse(ball, roster, stakeX, stakeY);
+    if (WELL_BLAST.pulses <= 1) {
+      finishBlast(ball, stakeX);
+      return hits;
+    }
+    effect = {
+      kind: 'blast',
+      nextIn: WELL_BLAST.interval,
+      index: 1,
+      stakeX,
+      stakeY,
+    };
+    return hits;
   };
 
   const commitCast = (
@@ -102,16 +144,11 @@ export function createWellCaster(): SkillCaster {
     markY: number,
   ): void => {
     const aim = aimOf(ball, sample);
-    if (slot === 1) {
-      if (!setFacingFrom(ball, markX - ball.x, markY - ball.y) && !setFacingFrom(ball, aim.x, aim.y)) {
-        return;
-      }
-    } else if (!setFacingFrom(ball, aim.x, aim.y)) {
+    if (!setFacingFrom(ball, aim.x, aim.y)) {
       return;
     }
     startCd(slot);
     aimingSlot = 0;
-    clearLock();
     const delay = wellWindup(slot);
     if (delay <= 0) {
       finishWindup(ball, slot, ball.facingX, ball.facingY, markX, markY, targetId, roster);
@@ -127,48 +164,6 @@ export function createWellCaster(): SkillCaster {
       markY,
       targetId,
     };
-  };
-
-  const resolveHook = (
-    ball: BallBody,
-    destX: number,
-    destY: number,
-    targetId: number,
-    roster: readonly BallBody[],
-  ): CollisionHit[] => {
-    const hits: CollisionHit[] = [];
-    const target = roster.find((other) => other.id === targetId && other.inPlay) ?? null;
-    if (target) {
-      const dmg = applySkillDamage(target, ball, WELL_HOOK.damage);
-      if (dmg) {
-        hits.push(dmg);
-      }
-      const midX = (target.x + destX) / 2;
-      const midY = (target.y + destY) / 2;
-      lightPullToward(target, midX, midY, WELL_HOOK.pullDist);
-      resolveArenaObstacles(target);
-    }
-    const dir = unitVec(destX - ball.x, destY - ball.y);
-    if (!dir) {
-      ball.vx = ball.facingX * WELL_HOOK.landSpeed;
-      ball.vy = ball.facingY * WELL_HOOK.landSpeed;
-      ball.allowOverCap = true;
-      return hits;
-    }
-    const gap = Math.hypot(destX - ball.x, destY - ball.y);
-    if (gap <= ARRIVE_PAD) {
-      ball.x = destX;
-      ball.y = destY;
-      ball.vx = dir.x * WELL_HOOK.landSpeed;
-      ball.vy = dir.y * WELL_HOOK.landSpeed;
-      ball.facingX = dir.x;
-      ball.facingY = dir.y;
-      ball.allowOverCap = true;
-      resolveArenaObstacles(ball);
-      return hits;
-    }
-    effect = { kind: 'hookFly', destX, destY, dirX: dir.x, dirY: dir.y };
-    return hits;
   };
 
   const resolveSwap = (ball: BallBody, targetId: number, roster: readonly BallBody[]): CollisionHit[] => {
@@ -247,7 +242,7 @@ export function createWellCaster(): SkillCaster {
       return [];
     }
     if (slot === 1) {
-      return resolveHook(ball, markX, markY, targetId, roster);
+      return startBlast(ball, roster);
     }
     if (slot === 2) {
       return resolveSwap(ball, targetId, roster);
@@ -271,26 +266,7 @@ export function createWellCaster(): SkillCaster {
       punishDisplace(slot);
       return;
     }
-    if (slot === 1 && !hookLock) {
-      const picked = pickNearestEnemy(ball, roster, WELL_HOOK.lockRange);
-      if (!picked) {
-        return;
-      }
-      hookLock = { targetId: picked.target.id, x: picked.target.x, y: picked.target.y };
-      return;
-    }
     if (slot === 4 && !getStake(ball.id)) {
-      return;
-    }
-    if (slot === 1 && hookLock) {
-      const mark = wellPoint(
-        ball,
-        WELL_HOOK.landRange,
-        sample.pointerX,
-        sample.pointerY,
-        sample.hasPointer,
-      );
-      commitCast(ball, slot, sample, roster, hookLock.targetId, mark.x, mark.y);
       return;
     }
     if (slot === 2) {
@@ -315,23 +291,19 @@ export function createWellCaster(): SkillCaster {
     bindOwner(ball);
     if (consumeAimBreak(ball)) {
       aimingSlot = 0;
-      clearLock();
     }
     if (!ball.inPlay || skillsBlocked(ball)) {
       aimingSlot = 0;
-      clearLock();
       return;
     }
     if (sample.cancelAim) {
       aimingSlot = 0;
-      clearLock();
       return;
     }
     if (sample.skillPress) {
       if (aimingSlot === sample.skillPress) {
         tryRelease(ball, sample, roster);
       } else if (cds[sample.skillPress - 1] <= 0 && !effect) {
-        clearLock();
         aimingSlot = sample.skillPress;
       }
     }
@@ -340,44 +312,12 @@ export function createWellCaster(): SkillCaster {
     }
   };
 
-  const applyHookFly = (ball: BallBody): void => {
-    if (effect?.kind !== 'hookFly') {
-      return;
-    }
-    const fly = effect;
-    const dir = unitVec(fly.destX - ball.x, fly.destY - ball.y) ?? { x: fly.dirX, y: fly.dirY };
-    ball.vx = dir.x * WELL_HOOK.flySpeed;
-    ball.vy = dir.y * WELL_HOOK.flySpeed;
-    ball.facingX = dir.x;
-    ball.facingY = dir.y;
-    ball.allowOverCap = true;
-    ball.frictionMul = 0;
-  };
-
-  const landFly = (ball: BallBody): void => {
-    if (effect?.kind !== 'hookFly') {
-      return;
-    }
-    const fly = effect;
-    const dir = unitVec(fly.dirX, fly.dirY) ?? { x: 1, y: 0 };
-    ball.x = fly.destX;
-    ball.y = fly.destY;
-    ball.vx = dir.x * WELL_HOOK.landSpeed;
-    ball.vy = dir.y * WELL_HOOK.landSpeed;
-    ball.facingX = dir.x;
-    ball.facingY = dir.y;
-    ball.allowOverCap = true;
-    resolveArenaObstacles(ball);
-    effect = null;
-  };
-
   const tick = (ball: BallBody, dt: number, roster: readonly BallBody[]): CollisionHit[] => {
     const step = Math.max(0, dt);
     now += step;
     bindOwner(ball);
     if (consumeAimBreak(ball)) {
       aimingSlot = 0;
-      clearLock();
     }
     for (let i = 0; i < cds.length; i += 1) {
       cds[i] = Math.max(0, cds[i] - step);
@@ -385,11 +325,14 @@ export function createWellCaster(): SkillCaster {
     ball.frictionMul = 1;
     ball.suppressCombat = false;
     tickStake(ball.id, step);
+    tickBoomFlashes(ball.id, step);
 
     if (!ball.inPlay) {
+      if (effect?.kind === 'blast') {
+        finishBlast(ball, effect.stakeX);
+      }
       aimingSlot = 0;
       effect = null;
-      clearLock();
       return [];
     }
 
@@ -401,25 +344,30 @@ export function createWellCaster(): SkillCaster {
         effect = null;
         hits.push(...finishWindup(ball, slot, aimX, aimY, markX, markY, targetId, roster));
       }
+    } else if (effect?.kind === 'blast') {
+      effect.nextIn -= step;
+      while (effect?.kind === 'blast' && effect.nextIn <= TIME_EPS) {
+        hits.push(...resolveBlastPulse(ball, roster, effect.stakeX, effect.stakeY));
+        effect.index += 1;
+        if (effect.index >= WELL_BLAST.pulses) {
+          finishBlast(ball, effect.stakeX);
+          break;
+        }
+        effect.nextIn += WELL_BLAST.interval;
+      }
     }
 
-    applyHookFly(ball);
     return hits;
   };
 
   const afterPhysics = (ball: BallBody): CollisionHit[] => {
     bindOwner(ball);
     if (!ball.inPlay) {
+      if (effect?.kind === 'blast') {
+        finishBlast(ball, effect.stakeX);
+      }
       effect = null;
-      clearLock();
       return [];
-    }
-    if (effect?.kind !== 'hookFly') {
-      return [];
-    }
-    const dist = Math.hypot(effect.destX - ball.x, effect.destY - ball.y);
-    if (dist <= WELL_HOOK.flySpeed / 60 + ARRIVE_PAD) {
-      landFly(ball);
     }
     return [];
   };
@@ -435,10 +383,10 @@ export function createWellCaster(): SkillCaster {
       cds[2] = 0;
       cds[3] = 0;
       effect = null;
-      clearLock();
       now = 0;
       if (ownerId >= 0) {
         clearStake(ownerId);
+        clearBoomFlashes(ownerId);
       }
     },
     getAimingSlot: () => aimingSlot,
@@ -450,23 +398,11 @@ export function createWellCaster(): SkillCaster {
             remain: effect.remain,
             markX: effect.markX,
             markY: effect.markY,
-            lockX: hookLock?.x,
-            lockY: hookLock?.y,
-            aimStage: effect.slot === 1 ? 2 : 1,
           }
         : null,
-    getAimHint: (): AimHint | null => {
-      if (aimingSlot === 0) {
-        return null;
-      }
-      if (aimingSlot === 1 && hookLock) {
-        return { slot: 1, stage: 2, lockX: hookLock.x, lockY: hookLock.y };
-      }
-      return { slot: aimingSlot, stage: 1 };
-    },
+    getAimHint: (): AimHint | null => (aimingSlot === 0 ? null : { slot: aimingSlot, stage: 1 }),
     isHardBusy: () => !!effect,
-    isDisplacing: () =>
-      effect?.kind === 'hookFly' || (!!effect && effect.kind === 'windup' && wellIsDisplace(effect.slot)),
+    isDisplacing: () => !!effect && effect.kind === 'windup' && wellIsDisplace(effect.slot),
     getHero: (): HeroId => 'well',
   };
 }

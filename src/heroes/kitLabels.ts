@@ -101,7 +101,7 @@ const ARC_SKILL_TIPS = [
 ] as const;
 
 const WELL_SKILL_TIPS = [
-  '先锁敌再点落点飞出',
+  '身周四次爆炸，有桩则同步炸桩',
   '与敌人交换位置',
   '投桩当墙，己方撞桩开窗',
   '线上敌定身 2 秒不能动',
@@ -159,7 +159,7 @@ export function kitHelpSkills(hero: HeroId): string {
     return '技能 1–4：1 侧闪（侧移闪） / 2 掠刃 / 3 回印（标记回响） / 4 虚影（虚晃）。';
   }
   if (hero === 'well') {
-    return '技能 1–4：1 双索（双钩，先锁敌再点落点） / 2 易位 / 3 索桩 / 4 回索。';
+    return '技能 1–4：1 索爆（身周四脉冲，有桩则同步炸） / 2 易位 / 3 索桩 / 4 回索。';
   }
   return '技能 1–4：1 钩矛 / 2 连刺×3 / 3 盾冲 / 4 蓄势。';
 }
@@ -178,7 +178,7 @@ export function kitSettingsHint(hero: HeroId): string {
     return '技能 1 侧闪 / 2 掠刃 / 3 回印 / 4 虚影。按下进瞄，再按同键或左键释放。';
   }
   if (hero === 'well') {
-    return '技能 1 双索（先锁敌，再点落点） / 2 易位 / 3 索桩 / 4 回索。按下进瞄，再按同键或左键释放。';
+    return '技能 1 索爆 / 2 易位 / 3 索桩 / 4 回索。按下进瞄，再按同键或左键释放。';
   }
   return '技能 1 钩矛 / 2 连刺 / 3 盾冲 / 4 蓄势。按下进瞄，再按同键或左键释放。';
 }

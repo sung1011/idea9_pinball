@@ -13,16 +13,14 @@ function unit(x: number, y: number): { x: number; y: number } {
 }
 
 /** 井绳四技能数值（设计锁）。瞄准无上限；前摇从释放后起算。 */
-export const WELL_HOOK = {
+export const WELL_BLAST = {
   slot: 1,
-  cd: 10,
-  windup: 0.4,
-  lockRange: 6,
-  landRange: 5,
+  cd: 11,
+  windup: 0.2,
+  pulses: 4,
+  interval: 0.35,
+  radius: 2.2,
   damage: 8,
-  pullDist: 2,
-  flySpeed: 16,
-  landSpeed: 9,
 } as const;
 
 export const WELL_SWAP = {
@@ -52,14 +50,14 @@ export const WELL_REEL = {
   duration: 2,
 } as const;
 
-/** 对内仍是井绳四槽：双钩 / 换位 / 弹索桩 / 收索 */
-export const WELL_SKILL_INTERNAL = ['双钩', '换位', '弹索桩', '收索'] as const;
+/** 对内仍是井绳四槽：索爆 / 换位 / 弹索桩 / 收索 */
+export const WELL_SKILL_INTERNAL = ['索爆', '换位', '弹索桩', '收索'] as const;
 /** 骑士井绳对外显示名 */
-export const WELL_SKILL_NAMES = ['双索', '易位', '索桩', '回索'] as const;
-export const WELL_SKILL_SHORT = ['索', '易', '桩', '回'] as const;
+export const WELL_SKILL_NAMES = ['索爆', '易位', '索桩', '回索'] as const;
+export const WELL_SKILL_SHORT = ['爆', '易', '桩', '回'] as const;
 export const WELL_KIT_DISPLAY_NAME = '骑士井绳';
 
-export const WELL_CDS = [WELL_HOOK.cd, WELL_SWAP.cd, WELL_STAKE.cd, WELL_REEL.cd] as const;
+export const WELL_CDS = [WELL_BLAST.cd, WELL_SWAP.cd, WELL_STAKE.cd, WELL_REEL.cd] as const;
 
 /** 超速 / 上限 / 中速 / 保底 / 爬行。 */
 export const SPEED_TIER_STEPS = [12, SPEED_CAP, 5, FLOOR_SPEED, CRAWL_SPEED] as const;
@@ -70,7 +68,7 @@ export type WellAimShape =
 
 export function wellWindup(slot: SkillSlot): number {
   if (slot === 1) {
-    return WELL_HOOK.windup;
+    return WELL_BLAST.windup;
   }
   if (slot === 2) {
     return WELL_SWAP.windup;
@@ -85,9 +83,9 @@ export function wellSkillCd(slot: SkillSlot): number {
   return WELL_CDS[slot - 1];
 }
 
-/** 双钩 / 换位是位移技；弹索桩 / 收索不是。 */
+/** 换位是位移技；索爆 / 弹索桩 / 收索不是。 */
 export function wellIsDisplace(slot: SkillSlot): boolean {
-  return slot === 1 || slot === 2;
+  return slot === 2;
 }
 
 export function wellPoint(
@@ -153,7 +151,7 @@ export function lightPullToward(
   ball.y += (dy / gap) * step;
 }
 
-/** 瞄准预览：双索/易位/索桩用圆；回索画桩线。 */
+/** 瞄准预览：索爆/易位/索桩用圆；回索画桩线。 */
 export function wellAimShape(
   slot: SkillSlot,
   ball: Pick<BallBody, 'x' | 'y' | 'facingX' | 'facingY'>,
@@ -163,22 +161,9 @@ export function wellAimShape(
   markX?: number,
   markY?: number,
   stake?: { x: number; y: number } | null,
-  stage: 1 | 2 = 1,
 ): WellAimShape | null {
   if (slot === 1) {
-    if (stage === 2) {
-      const mark =
-        markX !== undefined && markY !== undefined
-          ? { x: markX, y: markY }
-          : wellPoint(ball, WELL_HOOK.landRange, pointerX, pointerY, hasPointer);
-      return {
-        kind: 'circle',
-        radius: 0.35,
-        offsetX: mark.x - ball.x,
-        offsetY: mark.y - ball.y,
-      };
-    }
-    return { kind: 'circle', radius: WELL_HOOK.lockRange, offsetX: 0, offsetY: 0 };
+    return { kind: 'circle', radius: WELL_BLAST.radius, offsetX: 0, offsetY: 0 };
   }
   if (slot === 2) {
     return { kind: 'circle', radius: WELL_SWAP.range, offsetX: 0, offsetY: 0 };

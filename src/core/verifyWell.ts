@@ -7,7 +7,7 @@ import { HOOK_PULL } from '../heroes/hookKit';
 import { NAIL_ARMOR } from '../heroes/nailKit';
 import { RING_FIELD, RING_TRAP } from '../heroes/ringKit';
 import {
-  WELL_HOOK,
+  WELL_BLAST,
   WELL_REEL,
   WELL_STAKE,
   WELL_SWAP,
@@ -16,6 +16,7 @@ import {
 } from '../heroes/wellKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import { stepPhysics } from './physicsStep';
+import { resetBoomFlashes } from './boomFlashes';
 import { getStake, listStakes, placeStake, resetStakes } from './ropeStakes';
 import { createSkillCaster } from './skillCaster';
 import { resetTrapZones, setTrapZone } from './trapZones';
@@ -80,17 +81,6 @@ function fire(
   caster.handleInput(ball, sample({ skillPress: slot, ...extra }), roster);
 }
 
-function lockThenFire(
-  caster: ReturnType<typeof createSkillCaster>,
-  ball: BallBody,
-  roster: readonly BallBody[],
-  extra: Partial<ActionSample> = {},
-): void {
-  caster.handleInput(ball, sample({ skillPress: 1, ...extra }), roster);
-  caster.handleInput(ball, sample({ skillPress: 1, ...extra }), roster);
-  caster.handleInput(ball, sample({ skillPress: 1, ...extra }), roster);
-}
-
 function play(
   caster: ReturnType<typeof createSkillCaster>,
   ball: BallBody,
@@ -127,12 +117,14 @@ function dropTrapOn(ball: BallBody): void {
   });
 }
 
-/** 井绳四技能：双钩两段瞄、换位、桩反弹/撞窗、收索沿线定身 2s，以及困圈禁位移。 */
+/** 井绳四技能：索爆四脉冲、换位、桩反弹/撞窗、收索沿线定身 2s，以及困圈禁位移。 */
 export function verifyWell(): void {
   resetTrapZones();
   resetStakes();
-  assert(WELL_HOOK.cd === 10 && WELL_HOOK.windup === 0.4 && WELL_HOOK.lockRange === 6, '井绳：双钩应为 CD10 / 前摇0.4 / 锁敌6');
-  assert(WELL_HOOK.landRange === 5 && WELL_HOOK.damage === 8 && WELL_HOOK.landSpeed === 9, '井绳：双钩应为落点5 / 伤8 / 落地速9');
+  resetBoomFlashes();
+  assert(WELL_BLAST.cd === 11 && WELL_BLAST.windup === 0.2, '井绳：索爆应为 CD11 / 前摇0.2');
+  assert(WELL_BLAST.pulses === 4 && WELL_BLAST.interval === 0.35, '井绳：索爆应为 4 脉冲 / 间隔0.35');
+  assert(WELL_BLAST.radius === 2.2 && WELL_BLAST.damage === 8, '井绳：索爆应为半径2.2 / 伤8');
   assert(WELL_SWAP.cd === 16 && WELL_SWAP.windup === 0.45 && WELL_SWAP.range === 5, '井绳：换位应为 CD16 / 前摇0.45 / 距5');
   assert(WELL_SWAP.damage === 5 && WELL_SWAP.speedKeep === 0.5, '井绳：换位应为伤5 / 速度50%');
   assert(WELL_STAKE.cd === 12 && WELL_STAKE.windup === 0.3 && WELL_STAKE.range === 6, '井绳：弹索桩应为 CD12 / 前摇0.3 / 距6');
@@ -150,46 +142,92 @@ export function verifyWell(): void {
 
   resetTrapZones();
   resetStakes();
+  resetBoomFlashes();
   const miss = createSkillCaster('well');
   const [missRed, missBlue] = redBlue(8, 6, 16, 6);
-  fire(miss, missRed, 1, [missRed, missBlue], { pointerX: 8, pointerY: 10, hasPointer: true });
-  assert(miss.getCds()[0] === 0, '井绳：双钩未锁敌不应进 CD');
-  assert(miss.getAimingSlot() === 1, '井绳：双钩未锁敌应留在瞄准');
-  assert(miss.getAimHint?.()?.stage !== 2, '井绳：未锁敌不应进入第二段');
+  fire(miss, missRed, 1, [missRed, missBlue]);
+  assert(miss.getAimingSlot() === 0, '井绳：索爆无目标也应释放');
+  assert(Math.abs(miss.getCds()[0] - WELL_BLAST.cd) < 1e-6, '井绳：索爆无目标仍应进 11s CD');
+  assert(miss.getAimHint?.()?.stage !== 2, '井绳：索爆不应进入两段锁定');
+  assert(!miss.isDisplacing(), '井绳：索爆不是位移技');
+  assert(missBlue.hp === MAX_HP, '井绳：圈外敌人不应吃到索爆');
 
   resetTrapZones();
   resetStakes();
-  const hook = createSkillCaster('well');
-  const [hookRed, hookBlue] = redBlue(8, 6, 12, 6);
-  hookRed.vx = 0;
-  hookRed.vy = 0;
-  hookBlue.vx = 0;
-  hookBlue.vy = 0;
-  hook.handleInput(hookRed, sample({ skillPress: 1, pointerX: 8, pointerY: 10, hasPointer: true }), [
-    hookRed,
-    hookBlue,
-  ]);
-  hook.handleInput(hookRed, sample({ skillPress: 1, pointerX: 8, pointerY: 10, hasPointer: true }), [
-    hookRed,
-    hookBlue,
-  ]);
-  assert(hook.getAimingSlot() === 1, '井绳：双钩第一段确认后应仍瞄准');
-  assert(hook.getCds()[0] === 0, '井绳：双钩锁定后、落点确认前不应进 CD');
-  assert(hook.getAimHint?.()?.stage === 2, '井绳：锁敌后应进入第二段瞄落点');
-  hook.handleInput(hookRed, sample({ skillPress: 1, pointerX: 8, pointerY: 10, hasPointer: true }), [
-    hookRed,
-    hookBlue,
-  ]);
-  assert(hook.getWindup()?.slot === 1, '井绳：双钩应走 0.4s 前摇');
-  assert(Math.abs(hook.getCds()[0] - WELL_HOOK.cd) < 1e-6, '井绳：双钩应进 10s CD');
-  assert(hook.isDisplacing(), '井绳：双钩前摇期间应为位移技');
-  assert(Math.abs(hookRed.x - 8) < 1e-6 && Math.abs(hookRed.y - 6) < 1e-6, '井绳：前摇未结束不应起飞');
-  hook.tick(hookRed, WELL_HOOK.windup + 0.01, [hookRed, hookBlue]);
-  assert(Math.abs(hookBlue.hp - (MAX_HP - WELL_HOOK.damage)) < 1e-6, '井绳：双钩应打 A 8 伤');
-  assert(Math.abs(hookBlue.x - 10.5858) < 0.08 && Math.abs(hookBlue.y - 7.4142) < 0.08, '井绳：A 应轻拉向 A–B 中点约 2 格');
-  advance(hook, hookRed, [hookRed, hookBlue], 0.28);
-  assert(Math.abs(hookRed.x - 8) < 0.35 && Math.abs(hookRed.y - 10) < 0.45, '井绳：自己应飞向落点 B');
-  assert(Math.abs(Math.hypot(hookRed.vx, hookRed.vy) - WELL_HOOK.landSpeed) < 1.4, '井绳：落地速度应约 9');
+  resetBoomFlashes();
+  const blast = createSkillCaster('well');
+  const [blastRed, blastBlue] = redBlue(8, 6, 9.6, 6);
+  const blastAlly = createBallBody({
+    x: 8.8,
+    y: 6.4,
+    color: 0xe24a4a,
+    label: '红友',
+    team: 'red',
+    facingX: 1,
+    hero: 'hook',
+  });
+  const farBlue = createBallBody({
+    x: 12.5,
+    y: 6,
+    color: 0x3d7cf0,
+    label: '远蓝',
+    team: 'blue',
+    facingX: -1,
+    hero: 'hook',
+  });
+  for (const ball of [blastRed, blastBlue, blastAlly, farBlue]) {
+    ball.vx = 0;
+    ball.vy = 0;
+  }
+  fire(blast, blastRed, 1, [blastRed, blastBlue, blastAlly, farBlue]);
+  assert(blast.getWindup()?.slot === 1, '井绳：索爆应走 0.2s 前摇');
+  assert(Math.abs(blast.getCds()[0] - WELL_BLAST.cd) < 1e-6, '井绳：索爆应进 11s CD');
+  assert(!blast.isDisplacing(), '井绳：索爆前摇期间不应算位移');
+  assert(blast.isHardBusy(), '井绳：索爆前摇期间应占手');
+  assert(blastBlue.hp === MAX_HP, '井绳：索爆前摇未结束不应出伤');
+  blast.tick(blastRed, WELL_BLAST.windup + 0.01, [blastRed, blastBlue, blastAlly, farBlue]);
+  assert(Math.abs(blastBlue.hp - (MAX_HP - WELL_BLAST.damage)) < 1e-6, '井绳：索爆第一脉冲应打 8 伤');
+  assert(blastAlly.hp === MAX_HP, '井绳：索爆不应打友军');
+  assert(farBlue.hp === MAX_HP, '井绳：半径外敌人不应吃第一脉冲');
+  assert(Math.abs(blastRed.x - 8) < 1e-6 && Math.abs(blastRed.y - 6) < 1e-6, '井绳：索爆不应把自己打飞');
+  blast.tick(blastRed, WELL_BLAST.interval, [blastRed, blastBlue, blastAlly, farBlue]);
+  assert(Math.abs(blastBlue.hp - (MAX_HP - WELL_BLAST.damage * 2)) < 1e-6, '井绳：索爆第二脉冲应再打 8');
+  blast.tick(blastRed, WELL_BLAST.interval, [blastRed, blastBlue, blastAlly, farBlue]);
+  assert(Math.abs(blastBlue.hp - (MAX_HP - WELL_BLAST.damage * 3)) < 1e-6, '井绳：索爆第三脉冲应再打 8');
+  blast.tick(blastRed, WELL_BLAST.interval, [blastRed, blastBlue, blastAlly, farBlue]);
+  assert(Math.abs(blastBlue.hp - (MAX_HP - WELL_BLAST.damage * 4)) < 1e-6, '井绳：索爆四脉冲共 32 伤');
+  assert(blastAlly.hp === MAX_HP, '井绳：四脉冲仍不应打友军');
+  assert(farBlue.hp === MAX_HP, '井绳：半径外敌人四脉冲都不应中');
+  assert(!blast.isHardBusy(), '井绳：四脉冲结束后应放手');
+
+  resetTrapZones();
+  resetStakes();
+  resetBoomFlashes();
+  const pegBlast = createSkillCaster('well');
+  const [pegRed, pegNear] = redBlue(8, 6, 9.4, 6);
+  const pegFar = createBallBody({
+    x: 14,
+    y: 6.6,
+    color: 0x3d7cf0,
+    label: '桩蓝',
+    team: 'blue',
+    facingX: -1,
+    hero: 'hook',
+  });
+  for (const ball of [pegRed, pegNear, pegFar]) {
+    ball.vx = 0;
+    ball.vy = 0;
+  }
+  placeStake(pegRed, 14, 6);
+  fire(pegBlast, pegRed, 1, [pegRed, pegNear, pegFar]);
+  pegBlast.tick(pegRed, WELL_BLAST.windup + 0.01, [pegRed, pegNear, pegFar]);
+  assert(Math.abs(pegNear.hp - (MAX_HP - WELL_BLAST.damage)) < 1e-6, '井绳：有桩时自身圈仍应炸');
+  assert(Math.abs(pegFar.hp - (MAX_HP - WELL_BLAST.damage)) < 1e-6, '井绳：有桩时第一脉冲也应炸桩');
+  assert(!!getStake(pegRed.id), '井绳：第一脉冲后桩应还在');
+  pegBlast.tick(pegRed, WELL_BLAST.interval * 3 + 0.02, [pegRed, pegNear, pegFar]);
+  assert(Math.abs(pegNear.hp - (MAX_HP - WELL_BLAST.damage * 4)) < 1e-6, '井绳：自身圈应炸满 4 次');
+  assert(Math.abs(pegFar.hp - (MAX_HP - WELL_BLAST.damage * 4)) < 1e-6, '井绳：桩应同步炸满 4 次');
+  assert(!getStake(pegRed.id), '井绳：四脉冲结束后应收桩');
 
   resetTrapZones();
   resetStakes();
@@ -316,16 +354,18 @@ export function verifyWell(): void {
 
   resetTrapZones();
   resetStakes();
-  const trapHook = createSkillCaster('well');
-  const [trapH, trapHb] = redBlue(8, 6, 12, 6);
+  resetBoomFlashes();
+  const trapBlast = createSkillCaster('well');
+  const [trapH, trapHb] = redBlue(8, 6, 9.5, 6);
   dropTrapOn(trapH);
   const hx = trapH.x;
   const hy = trapH.y;
-  lockThenFire(trapHook, trapH, [trapH, trapHb], { pointerX: 8, pointerY: 10, hasPointer: true });
-  assert(Math.abs(trapHook.getCds()[0] - RING_TRAP.punishCd) < 0.05, '井绳：困圈内双钩应失败并进 2s 短 CD');
-  trapHook.tick(trapH, 0.5, [trapH, trapHb]);
-  assert(Math.abs(trapH.x - hx) < 1e-6 && Math.abs(trapH.y - hy) < 1e-6, '井绳：困圈内双钩不应起飞');
-  assert(!trapHook.isDisplacing(), '井绳：困圈内双钩不应进入位移');
+  fire(trapBlast, trapH, 1, [trapH, trapHb]);
+  assert(Math.abs(trapBlast.getCds()[0] - WELL_BLAST.cd) < 0.05, '井绳：困圈内索爆应正常进 11s CD');
+  assert(!trapBlast.isDisplacing(), '井绳：困圈内索爆不应算位移');
+  trapBlast.tick(trapH, WELL_BLAST.windup + 0.01, [trapH, trapHb]);
+  assert(Math.abs(trapH.x - hx) < 1e-6 && Math.abs(trapH.y - hy) < 1e-6, '井绳：困圈内索爆不应把自己打飞');
+  assert(Math.abs(trapHb.hp - (MAX_HP - WELL_BLAST.damage)) < 1e-6, '井绳：困圈内索爆仍应打到圈内敌');
 
   resetTrapZones();
   resetStakes();

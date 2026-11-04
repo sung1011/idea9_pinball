@@ -44,7 +44,8 @@ export function verifySkillTip(): void {
   assert(skillTipCopy('hook', 1).effect.includes('贴脸'), '技能提示：钩矛效果应来自设计表');
   assert(skillTipCopy('ring', 4).name === '囚环', '技能提示：磁环 4 对外名应为囚环');
   assert(skillTipCopy('ring', 4).effect.includes('物理关死出不去'), '技能提示：囚环应写物理关死出不去');
-  assert(skillTipCopy('well', 1).name === '双索', '技能提示：井绳 1 对外名应为双索');
+  assert(skillTipCopy('well', 1).name === '索爆', '技能提示：井绳 1 对外名应为索爆');
+  assert(skillTipCopy('well', 1).effect.includes('爆炸'), '技能提示：索爆一行效果应为脉冲爆炸');
   assert(skillTipCopy('well', 4).name === '回索', '技能提示：井绳 4 对外名应为回索');
   assert(skillTipCopy('well', 4).effect.includes('2'), '技能提示：回索一行效果应为定身 2 秒');
   assert(skillTipCopy('chain', 4).name === '扰锋', '技能提示：链生 4 对外名应为扰锋');

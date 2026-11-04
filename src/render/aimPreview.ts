@@ -7,7 +7,7 @@ import { chainAimShape } from '../heroes/chainKit';
 import { hookAimShape } from '../heroes/hookKit';
 import { nailAimShape } from '../heroes/nailKit';
 import { ringAimShape } from '../heroes/ringKit';
-import { WELL_HOOK, wellAimShape } from '../heroes/wellKit';
+import { WELL_BLAST, wellAimShape } from '../heroes/wellKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 
 const ARROW_LEN = 2.15;
@@ -83,7 +83,7 @@ export function createAimPreview(): AimPreview {
     aimingSlot: number,
     sample: ActionSample,
     windup?: WindupInfo | null,
-    aimHint?: AimHint | null,
+    _aimHint?: unknown,
   ): void => {
     root.clear();
     root.position.set(player.x, player.y);
@@ -163,7 +163,6 @@ export function createAimPreview(): AimPreview {
       return;
     }
     if (well) {
-      const stage = aimHint?.stage ?? windup?.aimStage ?? 1;
       const stake = getStake(player.id);
       const shape = wellAimShape(
         slot,
@@ -174,13 +173,7 @@ export function createAimPreview(): AimPreview {
         windup?.markX,
         windup?.markY,
         stake,
-        stage,
       );
-      if (stage === 1 && slot === 1) {
-        drawCircle(root, 0, 0, WELL_HOOK.lockRange, color, alpha);
-      } else if (stage === 2 && slot === 1) {
-        drawCircle(root, 0, 0, WELL_HOOK.landRange, color, alpha * 0.7);
-      }
       if (shape?.kind === 'circle') {
         drawCircle(root, shape.offsetX, shape.offsetY, shape.radius, color, alpha);
       } else if (shape?.kind === 'band') {
@@ -188,10 +181,10 @@ export function createAimPreview(): AimPreview {
         root.lineTo(shape.x1 - player.x, shape.y1 - player.y);
         root.stroke({ color, width: shape.halfWidth * 2, cap: 'round', alpha: alpha + 0.12 });
       }
-      if (aimHint?.lockX !== undefined && aimHint.lockY !== undefined) {
-        drawCircle(root, aimHint.lockX - player.x, aimHint.lockY - player.y, 0.28, color, 0.4);
+      if (slot === 1 && stake) {
+        drawCircle(root, stake.x - player.x, stake.y - player.y, WELL_BLAST.radius, color, alpha);
       }
-      drawAimArrow(root, fx, fy, color, slot === 1 ? 2.4 : ARROW_LEN);
+      drawAimArrow(root, fx, fy, color, slot === 1 ? 2.2 : ARROW_LEN);
       return;
     }
     const shape = hookAimShape(slot);

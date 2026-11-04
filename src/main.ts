@@ -16,6 +16,7 @@ import { verifyWell } from './core/verifyWell';
 import { verifyHeroPick } from './core/verifyHeroPick';
 import { verifyHudLayout } from './core/verifyHudLayout';
 import { verifySkillTip } from './core/verifySkillTip';
+import { resetBoomFlashes } from './core/boomFlashes';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
 import { nextHero, type HeroId } from './heroes/heroIds';
@@ -144,6 +145,7 @@ async function boot(): Promise<void> {
   const restart = (): void => {
     resetTrapZones();
     resetStakes();
+    resetBoomFlashes();
     match.reset();
     control.reset();
     bus.reset();
@@ -159,6 +161,7 @@ async function boot(): Promise<void> {
   const onPairDebug = (): void => {
     resetTrapZones();
     resetStakes();
+    resetBoomFlashes();
     control.reset();
     for (const bot of bots) {
       bot.reset();
