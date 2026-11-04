@@ -4,7 +4,7 @@ export type ActionSample = {
   aimX: number;
   aimY: number;
   hasAim: boolean;
-  /** 鼠标相对己球，或摇杆离死区：窗内用来拧速度 */
+  /** 鼠标/点地相对己球：全程弱拧，撞后强拧 */
   steerAim: boolean;
   skillPress: SkillSlot | 0;
   confirmRelease: boolean;

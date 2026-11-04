@@ -1,10 +1,10 @@
 # Idea pinball · 工程落地方案 v0
-更新：2026-11-04（M4 一局规则）
+更新：2026-11-04（M3.5 点地手感）
 
 ## 栈
 - 客户端：TypeScript + PixiJS + Vite
 - 物理 v0：自写圆球惯性；后可换 Rapier2D wasm
-- 输入：Action（Aim / Skill1–4 / FineTune / CancelAim）
+- 输入：Action（Aim / Skill1–4 / CancelAim；FineTune=撞后自动强拧）
 - 技能瞄准：**按下进入瞄准，再按同键释放**（左键可释放；Cancel 取消）
 - 联网后置：Go WebSocket 房间；v0 单机
 - 预览：GitHub Pages 项目站 `https://sung1011.github.io/idea9_pinball/`；`vite.config.ts` 的 `base` 为 `/idea9_pinball/`；推送 `main` 由 `.github/workflows/deploy-pages.yml` 发布；Pages Source 选 GitHub Actions
@@ -15,29 +15,30 @@
 3. M2 碰撞：阈值掉血；朝向乘区；弹开；主动撞窗0.25s ✅
 4. M3 输入：Action；PC鼠键 + 手机虚拟键；瞄准同键二次释放 ✅
 5. M4 一局：中点分；击破/助攻；8s回场+2s无敌；100分或4分钟 ✅
-6. M5 英雄切片：钩刺四技能 → 磁环困圈 / 钉壳定锚
-7. M6 后：Go 同步；其余英雄
+6. M3.5 点地手感：保底速 2.5；弱拧 45°/s / 撞后强拧 120°/s；无左摇杆 ✅
+7. M5 英雄切片：钩刺四技能 → 磁环困圈 / 钉壳定锚
+8. M6 后：Go 同步；其余英雄
 
 ## 目录
-- `src/core`：逻辑常量（`constants.ts`：地图 20×12、球半径 0.5、中点半径 2.5、矮柱、速度上限 8、摩擦、一局分/时限）
-- `src/core/ballBody.ts`：圆体状态（队伍 / 在场 / 无敌 / 出生点）
-- `src/core/physicsStep.ts`：每帧积分 / 摩擦 / 盖帽；离场球不参与
+- `src/core`：逻辑常量（`constants.ts`：地图 20×12、球半径 0.5、中点半径 2.5、矮柱、速度上限 8、保底速 2.5、弱/强拧、一局分/时限）
+- `src/core/ballBody.ts`：圆体状态（队伍 / 在场 / 无敌 / 出生点 / Aim）
+- `src/core/physicsStep.ts`：每帧积分 / 摩擦 / 保底 / 盖帽；离场球不参与
 - `src/core/wallBounce.ts`：圆角矩形墙 + 矮柱胶囊反弹；球-球弹性分离（伤害在 collisionDamage）
 - `src/core/matchSession.ts`：Countdown → Playing → Overtime? → Result；击破/助攻/中点/回场
-- `src/core/simpleBot.ts`：蓝方简 bot（周期 stub 冲中点或最近敌人）
+- `src/core/simpleBot.ts`：蓝方简 bot（共用保底冲 + 拧向，目标中点或敌人；周期 stub）
 - `src/render`：逻辑→屏幕变换（`worldTransform.ts`）、场地（`arenaView.ts`）、球与朝向箭头（`ballView.ts`）
 - `src/debug/debugVelocity.ts`：C/Z/X/V 验收对撞（在场才生效）；`R` 重开一局
 - `src/debug/debugMatch.ts`：`F`/`G` 加减分，`T` 跳 30s，`Y` 当前阶段剩 1s
 - `src/core/collisionDamage.ts`：相对速度阈值 / 朝向乘区 / 掉血弹开；无敌或同队不结算伤害
-- `src/ui/hpHud.ts`：血量条、瞄准/微调/回场/无敌、最近碰撞日志
+- `src/ui/hpHud.ts`：血量条、瞄准/弱拧强拧/回场/无敌、最近碰撞日志
 - `src/ui/matchHud.ts`：双方分、倒计时、中点归属、回场与击破提示
-- `src/input`：ActionBus 每帧采样 Aim / Skill1–4 / FineTune / CancelAim；PC 鼠键 + 横屏虚拟键
+- `src/input`：ActionBus 每帧采样 Aim / Skill1–4 / CancelAim；PC 鼠标点地 + 右侧四键（无左摇杆）
 - `src/core/skillStub.ts`：四槽相同释放 stub（冲量 + 朝向刷新 + 主动撞窗）
 - 后续：`src/heroes` 属 M5
 
 ## M1 物理约定
 - 积分：`x += v * dt`，`dt` 上限 1/20
-- 摩擦：`v *= exp(-FRICTION * dt)`，`FRICTION = ln(8/0.4)/2`，满速约 2s 滑到爬行 0.4；低于 0.05 归零
+- 摩擦：`v *= exp(-FRICTION * dt)`，`FRICTION = ln(8/0.4)/2`；M3.5 起低于保底 2.5 拉回，不再归零
 - 墙：圆心约束在内缩圆角矩形（角半径 1.0）；完全弹性反弹
 - 矮柱：按 2×1 胶囊当墙（半高 0.5 + 球半径）
 - 球-球：等质量弹性分离，避免穿模；伤害 / 朝向乘区 / 弹开属 M2
@@ -52,13 +53,20 @@
 - 本里程碑（M2）不做：击破回场、中点分、Action 层、英雄（已由 M3/M4 补）
 
 ## M3 输入约定
-- Action：`Aim` / `Skill1–4` / `FineTune`（窗内）/ `CancelAim`；无移动键，鼠标/摇杆只改 Aim
-- 技能：按下进入瞄准（扇形+箭头预览，**无最长时限**），再按同键或左键释放；右键 / Esc / 点空白(触屏) 取消，不冲量
+- Action：`Aim` / `Skill1–4` / `CancelAim`；FineTune 改为撞后自动强拧；无移动键，点地/鼠标只改 Aim
+- 技能：按下进入瞄准（扇形+箭头预览，**无最长时限**），再按同键或左键释放；右键 / Esc / 取消键 取消，不冲量
 - 释放 stub（四槽相同）：朝向=瞄准方向；速度 += 瞄准单位 × 3；再 clamp 上限 8；开 0.25s 主动撞窗；短 CD 0.4s 防连点
-- FineTune：墙/柱/球任意碰撞（含轻蹭）后开 0.3s 窗；窗内每帧把**速度方向**向 Aim 轻扭约 90°/s；HUD 亮微调提示
 - PC：Aim=鼠标相对红球；Skill1–4=`1`/`2`/`3`/`4`（兼 `QWE`；`R` 重开一局）；Cancel=`右键`/`Esc`
-- 手机横屏：左虚拟摇杆=Aim/FineTune；右四键=Skill1–4；点空白=Cancel；禁默认滚动/缩放
+- 手机横屏：点地纠偏；右四键=Skill1–4；点技能不抢 Aim；瞄准中显示取消键；禁默认滚动/缩放
 - 玩家控红球；蓝球在 M4 改为简 bot；保留 C/Z/X/V；`R` 重开一局
+
+## M3.5 点地手感
+- 保底速 2.5；上限仍 8
+- 全程弱拧 45°/s；墙/柱/球撞后 0.3s 强拧 120°/s（替换原约 90°/s 微调）
+- `targetDir = normalize(pointer − ball)`；只改速度方向，Aim 不加油门
+- 无左摇杆；右侧技能四键；点技能不抢 Aim
+- Bot 共用保底冲 + 拧向，目标中点或最近敌人
+- 不改 M4 计分/回场/中点规则；骑士换皮不做
 
 ## M4 一局约定
 - 本机：1 人控红方 1 球 vs 蓝方 1～2 个简 bot（`BLUE_BOT_COUNT`，默认 2）
@@ -67,7 +75,7 @@
 - 击破：HP≤0 离场，敌方击杀队伍 +15；击杀前 3s 内对死者造成过碰撞伤的队友（非击杀者）最近 1 人 +5。红方无队友，助攻由 `verifyM4` 双红预留覆盖
 - 回场：8s 于己方半场出生点；回场 / 开局 2s 无敌（可滑、可放 stub；碰撞不伤自己也不造成撞伤）。无敌或同队只做弹性分离
 - 中点：圆心地图中心、半径 2.5 格；每秒结算；区内活人数严格更多 +2；相等 0；离场当帧不占人
-- 简 bot：无寻路；周期朝中点或最近敌人给 stub 冲量 + 轻微随机；可被撞死并回场
+- 简 bot：无寻路；共用保底冲 + 拧向（中点或最近敌人）；周期再给 stub 冲量 + 轻微随机；可被撞死并回场
 - 调试：`C/Z/X/V` 不重置一局；`R` 重开；`F`/`G` +10 分；`T` 跳 30s；`Y` 当前阶段剩 1s；`DEBUG_CLOCK_SCALE` 默认可加速时钟
 - 本里程碑不做：真英雄、匹配、骑士换皮、联网、满编 3v3 假人 AI
 
@@ -75,13 +83,14 @@
 - M0：`npm i && npm run dev` 可见俯视空场地；`npm run build` 通过
 - M1：两颗占位球可惯性滑动；摩擦约 2s 满速→爬行；撞圆角墙/矮柱反弹；速度≤8；点击或方向键/空格给初速度并画出朝向箭头
 - M2：前/侧/后伤害与弹开可辨（调试键 C/Z/X/V）；HUD 显示双方 HP；轻蹭不掉血；调试给速后 0.25s 主动撞窗
-- M3：横屏虚拟键可放技能；PC 可瞄可放可取消；撞后 0.3s 内 Aim 能拧轨迹
+- M3：右侧四键 / 1–4/QWE 可同键瞄放技能 stub
+- M3.5：红球保底巡航约 2.5；金矛尖跟鼠标/点地；弱拧慢转、撞后短时更跟手；技能键不扯 Aim；蓝 bot 冲中点或贴脸
 
 ## M3 自测
-- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3`
+- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35`
 - PC：按 `1` 进瞄（无超时）→ 再按 `1` 或左键释放 → 红球沿瞄向加速且开主动撞窗；右键 / Esc 取消不冲量
-- 撞墙或轻蹭后 0.3s HUD 亮「微调」，鼠标能拧速度方向（约 90°/s）
-- 触屏：左摇杆改 Aim，右四键同「按下进瞄 / 再按释放」；点空白取消
+- 保底巡航约 2.5；鼠标持续拧向（弱 45°/s）；撞墙或轻蹭后 0.3s HUD 亮「强拧」120°/s
+- 触屏：点地纠偏，右四键同「按下进瞄 / 再按释放」；点技能不抢 Aim；取消键取消
 - M4：单机完整一局（开局无敌 → 击破得分+回场倒计时 → 中点刷分 → 先到100 / 加时 / 再平下次击破）
 - M5：钩刺急停→勾→捅→推可打出
 

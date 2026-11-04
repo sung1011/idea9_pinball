@@ -39,10 +39,10 @@ export function createHpHud(host: HTMLElement): HpHud {
   rows.className = 'hpHudRows';
   const action = document.createElement('div');
   action.className = 'hpHudAction';
-  action.textContent = '红球：按 1–4 / QWE 瞄准，再按同键或左键释放';
+  action.textContent = '点地纠偏、无左摇杆 · 1–4 / QWE 同键瞄放';
   const fineTune = document.createElement('div');
   fineTune.className = 'hpHudFineTune';
-  fineTune.textContent = '微调';
+  fineTune.textContent = '弱拧';
   const hintText = '碰撞：轻蹭只改方向；相对速度≥4 或主动撞窗才掉血';
   const log = document.createElement('div');
   log.className = 'hpHudLog';
@@ -80,7 +80,7 @@ export function createHpHud(host: HTMLElement): HpHud {
           value.textContent = `回场 ${left.toFixed(1)}s`;
         } else {
           const ram = ball.activeRamRemain > 0 ? ` 撞窗${ball.activeRamRemain.toFixed(2)}s` : '';
-          const tune = ball.fineTuneRemain > 0 ? ` 微调${ball.fineTuneRemain.toFixed(2)}s` : '';
+          const tune = ball.fineTuneRemain > 0 ? ` 强拧${ball.fineTuneRemain.toFixed(2)}s` : '';
           const inv = ball.invincibleRemain > 0 ? ` 无敌${ball.invincibleRemain.toFixed(1)}s` : '';
           value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${inv}${ram}${tune}`;
         }
@@ -95,21 +95,21 @@ export function createHpHud(host: HTMLElement): HpHud {
     const fine = player?.fineTuneRemain ?? 0;
     const parts: string[] = [];
     if (status && status.aimingSlot > 0) {
-      parts.push(`瞄准技能${status.aimingSlot} · 再按同键或左键释放 · 右键/Esc/点空白取消`);
+      parts.push(`瞄准技能${status.aimingSlot} · 再按同键或左键释放 · 右键/Esc/取消键取消`);
     }
     if (fine > 0) {
-      parts.push(`微调 ${fine.toFixed(2)}s`);
+      parts.push(`强拧 ${fine.toFixed(2)}s`);
     } else if (status && status.skillCd > 0 && (!status.aimingSlot || status.aimingSlot === 0)) {
       parts.push(`技能CD ${status.skillCd.toFixed(2)}s`);
     }
     if (parts.length === 0) {
-      parts.push('红球：按 1–4 / QWE 瞄准，再按同键或左键释放');
+      parts.push('点地纠偏、无左摇杆 · 1–4 / QWE 同键瞄放');
     }
     action.textContent = parts.join(' · ');
     action.classList.toggle('isFineTune', fine > 0);
     action.classList.toggle('isAiming', !!status && status.aimingSlot > 0);
     fineTune.classList.toggle('isOn', fine > 0);
-    fineTune.textContent = fine > 0 ? `微调 ${fine.toFixed(2)}s` : '微调';
+    fineTune.textContent = fine > 0 ? `强拧 ${fine.toFixed(2)}s` : '弱拧';
   };
 
   const pushHits = (hits: CollisionHit[]): void => {

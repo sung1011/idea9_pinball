@@ -1,6 +1,6 @@
 import type { BallBody } from '../core/ballBody';
 import { SKILL_STUB_CD } from '../core/constants';
-import { applyFineTune, applySkillRelease } from '../core/skillStub';
+import { applyFloorSpeed, applySteerToward, applySkillRelease } from '../core/skillStub';
 import type { ActionSample, SkillSlot } from './actionTypes';
 
 export type PlayerControl = {
@@ -55,8 +55,16 @@ export function createPlayerControl(): PlayerControl {
         }
       }
 
-      if (player.fineTuneRemain > 0 && sample.steerAim && sample.hasAim) {
-        applyFineTune(player, sample.aimX, sample.aimY, dt);
+      if (sample.hasAim) {
+        player.aimX = sample.aimX;
+        player.aimY = sample.aimY;
+        player.hasAim = true;
+        if (dt > 0) {
+          applyFloorSpeed(player);
+          applySteerToward(player, sample.aimX, sample.aimY, dt);
+        }
+      } else {
+        player.hasAim = false;
       }
     },
     reset: () => {

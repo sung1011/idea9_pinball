@@ -35,26 +35,18 @@ export type AimPreview = {
   sync: (player: BallBody, aimingSlot: number, sample: ActionSample) => void;
 };
 
-/** 瞄准扇形 + 箭头；微调窗内用较弱箭头标出 Aim。 */
+/** 技能瞄准时画扇形；矛尖由 ballView 持续指示 targetDir。 */
 export function createAimPreview(): AimPreview {
   const root = new Graphics();
 
   const sync = (player: BallBody, aimingSlot: number, sample: ActionSample): void => {
     root.clear();
     root.position.set(player.x, player.y);
-    if (!player.inPlay || !sample.hasAim) {
+    if (!player.inPlay || !sample.hasAim || aimingSlot === 0) {
       return;
     }
-    const aiming = aimingSlot !== 0;
-    const fine = player.fineTuneRemain > 0;
-    if (!aiming && !fine) {
-      return;
-    }
-    const color = aiming ? 0x7ee8ff : 0xffe08a;
-    if (aiming) {
-      drawCone(root, sample.aimX, sample.aimY, color, 0.28);
-    }
-    drawAimArrow(root, sample.aimX, sample.aimY, color);
+    drawCone(root, sample.aimX, sample.aimY, 0x7ee8ff, 0.28);
+    drawAimArrow(root, sample.aimX, sample.aimY, 0x7ee8ff);
   };
 
   return { root, sync };

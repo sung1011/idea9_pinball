@@ -5,6 +5,7 @@ import { stepPhysics } from './core/physicsStep';
 import { createSimpleBot } from './core/simpleBot';
 import { verifyM2 } from './core/verifyM2';
 import { verifyM3 } from './core/verifyM3';
+import { verifyM35 } from './core/verifyM35';
 import { verifyM4 } from './core/verifyM4';
 import { bindDebugMatch } from './debug/debugMatch';
 import { bindDebugVelocity } from './debug/debugVelocity';
@@ -26,13 +27,14 @@ function mountDebugHint(host: HTMLElement): void {
   const hint = document.createElement('div');
   hint.className = 'debugHint';
   hint.textContent =
-    '红球：1–4/QWE 瞄，再按同键或左键放。R重开  F/G±10分  T跳30s  Y时钟1s  ·  C/Z/X/V 对撞';
+    '点地纠偏、无左摇杆 · 1–4/QWE 瞄放 · R重开  F/G±10分  T跳30s  Y时钟1s  ·  C/Z/X/V 对撞';
   host.appendChild(hint);
 }
 
 async function boot(): Promise<void> {
   verifyM2();
   verifyM3();
+  verifyM35();
   verifyM4();
 
   const host = document.querySelector<HTMLDivElement>('#app');

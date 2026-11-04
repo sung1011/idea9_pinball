@@ -28,6 +28,29 @@ function drawArrow(g: Graphics, fx: number, fy: number, speed: number): void {
   g.fill({ color: 0xffffff });
 }
 
+/** 矛尖：指示 targetDir（点地 / 鼠标 / bot 目标）。 */
+function drawTargetSpear(g: Graphics, tx: number, ty: number): void {
+  const len = Math.hypot(tx, ty);
+  if (len < 1e-6) {
+    return;
+  }
+  const fx = tx / len;
+  const fy = ty / len;
+  const tipX = fx * 0.92;
+  const tipY = fy * 0.92;
+  g.moveTo(fx * 0.5, fy * 0.5);
+  g.lineTo(tipX, tipY);
+  g.stroke({ color: 0xffe08a, width: 0.06, cap: 'round' });
+
+  const px = -fy;
+  const py = fx;
+  g.moveTo(tipX, tipY);
+  g.lineTo(tipX - fx * 0.14 + px * 0.07, tipY - fy * 0.14 + py * 0.07);
+  g.lineTo(tipX - fx * 0.14 - px * 0.07, tipY - fy * 0.14 - py * 0.07);
+  g.closePath();
+  g.fill({ color: 0xffe08a });
+}
+
 function drawHpBar(g: Graphics, hp: number, maxHp: number): void {
   const width = 0.92;
   const height = 0.1;
@@ -49,7 +72,8 @@ export function createBallView(ball: BallBody): BallView {
   const body = new Graphics();
   const hpBar = new Graphics();
   const arrow = new Graphics();
-  root.addChild(body, hpBar, arrow);
+  const spear = new Graphics();
+  root.addChild(body, hpBar, arrow, spear);
 
   const sync = (next: BallBody): void => {
     root.visible = next.inPlay;
@@ -82,6 +106,10 @@ export function createBallView(ball: BallBody): BallView {
     const speed = Math.hypot(next.vx, next.vy);
     arrow.clear();
     drawArrow(arrow, next.facingX, next.facingY, speed);
+    spear.clear();
+    if (next.hasAim) {
+      drawTargetSpear(spear, next.aimX, next.aimY);
+    }
   };
 
   sync(ball);

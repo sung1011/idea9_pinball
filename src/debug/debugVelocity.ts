@@ -82,10 +82,10 @@ export function bindDebugVelocity(opts: { balls: BallBody[]; onReset?: () => voi
     }
     if (key === 'v') {
       ev.preventDefault();
-      placeBall(pair[0], 8.7, 6, 1, 0);
-      placeBall(pair[1], 11.3, 6, -1, 0);
-      impart(pair[0], 1, 0, 1.2, false);
-      impart(pair[1], -1, 0, 1.2, false);
+      placeBall(pair[0], 9.5, 6, 1, 0);
+      placeBall(pair[1], 10.35, 6.5, 1, 0);
+      impart(pair[0], 1, 0, 2.5, false);
+      impart(pair[1], 1, 0, 2.5, false);
       return;
     }
     if (key === 'r') {

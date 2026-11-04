@@ -18,7 +18,7 @@ function sample(partial: Partial<ActionSample>): ActionSample {
   };
 }
 
-/** 释放 stub / 取消 / 微调转向 / 轻蹭开窗。 */
+/** 释放 stub / 取消 / 强拧转向 / 轻蹭开窗。 */
 export function verifyM3(): void {
   const rest = createBallBody({
     x: 10,
@@ -66,8 +66,8 @@ export function verifyM3(): void {
   });
   applyFineTune(turn, 0, 1, 0.3);
   const deg = (Math.atan2(turn.vy, turn.vx) * 180) / Math.PI;
-  if (Math.abs(deg - 27) > 0.6) {
-    throw new Error(`M3：0.3s 微调约 27°，实得 ${deg.toFixed(2)}`);
+  if (Math.abs(deg - 36) > 0.6) {
+    throw new Error(`M3：0.3s 强拧约 36°，实得 ${deg.toFixed(2)}`);
   }
   if (Math.abs(Math.hypot(turn.vx, turn.vy) - 4) > 1e-5) {
     throw new Error('M3：微调应只改方向不改速率');
@@ -120,21 +120,21 @@ export function verifyM3(): void {
   }
 
   const scrapeA = createBallBody({
-    x: 9.45,
+    x: 9.5,
     y: 6,
     color: 0xe24a4a,
-    vx: 1.2,
+    vx: 2.5,
     vy: 0,
     facingX: 1,
     facingY: 0,
   });
   const scrapeB = createBallBody({
-    x: 10.55,
-    y: 6,
+    x: 10.35,
+    y: 6.5,
     color: 0x3d7cf0,
-    vx: -1.2,
+    vx: 2.5,
     vy: 0,
-    facingX: -1,
+    facingX: 1,
     facingY: 0,
   });
   let opened = false;

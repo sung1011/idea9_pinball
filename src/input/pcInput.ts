@@ -1,5 +1,5 @@
 import { screenToLogical, type WorldTransform } from '../render/worldTransform';
-import type { ActionBus } from './actionBus';
+import { isAimUiTarget, type ActionBus } from './actionBus';
 import type { SkillSlot } from './actionTypes';
 
 const SKILL_KEYS: Record<string, SkillSlot> = {
@@ -12,44 +12,39 @@ const SKILL_KEYS: Record<string, SkillSlot> = {
   e: 3,
 };
 
-function isVirtualControl(target: EventTarget | null): boolean {
-  return target instanceof Element && !!target.closest('[data-touch-control]');
-}
-
-function trackMouse(
+function trackPointer(
   ev: PointerEvent,
   canvas: HTMLCanvasElement,
   getTransform: () => WorldTransform,
   bus: ActionBus,
 ): void {
-  if (ev.pointerType === 'touch') {
+  if (isAimUiTarget(ev.target)) {
     return;
   }
   const rect = canvas.getBoundingClientRect();
   const world = screenToLogical(ev.clientX - rect.left, ev.clientY - rect.top, getTransform());
-  bus.setMouseLogical(world.x, world.y);
+  bus.setPointerLogical(world.x, world.y);
 }
 
-/** PC：鼠标改 Aim；1–4 / QWE 技能；左键释放；右键 / Esc 取消。R 留给调试重置。 */
+/** PC：鼠标持续设 targetDir；1–4 / QWE 技能；左键释放；右键 / Esc 取消。R 留给调试重置。触屏点地只纠偏。 */
 export function bindPcInput(opts: {
   bus: ActionBus;
   canvas: HTMLCanvasElement;
   getTransform: () => WorldTransform;
 }): () => void {
   const onMove = (ev: PointerEvent): void => {
-    trackMouse(ev, opts.canvas, opts.getTransform, opts.bus);
+    if (ev.pointerType !== 'mouse' && ev.buttons === 0) {
+      return;
+    }
+    trackPointer(ev, opts.canvas, opts.getTransform, opts.bus);
   };
 
   const onDown = (ev: PointerEvent): void => {
-    trackMouse(ev, opts.canvas, opts.getTransform, opts.bus);
-    if (isVirtualControl(ev.target)) {
+    if (isAimUiTarget(ev.target)) {
       return;
     }
-    if (ev.pointerType === 'touch' || ev.pointerType === 'pen') {
-      opts.bus.pushCancel();
-      return;
-    }
-    if (ev.button === 0) {
+    trackPointer(ev, opts.canvas, opts.getTransform, opts.bus);
+    if (ev.pointerType === 'mouse' && ev.button === 0) {
       opts.bus.pushRelease();
     }
     if (ev.button === 2) {

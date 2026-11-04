@@ -19,8 +19,12 @@ export type BallBody = {
   maxHp: number;
   /** 主动撞窗口剩余秒数；>0 时碰撞按主动撞阈值结算 */
   activeRamRemain: number;
-  /** 碰撞后微调窗口剩余秒数；窗内用 Aim 拧速度方向 */
+  /** 碰撞后强拧窗口剩余秒数；窗内 120°/s，否则全程弱拧 45°/s */
   fineTuneRemain: number;
+  /** 目标方向（Aim）；矛尖用 */
+  aimX: number;
+  aimY: number;
+  hasAim: boolean;
   /** 未设则不算组队（M2 公式球仍可互伤） */
   team?: TeamId;
   inPlay: boolean;
@@ -60,6 +64,9 @@ export function createBallBody(init: {
     maxHp: MAX_HP,
     activeRamRemain: 0,
     fineTuneRemain: 0,
+    aimX: init.facingX ?? 1,
+    aimY: init.facingY ?? 0,
+    hasAim: false,
     team: init.team,
     inPlay: true,
     invincibleRemain: 0,

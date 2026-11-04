@@ -224,48 +224,6 @@ canvas {
   z-index: 5;
 }
 
-.touchStick {
-  position: absolute;
-  left: max(10px, env(safe-area-inset-left));
-  bottom: max(10px, env(safe-area-inset-bottom));
-  width: min(28vmin, 148px);
-  height: min(28vmin, 148px);
-  pointer-events: auto;
-  touch-action: none;
-}
-
-.touchStickBase {
-  position: absolute;
-  inset: 8%;
-  border-radius: 50%;
-  border: 3px solid #7ee8ff99;
-  background: #0c333366;
-  box-shadow: inset 0 0 16px #04161688;
-}
-
-.touchStickKnob {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 38%;
-  height: 38%;
-  margin: -19% 0 0 -19%;
-  border-radius: 50%;
-  background: #7ee8ff;
-  box-shadow: 0 0 12px #7ee8ff88;
-  pointer-events: none;
-}
-
-.touchLayer.isFineTune .touchStickBase {
-  border-color: #ffe08a;
-  box-shadow: 0 0 16px #ffe08a66, inset 0 0 16px #04161688;
-}
-
-.touchLayer.isFineTune .touchStickKnob {
-  background: #ffe08a;
-  box-shadow: 0 0 14px #ffe08acc;
-}
-
 .touchSkills {
   position: absolute;
   right: max(10px, env(safe-area-inset-right));
@@ -301,6 +259,21 @@ canvas {
 
 .touchSkillBtn.isCd {
   opacity: 0.45;
+}
+
+.touchCancel {
+  position: absolute;
+  right: max(10px, env(safe-area-inset-right));
+  bottom: calc(max(10px, env(safe-area-inset-bottom)) + min(38vmin, 180px));
+  min-width: 68px;
+  height: 40px;
+  border-radius: 12px;
+  border: 2px solid #e24a4a;
+  background: #0f3f3fcc;
+  color: #ffd0d0;
+  pointer-events: auto;
+  touch-action: none;
+  font: 13px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
 }
 
 @media (max-height: 430px) {

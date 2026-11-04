@@ -44,23 +44,23 @@ export function verifyM2(): void {
   }
 
   const scrapeA = createBallBody({
-    x: 9.45,
+    x: 9.5,
     y: 4,
     color: 0xe24a4a,
     label: 'C',
-    vx: 1.2,
+    vx: 2.5,
     vy: 0,
     facingX: 1,
     facingY: 0,
   });
   const scrapeB = createBallBody({
-    x: 10.55,
-    y: 4,
+    x: 10.35,
+    y: 4.5,
     color: 0x3d7cf0,
     label: 'D',
-    vx: -1.2,
+    vx: 2.5,
     vy: 0,
-    facingX: -1,
+    facingX: 1,
     facingY: 0,
   });
   stepUntilHit([scrapeA, scrapeB]);

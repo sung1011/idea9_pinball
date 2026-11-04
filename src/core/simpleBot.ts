@@ -6,7 +6,7 @@ import {
   CONTROL_POINT,
 } from './constants';
 import type { MatchPhase } from './matchSession';
-import { applySkillRelease } from './skillStub';
+import { applyFloorSpeed, applySkillRelease, applySteerToward } from './skillStub';
 
 export type SimpleBot = {
   tick: (dt: number, roster: readonly BallBody[], phase: MatchPhase) => void;
@@ -33,20 +33,16 @@ function nearestEnemy(bot: BallBody, roster: readonly BallBody[]): BallBody | nu
   return best;
 }
 
-/** 无寻路：周期朝中点或最近敌人给 stub 冲量，加轻微随机。 */
+/** 共用保底冲 + 拧向（中点或最近敌人）；周期再给 stub 冲量。 */
 export function createSimpleBot(bot: BallBody): SimpleBot {
   let wait = nextWait() * 0.35;
 
   return {
     tick(dt, roster, phase) {
-      if (!bot.inPlay || phase === 'result' || phase === 'countdown') {
+      if (!bot.inPlay || phase === 'result') {
+        bot.hasAim = false;
         return;
       }
-      wait -= dt;
-      if (wait > 0) {
-        return;
-      }
-      wait = nextWait();
 
       const enemy = nearestEnemy(bot, roster);
       const toMidX = CONTROL_POINT.x - bot.x;
@@ -59,6 +55,23 @@ export function createSimpleBot(bot: BallBody): SimpleBot {
         aimX = enemy.x - bot.x;
         aimY = enemy.y - bot.y;
       }
+      const aimLen = Math.hypot(aimX, aimY);
+      if (aimLen > 1e-6) {
+        bot.aimX = aimX / aimLen;
+        bot.aimY = aimY / aimLen;
+        bot.hasAim = true;
+        applyFloorSpeed(bot);
+        applySteerToward(bot, bot.aimX, bot.aimY, dt);
+      }
+
+      if (phase === 'countdown') {
+        return;
+      }
+      wait -= dt;
+      if (wait > 0) {
+        return;
+      }
+      wait = nextWait();
       const jitter = (Math.random() - 0.5) * 2 * BOT_AIM_JITTER_RAD;
       const ang = Math.atan2(aimY, aimX) + jitter;
       applySkillRelease(bot, Math.cos(ang), Math.sin(ang));

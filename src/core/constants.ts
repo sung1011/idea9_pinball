@@ -45,8 +45,20 @@ export const SPEED_CAP = 8;
 export const CRAWL_SPEED = 0.4;
 export const FRICTION = Math.log(SPEED_CAP / CRAWL_SPEED) / 2;
 
-/** 低于此速率视为静止，避免无限微滑 */
+/** 低于此速率视为静止。M3.5 保底冲不再归零；定锚等 M5 状态可再用。 */
 export const REST_SPEED = 0.05;
+
+/** 保底速（格/秒）：摩擦后低于此值拉回，非完全静止 */
+export const FLOOR_SPEED = 2.5;
+
+/** 全程弱拧（度/秒） */
+export const WEAK_STEER_DEG_PER_SEC = 45;
+
+/** 撞后强拧（度/秒）；替换原约 90°/s 微调 */
+export const STRONG_STEER_DEG_PER_SEC = 120;
+
+export const WEAK_STEER_RAD_PER_SEC = (WEAK_STEER_DEG_PER_SEC * Math.PI) / 180;
+export const STRONG_STEER_RAD_PER_SEC = (STRONG_STEER_DEG_PER_SEC * Math.PI) / 180;
 
 /** 墙/柱弹性系数；1 = 完全弹性反弹 */
 export const WALL_RESTITUTION = 1;
@@ -88,11 +100,8 @@ export const SKILL_IMPULSE = 3;
 /** 技能短 CD，防连点（秒） */
 export const SKILL_STUB_CD = 0.4;
 
-/** 任意碰撞（含轻蹭）后的微调窗口（秒） */
+/** 任意碰撞（含轻蹭）后的强拧窗口（秒） */
 export const FINE_TUNE_WINDOW = 0.3;
-
-/** 微调：把速度方向拧向瞄准，约 90°/s */
-export const FINE_TUNE_TURN_RAD_PER_SEC = Math.PI / 2;
 
 /** 本机蓝方简 bot 数量；1～2，默认 2 */
 export const BLUE_BOT_COUNT = 2;

@@ -6,7 +6,8 @@ import {
   type BallBody,
 } from './ballBody';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
-import { FRICTION, REST_SPEED, SPEED_CAP } from './constants';
+import { FRICTION, SPEED_CAP } from './constants';
+import { applyFloorSpeed } from './skillStub';
 import { resolveArenaObstacles, resolveBallBall } from './wallBounce';
 
 const MAX_DT = 1 / 20;
@@ -26,11 +27,9 @@ function applyFrictionAndFacing(ball: BallBody, dt: number): void {
   const damp = Math.exp(-FRICTION * dt);
   ball.vx *= damp;
   ball.vy *= damp;
-
+  applyFloorSpeed(ball);
   const speed = Math.hypot(ball.vx, ball.vy);
-  if (speed < REST_SPEED) {
-    ball.vx = 0;
-    ball.vy = 0;
+  if (speed <= 1e-8) {
     return;
   }
   ball.facingX = ball.vx / speed;
