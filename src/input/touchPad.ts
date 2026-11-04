@@ -1,6 +1,12 @@
 import type { SkillCds } from '../core/skillCaster';
 import type { HeroId } from '../heroes/heroIds';
 import { skillShorts, skillTipCopy } from '../heroes/kitLabels';
+import {
+  createSkillCdFace,
+  nextSkillCdTotal,
+  syncSkillCdFace,
+  type SkillCdFace,
+} from '../ui/skillCdMask';
 import { createSkillTip, SKILL_TIP_HOLD_MS } from '../ui/skillTip';
 import type { ActionBus } from './actionBus';
 import type { SkillSlot } from './actionTypes';
@@ -46,6 +52,8 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
   skills.className = 'touchSkills';
   skills.dataset.touchControl = 'skills';
   const buttons: HTMLButtonElement[] = [];
+  const faces: SkillCdFace[] = [];
+  const cdTotals = [0, 0, 0, 0];
   let hero: HeroId = 'hook';
   let holdTimer = 0;
   let holdSlot: SkillSlot | 0 = 0;
@@ -83,7 +91,7 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
     btn.className = 'touchSkillBtn';
     btn.dataset.touchControl = 'skill';
     btn.dataset.slot = String(slot);
-    btn.textContent = skillShorts('hook')[slot - 1] ?? String(slot);
+    faces.push(createSkillCdFace(btn, skillShorts('hook')[slot - 1] ?? String(slot)));
     btn.addEventListener('pointerdown', (ev: PointerEvent) => {
       ev.preventDefault();
       ev.stopPropagation();
@@ -141,9 +149,11 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
       const shorts = skillShorts(hero);
       for (let i = 0; i < buttons.length; i += 1) {
         const slot = i + 1;
-        buttons[i].textContent = shorts[i] ?? String(slot);
+        const remain = status.skillCds[i] ?? 0;
+        cdTotals[i] = nextSkillCdTotal(remain, cdTotals[i]);
+        faces[i].name.textContent = shorts[i] ?? String(slot);
         buttons[i].classList.toggle('isAiming', status.aimingSlot === slot || status.windupSlot === slot);
-        buttons[i].classList.toggle('isCd', (status.skillCds[i] ?? 0) > 0);
+        syncSkillCdFace(buttons[i], faces[i], remain, cdTotals[i]);
       }
       if (tip.isOn() && isSkillSlot(holdSlot)) {
         tip.syncCopy(skillTipCopy(hero, holdSlot));

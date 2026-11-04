@@ -1,5 +1,5 @@
 # Idea pinball · 工程落地方案 v0
-更新：2026-11-04（井绳 1 改为索爆：身周+桩同步四脉冲；回索改为沿线定身 2s，超出硬控 0.6s 上限；开局冲锋 1s、前 0.2s 拉升，冲锋阶段不再出说明板；Layout B 顶中合并比分计时胶囊；囚环物理关死出不去；持续技能时长 +2s，钉锚硬控 0.6s 不动；长按技能键看对外名+一行效果；战场 HUD Layout B：横屏全屏；站点图标 E：红蓝对撞金矛；对局可随时换英雄；井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋峰值 7.5）
+更新：2026-11-04（技能键 CD：12 点起顺时针径向遮罩 + 剩余秒一位小数，长按提示 CD 中仍可用；井绳 1 改为索爆：身周+桩同步四脉冲；回索改为沿线定身 2s，超出硬控 0.6s 上限；开局冲锋 1s、前 0.2s 拉升，冲锋阶段不再出说明板；Layout B 顶中合并比分计时胶囊；囚环物理关死出不去；持续技能时长 +2s，钉锚硬控 0.6s 不动；长按技能键看对外名+一行效果；战场 HUD Layout B：横屏全屏；站点图标 E：红蓝对撞金矛；对局可随时换英雄；井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋峰值 7.5）
 
 ## 栈
 - 客户端：TypeScript + PixiJS + Vite
@@ -59,17 +59,19 @@
 - `src/ui/hpHud.ts`：调试血条/碰撞日志（默认不挂到战场；骑士头顶仍画血条）
 - `src/ui/matchHud.ts`：Layout B 顶中一颗胶囊（红分 | 计时 | 蓝分，带小队标）、左下英雄下拉、短 toast（击破/回场）；Stall 大号倒计时保留，冲锋段不出说明板；指定英雄只换 kit
 - `src/ui/skillTip.ts`：技能键长按约 0.4s 浮层（骑士对外名 + 一行效果），锚在键上方
+- `src/ui/skillCdMask.ts`：技能键 CD 径向遮罩（12 点起顺时针抹开）与剩余秒一位小数；本轮总长取该次 CD 起始剩余（含未中/惩罚短 CD）
 - `src/ui/stageLayout.ts`：横构图舞台、安全区、CSS 变量；竖窗 letterbox
 - `src/ui/rotateHint.ts`：触屏竖持转横提示
 - `src/core/verifyHeroPick.ts`：下拉指定 / H 循环同步选中 / 换 kit 保留血量位置
 - `src/core/verifyHudLayout.ts`：舞台保持 20×12 横构图、竖窗 letterbox、安全区；顶中红|计时|蓝一颗胶囊，无角落独立比分；Stall 倒计时在、冲锋说明板不在
 - `src/core/verifySkillTip.ts`：长按阈值、对外名+一行效果、按下立刻进总线、CD 中仍可出提示
+- `src/core/verifySkillCd.ts`：CD 键一位小数、满圈起抹/按本轮比例收缩、短 CD 从实际总长起算、CD 中长按仍可出浮层
 - `src/ui/helpCard.ts`：说明卡（开局 / 怎么动 / 怎么得分 / 怎么赢 / 回场）；从设置常规「怎么玩」打开
 - `src/ui/settingsPanel.ts`：右上角小齿轮（常规 / 版本 / GM）；点空白关；常规可开说明卡
 - `src/ui/appVersion.ts`：版本号 + 构建短 SHA + 简短 changelog
 - `src/ui/resultPanel.ts`：局结束结算（胜/负、击破分与领地分、用时、再来一局）
 - `public/`：站点图标（源图 `knightIconSource.jpg`；`favicon.png` 32 / `appleTouchIcon.png` 180 / `icon192.png` / `icon512.png`），Vite 原样拷到 dist；`index.html` 用根路径 link，构建时随 `base` `/idea9_pinball/` 解析
-- `src/input`：ActionBus 每帧采样 Aim / Skill1–4 / CancelAim；PC 鼠标点地 + 右侧四键（无左摇杆）；技能键按下立刻进瞄/同键释放，长按约 0.4s 另出浮层，不挡短按
+- `src/input`：ActionBus 每帧采样 Aim / Skill1–4 / CancelAim；PC 鼠标点地 + 右侧四键（无左摇杆）；技能键按下立刻进瞄/同键释放，长按约 0.4s 另出浮层，不挡短按；CD 中径向遮罩 + 剩余秒，遮罩不挡长按
 - `src/core/skillStub.ts`：保底冲 / 弱强拧 / stub 冲量工具（对局释放已改钩刺）
 
 ## M1 物理约定
@@ -93,7 +95,7 @@
 - 技能：按下进入瞄准（扇形+箭头预览，**无最长时限**），再按同键或左键释放；右键 / Esc / 取消键 取消，不冲量
 - 释放：朝向=瞄准方向；**前摇从释放后起算**。M5 起红方固定钩刺，不再用四槽相同 stub
 - PC：Aim=鼠标相对红球；Skill1–4=`1`/`2`/`3`/`4`（不绑 `QWE`；`R` 只重开一局）；Cancel=`右键`/`Esc`
-- 手机横屏：点地纠偏；右下 2×2 四键=Skill1–4；点技能不抢 Aim；瞄准中显示取消键；禁默认滚动/缩放。竖持只出转横提示。长按技能键约 0.4s 出对外名+一行效果（CD 中也可看）
+- 手机横屏：点地纠偏；右下 2×2 四键=Skill1–4；点技能不抢 Aim；瞄准中显示取消键；禁默认滚动/缩放。竖持只出转横提示。长按技能键约 0.4s 出对外名+一行效果（CD 中也可看）。CD 中从 12 点顺时针径向遮罩并显示剩余秒一位小数；用施放器现有剩余计时，不改 kit 数值
 - 玩家控红球；蓝球在 M4 改为简 bot；调试 `Z` 背后×1.35 / `X` 侧面×0.7 / `C` 正面×1.0 / `V` 轻蹭（GM 开时）；`R` 只重开一局（正式也可用）
 
 ## M3.5 点地手感
@@ -128,7 +130,7 @@
 - `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35`
 - PC：按 `1` 进瞄（无超时）→ 再按 `1` 或左键释放 → 释放后才走该槽前摇；右键 / Esc 取消不生效
 - 保底巡航约 2.5；鼠标持续拧向（弱 45°/s）；撞墙或轻蹭后 0.3s HUD 亮「强拧」120°/s
-- 触屏：点地纠偏，右四键同「按下进瞄 / 再按释放」；点技能不抢 Aim；取消键取消；长按技能键约 0.4s 出对外名+一行效果（CD 中也可），松开收起
+- 触屏：点地纠偏，右四键同「按下进瞄 / 再按释放」；点技能不抢 Aim；取消键取消；长按技能键约 0.4s 出对外名+一行效果（CD 中也可），松开收起。CD 中键上顺时针径向遮罩 + 一位小数剩余秒
 - M4：单机完整一局（Stall 5s → 冲锋 1s 无敌 → 击破得分+回场倒计时 → 领地刷分 → 先到100 / 加时 / 再平下次击破）
 - M5：钩刺急停→勾→捅→推可打出
 
@@ -181,7 +183,7 @@
 未改：`NAIL_PIN.duration` 0.6、`HOOK_STAB.thirdStun` 0.25、各 CD / missCd / punishCd / windup / dashTime / ramWindow / `ARC_GRAZE.targetCd`、开局 Stall / 冲锋 / 回场无敌。`WELL_REEL.duration` 2s 定身是后来单独改的硬控例外，不在本表 +2s 之列。
 
 ## M5 自测
-- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35` + `verifyM4` + `verifyM5` + `verifyRing` + `verifyChain` + `verifyNail` + `verifyArc` + `verifyWell` + `verifyHeroPick` + `verifyHudLayout` + `verifySkillTip`
+- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35` + `verifyM4` + `verifyM5` + `verifyRing` + `verifyChain` + `verifyNail` + `verifyArc` + `verifyWell` + `verifyHeroPick` + `verifyHudLayout` + `verifySkillTip` + `verifySkillCd`
 - 按 `1` 进瞄可一直持有，再按 `1` 或左键后 0.4s 才出勾；未中 CD 约 4s
 - 蓄势→钩矛→连刺→盾冲可依次打出；HUD 分槽显示钩/刺/冲/蓄 CD
 - 蓝1 磁环会推波/困圈；蓝2 钩刺会保底靠近并偶尔勾，不会打捅×3 连招

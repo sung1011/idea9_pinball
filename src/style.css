@@ -714,6 +714,10 @@ canvas {
 }
 
 .touchSkillBtn {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
   width: min(11vmin, 48px);
   height: min(11vmin, 48px);
   min-width: 40px;
@@ -729,6 +733,37 @@ canvas {
   backdrop-filter: blur(6px);
 }
 
+.touchSkillName {
+  position: relative;
+  z-index: 1;
+}
+
+.touchSkillCdWipe {
+  display: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  background: conic-gradient(
+    from -90deg,
+    #9af6f626 0 calc((1 - var(--cd-remain, 0)) * 1turn),
+    #02080ee8 calc((1 - var(--cd-remain, 0)) * 1turn)
+  );
+}
+
+.touchSkillCdTime {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  place-items: center;
+  font: 700 12px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  color: #ffe08a;
+  text-shadow: 0 1px 3px #041616ee;
+}
+
 .touchSkillBtn.isAiming,
 .touchSkillBtn:active {
   border-color: #ffe08a;
@@ -737,7 +772,19 @@ canvas {
 }
 
 .touchSkillBtn.isCd {
-  opacity: 0.45;
+  background: #24303acc;
+}
+
+.touchSkillBtn.isCd .touchSkillName {
+  opacity: 0.22;
+}
+
+.touchSkillBtn.isCd .touchSkillCdWipe {
+  display: block;
+}
+
+.touchSkillBtn.isCd .touchSkillCdTime {
+  display: grid;
 }
 
 .skillTip {
@@ -869,6 +916,10 @@ canvas {
     min-width: 36px;
     min-height: 36px;
     font-size: 10px;
+  }
+
+  .touchSkillCdTime {
+    font-size: 11px;
   }
 
   .openingHudNum {

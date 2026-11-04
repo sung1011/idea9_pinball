@@ -15,6 +15,7 @@ import { verifyRing } from './core/verifyRing';
 import { verifyWell } from './core/verifyWell';
 import { verifyHeroPick } from './core/verifyHeroPick';
 import { verifyHudLayout } from './core/verifyHudLayout';
+import { verifySkillCd } from './core/verifySkillCd';
 import { verifySkillTip } from './core/verifySkillTip';
 import { resetBoomFlashes } from './core/boomFlashes';
 import { resetStakes } from './core/ropeStakes';
@@ -54,6 +55,7 @@ async function boot(): Promise<void> {
   verifyHeroPick();
   verifyHudLayout();
   verifySkillTip();
+  verifySkillCd();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
