@@ -17,7 +17,9 @@ import { verifyHeroPick } from './core/verifyHeroPick';
 import { verifyHudLayout } from './core/verifyHudLayout';
 import { verifySkillCd } from './core/verifySkillCd';
 import { verifySkillTip } from './core/verifySkillTip';
+import { verifyCombatFloat } from './core/verifyCombatFloat';
 import { resetBoomFlashes } from './core/boomFlashes';
+import { floatsFromHits, resetCombatFloatAcc, takeHealFloats } from './core/combatFloat';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
 import { nextHero, type HeroId } from './heroes/heroIds';
@@ -32,6 +34,7 @@ import { createTouchPad } from './input/touchPad';
 import { createAimPreview } from './render/aimPreview';
 import { createArenaView } from './render/arenaView';
 import { createBallView } from './render/ballView';
+import { createCombatFloatView } from './render/combatFloatView';
 import { applyWorldTransform, fitWorldToBox, type WorldTransform } from './render/worldTransform';
 import { createHelpCard } from './ui/helpCard';
 import { createMatchHud } from './ui/matchHud';
@@ -56,6 +59,7 @@ async function boot(): Promise<void> {
   verifyHudLayout();
   verifySkillTip();
   verifySkillCd();
+  verifyCombatFloat();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -88,6 +92,8 @@ async function boot(): Promise<void> {
   world.addChild(fields.root);
   const aimPreview = createAimPreview();
   world.addChild(aimPreview.root);
+  const combatFloats = createCombatFloatView();
+  world.addChild(combatFloats.root);
   app.stage.addChild(world);
 
   const rotateHint = createRotateHint(host);
@@ -148,6 +154,8 @@ async function boot(): Promise<void> {
     resetTrapZones();
     resetStakes();
     resetBoomFlashes();
+    resetCombatFloatAcc();
+    combatFloats.clear();
     match.reset();
     control.reset();
     bus.reset();
@@ -164,6 +172,8 @@ async function boot(): Promise<void> {
     resetTrapZones();
     resetStakes();
     resetBoomFlashes();
+    resetCombatFloatAcc();
+    combatFloats.clear();
     control.reset();
     for (const bot of bots) {
       bot.reset();
@@ -283,6 +293,8 @@ async function boot(): Promise<void> {
       );
     }
     const frameHits = [...step.hits, ...skillHits];
+    combatFloats.spawn([...floatsFromHits(frameHits, balls), ...takeHealFloats(step.heals)]);
+    combatFloats.tick(dt);
     match.tick(dt, frameHits);
     const next = match.snapshot();
     const aimingSlot = control.getAimingSlot();

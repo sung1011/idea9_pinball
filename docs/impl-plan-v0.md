@@ -1,5 +1,5 @@
 # Idea pinball · 工程落地方案 v0
-更新：2026-11-04（共用 / 英雄血量 100→300，开局与回场满血基线；技能键 CD：12 点起顺时针径向遮罩 + 剩余秒一位小数，长按提示 CD 中仍可用；井绳 1 改为索爆：身周+桩同步四脉冲；回索改为沿线定身 2s，超出硬控 0.6s 上限；开局冲锋 1s、前 0.2s 拉升，冲锋阶段不再出说明板；Layout B 顶中合并比分计时胶囊；囚环物理关死出不去；持续技能时长 +2s，钉锚硬控 0.6s 不动；长按技能键看对外名+一行效果；战场 HUD Layout B：横屏全屏；站点图标 E：红蓝对撞金矛；对局可随时换英雄；井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋峰值 7.5）
+更新：2026-11-04（战斗飘字仅数字：伤害红橙 `-12` / 治疗绿 `+8` / 护盾青预留，从结算点上浮淡出；共用 / 英雄血量 100→300，开局与回场满血基线；技能键 CD：12 点起顺时针径向遮罩 + 剩余秒一位小数，长按提示 CD 中仍可用；井绳 1 改为索爆：身周+桩同步四脉冲；回索改为沿线定身 2s，超出硬控 0.6s 上限；开局冲锋 1s、前 0.2s 拉升，冲锋阶段不再出说明板；Layout B 顶中合并比分计时胶囊；囚环物理关死出不去；持续技能时长 +2s，钉锚硬控 0.6s 不动；长按技能键看对外名+一行效果；战场 HUD Layout B：横屏全屏；站点图标 E：红蓝对撞金矛；对局可随时换英雄；井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋峰值 7.5）
 
 ## 栈
 - 客户端：TypeScript + PixiJS + Vite
@@ -43,6 +43,8 @@
 - `src/core/trapZones.ts`：困圈（物理关死出不去 + 禁敌位移技，友军不受困）
 - `src/core/skillQuery.ts`：扇形选取 / 友军选取 / 勾索墙挡
 - `src/core/skillHits.ts`：技能直伤（计入击破/助攻；纯治疗/护盾不记）
+- `src/core/combatFloat.ts`：战斗飘字事件（伤害/治疗/护盾色通道；只显示 ± 数字；HOT 收成整数；不改伤害公式）
+- `src/render/combatFloatView.ts`：世界坐标短上浮淡出；同帧错开；不挡顶中胶囊与右下技能键
 - `src/heroes/heroIds.ts`：6 人池 `HERO_IDS`、中文名、`nextHero` 循环
 - `src/heroes/kitLabels.ts`：对外短名 / 全名 / 长按一行效果；HUD / 说明 / 技能浮层共用
 - `src/heroes/hookKit.ts`：钩刺四技能数值与瞄准扇形；对外显示钩矛 / 连刺 / 盾冲 / 蓄势
@@ -51,7 +53,7 @@
 - `src/heroes/nailKit.ts`：钉壳四技能数值与瞄准扇；对外显示甲垒 / 刺盾 / 顶冲 / 钉锚
 - `src/heroes/arcKit.ts`：闪弧四技能数值与瞄准圆；对外显示侧闪 / 掠刃 / 回印 / 虚影
 - `src/heroes/wellKit.ts`：井绳四技能数值与瞄准圆/桩线；对外显示索爆 / 易位 / 索桩 / 回索
-- `src/render`：逻辑→屏幕变换（`worldTransform.ts` 的 `fitWorldToBox`）、场地与领地纹章 / 木栏 Stall（`arenaView.ts`，默认无调试网格/出生圈）、骑士圆盾羽冠矛尖与冲锋残影（`ballView.ts`）、磁场/困圈/索桩/索爆圈（`fieldOverlay.ts`）
+- `src/render`：逻辑→屏幕变换（`worldTransform.ts` 的 `fitWorldToBox`）、场地与领地纹章 / 木栏 Stall（`arenaView.ts`，默认无调试网格/出生圈）、骑士圆盾羽冠矛尖与冲锋残影（`ballView.ts`）、磁场/困圈/索桩/索爆圈（`fieldOverlay.ts`）、战斗飘字（`combatFloatView.ts`）
 - `src/debug/debugVelocity.ts`：`Z` 背后×1.35 / `X` 侧面×0.7 / `C` 正面×1.0 / `V` 轻蹭（在场才生效；仅 GM 开）；`R` 只重开一局（正式也可用）
 - `src/debug/debugMatch.ts`：`F`/`G` ±分，`T` 跳 30s，`Y` 当前阶段剩 1s，`H` 红方循环钩刺/磁环/链生/钉壳/闪弧/井绳（仅 GM 开）
 - `src/debug/gmState.ts`：GM 开关，默认开，记本地
@@ -66,6 +68,7 @@
 - `src/core/verifyHudLayout.ts`：舞台保持 20×12 横构图、竖窗 letterbox、安全区；顶中红|计时|蓝一颗胶囊，无角落独立比分；Stall 倒计时在、冲锋说明板不在
 - `src/core/verifySkillTip.ts`：长按阈值、对外名+一行效果、按下立刻进总线、CD 中仍可出提示
 - `src/core/verifySkillCd.ts`：CD 键一位小数、满圈起抹/按本轮比例收缩、短 CD 从实际总长起算、CD 中长按仍可出浮层
+- `src/core/verifyCombatFloat.ts`：飘字仅数字、三色通道、碰撞掉血出红橙、HOT/整段回血出绿、无护盾数值则跳过
 - `src/ui/helpCard.ts`：说明卡（开局 / 怎么动 / 怎么得分 / 怎么赢 / 回场）；从设置常规「怎么玩」打开
 - `src/ui/settingsPanel.ts`：右上角小齿轮（常规 / 版本 / GM）；点空白关；常规可开说明卡
 - `src/ui/appVersion.ts`：版本号 + 构建短 SHA + 简短 changelog
@@ -183,7 +186,7 @@
 未改：`NAIL_PIN.duration` 0.6、`HOOK_STAB.thirdStun` 0.25、各 CD / missCd / punishCd / windup / dashTime / ramWindow / `ARC_GRAZE.targetCd`、开局 Stall / 冲锋 / 回场无敌。`WELL_REEL.duration` 2s 定身是后来单独改的硬控例外，不在本表 +2s 之列。
 
 ## M5 自测
-- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35` + `verifyM4` + `verifyM5` + `verifyRing` + `verifyChain` + `verifyNail` + `verifyArc` + `verifyWell` + `verifyHeroPick` + `verifyHudLayout` + `verifySkillTip` + `verifySkillCd`
+- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35` + `verifyM4` + `verifyM5` + `verifyRing` + `verifyChain` + `verifyNail` + `verifyArc` + `verifyWell` + `verifyHeroPick` + `verifyHudLayout` + `verifySkillTip` + `verifySkillCd` + `verifyCombatFloat`
 - 按 `1` 进瞄可一直持有，再按 `1` 或左键后 0.4s 才出勾；未中 CD 约 4s
 - 蓄势→钩矛→连刺→盾冲可依次打出；HUD 分槽显示钩/刺/冲/蓄 CD
 - 蓝1 磁环会推波/困圈；蓝2 钩刺会保底靠近并偶尔勾，不会打捅×3 连招
@@ -194,3 +197,4 @@
 - 闪弧：侧闪横移 2 格、掠刃擦肩 11 且同目标 1s 限频、回印后主动撞/擦伤额外 14、虚影 2.4s 无碰撞且结束速≥6 开 0.2s 撞窗、困圈内不可侧闪/虚影
 - 井绳：索爆身周四脉冲、有桩则同步炸桩后收桩、易位换位与 50% 速度、索桩反弹且己方开撞窗、回索沿线伤 6 并定身 2s、困圈内不可易位
 - 击破后 5s 回场有血可动，再无敌 2s
+- 战斗飘字：撞掉血出红橙 `-N`；愈链 HOT / 甲垒回 8 出绿色 `+N`；护盾无吸收量则不出字；同帧多段错开，不挡顶中胶囊与技能键

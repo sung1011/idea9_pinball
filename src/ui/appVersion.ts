@@ -8,6 +8,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '战斗飘字仅数字：伤害红橙、治疗绿、护盾青；从结算点上浮淡出' },
   { title: '技能键 CD：12 点起顺时针径向遮罩，剩余秒一位小数；长按提示 CD 中仍可用' },
   { title: 'Layout B 顶中一颗胶囊：红分 | 计时 | 蓝分（小队标）；去掉左上/右上独立比分' },
   { title: '囚环物理关死出不去；各持续技能时长 +2s（钉锚硬控 0.6s 不动）' },

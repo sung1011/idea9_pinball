@@ -15,6 +15,7 @@ import {
   type BallBody,
 } from './ballBody';
 import { NAIL_ARMOR, NAIL_PIN } from '../heroes/nailKit';
+import type { HealPulse } from './combatFloat';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
 import { FRICTION, SPEED_CAP } from './constants';
 import { applyFloorSpeed } from './skillStub';
@@ -69,6 +70,7 @@ function pairKey(a: BallBody, b: BallBody): string {
 
 export type PhysicsStepResult = {
   hits: CollisionHit[];
+  heals: HealPulse[];
   collidedIds: number[];
   wallHitIds: number[];
 };
@@ -149,6 +151,7 @@ export function stepPhysics(
   }
 
   const hits: CollisionHit[] = [];
+  const heals: HealPulse[] = [];
   for (const contact of pending) {
     hits.push(
       ...applyCollisionCombat(
@@ -171,10 +174,18 @@ export function stepPhysics(
     tickInvincible(ball, stepDt);
     tickStun(ball, stepDt);
     tickSilence(ball, stepDt);
-    tickHeal(ball, stepDt);
+    const healed = tickHeal(ball, stepDt);
+    if (healed > 0) {
+      heals.push({ unitId: ball.id, amount: healed, x: ball.x, y: ball.y });
+    }
     tickShield(ball, stepDt);
     tickArmor(ball, stepDt, (item) => {
+      const before = item.hp;
       item.hp = Math.min(item.maxHp, item.hp + NAIL_ARMOR.heal);
+      const gained = item.hp - before;
+      if (gained > 0) {
+        heals.push({ unitId: item.id, amount: gained, x: item.x, y: item.y });
+      }
     });
     tickReflect(ball, stepDt);
     tickPin(ball, stepDt, NAIL_PIN.breakDist);
@@ -185,5 +196,5 @@ export function stepPhysics(
     }
   }
 
-  return { hits, collidedIds: [...collided], wallHitIds: [...wallHits] };
+  return { hits, heals, collidedIds: [...collided], wallHitIds: [...wallHits] };
 }

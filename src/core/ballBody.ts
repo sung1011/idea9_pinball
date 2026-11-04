@@ -212,20 +212,25 @@ export function applyShield(ball: BallBody, mul: number, duration: number): void
   ball.shieldRemain = Math.max(ball.shieldRemain, duration);
 }
 
-export function tickHeal(ball: BallBody, dt: number): void {
+/** 按原公式回血，返回本段实际增加的 HP（满血为 0）。 */
+export function tickHeal(ball: BallBody, dt: number): number {
   if (ball.healRemain <= 0) {
     ball.healRemain = 0;
     ball.healDps = 0;
-    return;
+    return 0;
   }
   const step = Math.min(Math.max(0, dt), ball.healRemain);
+  let gained = 0;
   if (ball.inPlay && ball.healDps > 0) {
+    const before = ball.hp;
     ball.hp = Math.min(ball.maxHp, ball.hp + ball.healDps * step);
+    gained = ball.hp - before;
   }
   ball.healRemain = Math.max(0, ball.healRemain - step);
   if (ball.healRemain <= 0) {
     ball.healDps = 0;
   }
+  return gained;
 }
 
 export function tickShield(ball: BallBody, dt: number): void {
