@@ -3,6 +3,7 @@ import type { BallBody } from '../core/ballBody';
 import type { WindupInfo } from '../core/skillCaster';
 import { chainAimShape } from '../heroes/chainKit';
 import { hookAimShape } from '../heroes/hookKit';
+import { nailAimShape } from '../heroes/nailKit';
 import { ringAimShape } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 
@@ -10,6 +11,7 @@ const ARROW_LEN = 2.15;
 const HOOK_COLOR = 0x7ee8ff;
 const RING_COLOR = 0xa78bfa;
 const CHAIN_COLOR = 0x86efac;
+const NAIL_COLOR = 0xf4bf6a;
 
 function drawCone(
   g: Graphics,
@@ -94,7 +96,8 @@ export function createAimPreview(): AimPreview {
     }
     const ring = player.hero === 'ring';
     const chain = player.hero === 'chain';
-    const color = ring ? RING_COLOR : chain ? CHAIN_COLOR : HOOK_COLOR;
+    const nail = player.hero === 'nail';
+    const color = ring ? RING_COLOR : chain ? CHAIN_COLOR : nail ? NAIL_COLOR : HOOK_COLOR;
     const alpha = casting ? 0.16 : 0.28;
     if (ring) {
       const shape = ringAimShape(
@@ -122,6 +125,14 @@ export function createAimPreview(): AimPreview {
         drawCone(root, fx, fy, shape.halfRad, shape.radius, color, alpha);
       }
       drawAimArrow(root, fx, fy, color, slot === 4 ? 2.4 : ARROW_LEN);
+      return;
+    }
+    if (nail) {
+      const shape = nailAimShape(slot);
+      if (shape) {
+        drawCone(root, fx, fy, shape.halfRad, shape.radius, color, alpha);
+      }
+      drawAimArrow(root, fx, fy, color, slot === 3 ? 2.4 : ARROW_LEN);
       return;
     }
     const shape = hookAimShape(slot);

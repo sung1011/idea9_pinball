@@ -1,9 +1,9 @@
-export type HeroId = 'hook' | 'ring' | 'chain';
+export type HeroId = 'hook' | 'ring' | 'chain' | 'nail';
 
-const HERO_CYCLE: readonly HeroId[] = ['hook', 'ring', 'chain'];
+const HERO_CYCLE: readonly HeroId[] = ['hook', 'ring', 'chain', 'nail'];
 
 export function isHeroId(value: string): value is HeroId {
-  return value === 'hook' || value === 'ring' || value === 'chain';
+  return value === 'hook' || value === 'ring' || value === 'chain' || value === 'nail';
 }
 
 export function nextHero(hero: HeroId): HeroId {
@@ -17,6 +17,9 @@ export function heroZh(hero: HeroId): string {
   }
   if (hero === 'chain') {
     return '链生';
+  }
+  if (hero === 'nail') {
+    return '钉壳';
   }
   return '钩刺';
 }

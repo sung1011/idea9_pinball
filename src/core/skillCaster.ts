@@ -1,8 +1,8 @@
 import type { BallBody } from './ballBody';
 import { consumeAimBreak, openActiveRam } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
-import { HARD_CC_DIMINISH_WINDOW } from './constants';
 import type { HeroId } from '../heroes/heroIds';
+import { applyHardCc } from './hardCc';
 import {
   HOOK_BRAKE,
   HOOK_PULL,
@@ -15,7 +15,9 @@ import {
 import { RING_TRAP } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import { createChainCaster } from './chainCaster';
+import { createNailCaster } from './nailCaster';
 import { createRingCaster } from './ringCaster';
+import { applyPinRamBonus } from './nailCombat';
 import { applySkillDamage } from './skillHits';
 import { pickFanEnemy, unitVec } from './skillQuery';
 import { setFacingFrom } from './skillStub';
@@ -42,19 +44,7 @@ type Effect =
   | { kind: 'stab'; nextIn: number; index: number; aimX: number; aimY: number }
   | { kind: 'dash'; dirX: number; dirY: number; remainTime: number; remainDist: number; speed: number };
 
-export function scaleHardCc(duration: number, lastAt: number, now: number): number {
-  if (now - lastAt < HARD_CC_DIMINISH_WINDOW && lastAt > -1e8) {
-    return duration * 0.5;
-  }
-  return duration;
-}
-
-export function applyHardCc(target: BallBody, duration: number, now: number): number {
-  const scaled = scaleHardCc(duration, target.lastHardCcAt, now);
-  target.stunRemain = Math.max(target.stunRemain, scaled);
-  target.lastHardCcAt = now;
-  return scaled;
-}
+export { applyHardCc, scaleHardCc } from './hardCc';
 
 function emptyCds(): SkillCds {
   return [0, 0, 0, 0];
@@ -104,6 +94,9 @@ export function createSkillCaster(hero: HeroId = 'hook'): SkillCaster {
   }
   if (hero === 'chain') {
     return createChainCaster();
+  }
+  if (hero === 'nail') {
+    return createNailCaster();
   }
   return createHookCaster();
 }
@@ -457,6 +450,10 @@ export function createHookCaster(): SkillCaster {
       ball.vy = effect.dirY * effect.speed * keep;
       ball.allowOverCap = true;
       openActiveRam(ball);
+      const extra = applyPinRamBonus(touched, ball);
+      if (extra) {
+        hits.push(extra);
+      }
       effect = null;
       return hits;
     }

@@ -8,6 +8,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '钉壳四技能落地：甲垒 / 刺盾 / 顶冲 / 钉锚；GM · H 循环钩刺 / 磁环 / 链生 / 钉壳' },
   { title: '链生四技能落地：愈链 / 盾脉 / 援勾 / 扰锋；GM · H 循环钩刺 / 磁环 / 链生' },
   { title: '磁环四技能落地：辉环 / 斥波 / 壁行 / 囚环；蓝1 默认磁环；GM · H 换英雄' },
   { title: '骑士冲杀换皮：圆盾羽冠矛尖、木栏 Stall、领地纹章、冲锋残影' },

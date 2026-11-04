@@ -89,8 +89,11 @@ export function createHpHud(host: HTMLElement): HpHud {
           const stun = ball.stunRemain > 0 ? ` 硬直${ball.stunRemain.toFixed(2)}s` : '';
           const heal = ball.healRemain > 0 ? ` 愈${ball.healRemain.toFixed(1)}s` : '';
           const shield = ball.shieldRemain > 0 ? ` 盾${ball.shieldRemain.toFixed(1)}s` : '';
+          const armor = ball.armorRemain > 0 ? ` 甲${ball.armorRemain.toFixed(1)}s` : '';
+          const thorn = ball.reflectRemain > 0 && ball.reflectArmed ? ` 刺${ball.reflectRemain.toFixed(1)}s` : '';
+          const pin = ball.pinRemain > 0 ? ` 钉${ball.pinRemain.toFixed(2)}s` : '';
           const charge = status?.charging ? ' 冲锋' : '';
-          value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${charge}${inv}${ram}${tune}${stun}${heal}${shield}`;
+          value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${charge}${inv}${ram}${tune}${stun}${heal}${shield}${armor}${thorn}${pin}`;
         }
         row.classList.toggle('isOut', !ball.inPlay);
 

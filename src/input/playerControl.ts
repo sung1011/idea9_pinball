@@ -1,4 +1,4 @@
-import type { BallBody } from '../core/ballBody';
+import { clearKitAuras, type BallBody } from '../core/ballBody';
 import type { CollisionHit } from '../core/collisionDamage';
 import { createSkillCaster, type SkillCaster, type SkillCds, type WindupInfo } from '../core/skillCaster';
 import { applyFloorSpeed, applySteerToward } from '../core/skillStub';
@@ -76,13 +76,7 @@ export function createPlayerControl(initial: HeroId = 'hook'): PlayerControl {
     getCaster: () => caster,
     setHero: (ball, hero) => {
       caster.reset();
-      ball.slideWalls = false;
-      ball.fieldRemain = 0;
-      ball.healRemain = 0;
-      ball.healDps = 0;
-      ball.shieldRemain = 0;
-      ball.shieldMul = 1;
-      ball.aimBreak = false;
+      clearKitAuras(ball);
       ball.hero = hero;
       caster = createSkillCaster(hero);
     },

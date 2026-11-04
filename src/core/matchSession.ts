@@ -1,4 +1,4 @@
-import { createBallBody, grantInvincible, type BallBody, type TeamId } from './ballBody';
+import { clearKitAuras, createBallBody, grantInvincible, type BallBody, type TeamId } from './ballBody';
 import type { HeroId } from '../heroes/heroIds';
 import type { CollisionHit } from './collisionDamage';
 import {
@@ -199,13 +199,7 @@ function resetBall(ball: BallBody, openingInvincible: number): void {
   ball.allowOverCap = false;
   ball.suppressCombat = false;
   ball.hasAim = false;
-  ball.slideWalls = false;
-  ball.fieldRemain = 0;
-  ball.healRemain = 0;
-  ball.healDps = 0;
-  ball.shieldRemain = 0;
-  ball.shieldMul = 1;
-  ball.aimBreak = false;
+  clearKitAuras(ball);
   if (ball.team === 'blue') {
     ball.facingX = -1;
     ball.facingY = 0;
@@ -336,13 +330,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     ball.allowOverCap = false;
     ball.suppressCombat = false;
     ball.hasAim = false;
-    ball.slideWalls = false;
-    ball.fieldRemain = 0;
-    ball.healRemain = 0;
-    ball.healDps = 0;
-    ball.shieldRemain = 0;
-    ball.shieldMul = 1;
-    ball.aimBreak = false;
+    clearKitAuras(ball);
     respawns[ball.id] = RESPAWN_SEC;
   };
 
@@ -361,13 +349,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     ball.allowOverCap = false;
     ball.suppressCombat = false;
     ball.hasAim = false;
-    ball.slideWalls = false;
-    ball.fieldRemain = 0;
-    ball.healRemain = 0;
-    ball.healDps = 0;
-    ball.shieldRemain = 0;
-    ball.shieldMul = 1;
-    ball.aimBreak = false;
+    clearKitAuras(ball);
     grantInvincible(ball, SPAWN_INVINCIBLE_SEC);
     if (ball.team === 'blue') {
       ball.facingX = -1;

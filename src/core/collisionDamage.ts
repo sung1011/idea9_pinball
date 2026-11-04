@@ -1,4 +1,5 @@
 import type { BallBody } from './ballBody';
+import { applyNailReflect, applyPinRamBonus } from './nailCombat';
 import {
   ACTIVE_RAM_SPEED_THRESHOLD,
   COLLISION_DAMAGE_CAP,
@@ -112,11 +113,15 @@ function hitVictim(
 ): CollisionHit | null {
   const facing = incomingFacing(victim.facingX, victim.facingY, incomingX, incomingY);
   const shieldMul = victim.shieldRemain > 0 ? victim.shieldMul : 1;
-  const damage = collisionDamage(relSpeed, threshold, facing.coeff) * shieldMul;
+  const armorMul = victim.armorRemain > 0 ? victim.armorMul : 1;
+  const damage = collisionDamage(relSpeed, threshold, facing.coeff) * shieldMul * armorMul;
   if (damage <= 0) {
     return null;
   }
   victim.hp = Math.max(0, victim.hp - damage);
+  if (victim.armorRemain > 0) {
+    victim.armorBroken = true;
+  }
   const kb = knockbackSpeed(relSpeed, threshold, facing.coeff);
   victim.vx += knockNx * kb;
   victim.vy += knockNy * kb;
@@ -168,6 +173,28 @@ export function applyCollisionCombat(
   }
   if (hitB) {
     hits.push(hitB);
+  }
+  const aRammed = b.activeRamRemain > 0;
+  const bRammed = a.activeRamRemain > 0;
+  if (hitA) {
+    const extra = applyPinRamBonus(a, b);
+    if (extra) {
+      hits.push(extra);
+    }
+    const reflect = applyNailReflect(a, b, aRammed);
+    if (reflect) {
+      hits.push(reflect);
+    }
+  }
+  if (hitB) {
+    const extra = applyPinRamBonus(b, a);
+    if (extra) {
+      hits.push(extra);
+    }
+    const reflect = applyNailReflect(b, a, bRammed);
+    if (reflect) {
+      hits.push(reflect);
+    }
   }
   return hits;
 }

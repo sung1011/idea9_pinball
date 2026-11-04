@@ -56,6 +56,20 @@ export type BallBody = {
   shieldMul: number;
   /** 朝向打乱：打断短瞄准，施放器下帧清空 */
   aimBreak: boolean;
+  /** 叠甲剩余秒数；>0 时碰撞伤乘 armorMul */
+  armorRemain: number;
+  armorMul: number;
+  armorBroken: boolean;
+  /** 反击刺反伤窗剩余秒数；>0 且 reflectArmed 时首次被撞反伤 */
+  reflectRemain: number;
+  reflectDamage: number;
+  reflectOnce: boolean;
+  reflectArmed: boolean;
+  /** 定锚剩余秒数；>0 时速度可被碰撞推动，位移≥1 断钉 */
+  pinRemain: number;
+  pinX: number;
+  pinY: number;
+  pinnedByTeam?: TeamId;
 };
 
 export function createBallBody(init: {
@@ -111,6 +125,17 @@ export function createBallBody(init: {
     shieldRemain: 0,
     shieldMul: 1,
     aimBreak: false,
+    armorRemain: 0,
+    armorMul: 1,
+    armorBroken: false,
+    reflectRemain: 0,
+    reflectDamage: 0,
+    reflectOnce: false,
+    reflectArmed: false,
+    pinRemain: 0,
+    pinX: 0,
+    pinY: 0,
+    pinnedByTeam: undefined,
   };
 }
 
@@ -202,4 +227,108 @@ export function consumeAimBreak(ball: BallBody): boolean {
   }
   ball.aimBreak = false;
   return true;
+}
+
+export function applyArmor(ball: BallBody, mul: number, duration: number): void {
+  ball.armorMul = mul;
+  ball.armorRemain = Math.max(ball.armorRemain, duration);
+  ball.armorBroken = false;
+}
+
+export function clearArmor(ball: BallBody): void {
+  ball.armorRemain = 0;
+  ball.armorMul = 1;
+  ball.armorBroken = false;
+}
+
+export function tickArmor(ball: BallBody, dt: number, onIntactEnd?: (ball: BallBody) => void): void {
+  if (ball.armorRemain <= 0) {
+    ball.armorRemain = 0;
+    ball.armorMul = 1;
+    return;
+  }
+  const step = Math.min(Math.max(0, dt), ball.armorRemain);
+  ball.armorRemain = Math.max(0, ball.armorRemain - step);
+  if (ball.armorRemain > 0) {
+    return;
+  }
+  const broken = ball.armorBroken;
+  ball.armorMul = 1;
+  ball.armorBroken = false;
+  if (!broken && ball.inPlay) {
+    onIntactEnd?.(ball);
+  }
+}
+
+export function applyReflectWindow(
+  ball: BallBody,
+  damage: number,
+  duration: number,
+  once: boolean,
+): void {
+  ball.reflectDamage = damage;
+  ball.reflectRemain = Math.max(ball.reflectRemain, duration);
+  ball.reflectOnce = once;
+  ball.reflectArmed = true;
+}
+
+export function clearReflect(ball: BallBody): void {
+  ball.reflectRemain = 0;
+  ball.reflectDamage = 0;
+  ball.reflectOnce = false;
+  ball.reflectArmed = false;
+}
+
+export function tickReflect(ball: BallBody, dt: number): void {
+  if (ball.reflectRemain <= 0) {
+    clearReflect(ball);
+    return;
+  }
+  ball.reflectRemain = Math.max(0, ball.reflectRemain - Math.max(0, dt));
+  if (ball.reflectRemain <= 0) {
+    clearReflect(ball);
+  }
+}
+
+export function applyPin(ball: BallBody, duration: number, team: TeamId | undefined): void {
+  ball.pinRemain = Math.max(ball.pinRemain, duration);
+  ball.pinX = ball.x;
+  ball.pinY = ball.y;
+  ball.pinnedByTeam = team;
+}
+
+export function clearPin(ball: BallBody): void {
+  ball.pinRemain = 0;
+  ball.pinnedByTeam = undefined;
+}
+
+export function tickPin(ball: BallBody, dt: number, breakDist: number): void {
+  if (ball.pinRemain <= 0) {
+    ball.pinRemain = 0;
+    ball.pinnedByTeam = undefined;
+    return;
+  }
+  const moved = Math.hypot(ball.x - ball.pinX, ball.y - ball.pinY);
+  if (moved + 1e-9 >= breakDist) {
+    ball.stunRemain = 0;
+    clearPin(ball);
+    return;
+  }
+  ball.pinRemain = Math.max(0, ball.pinRemain - Math.max(0, dt));
+  if (ball.pinRemain <= 0) {
+    clearPin(ball);
+  }
+}
+
+export function clearKitAuras(ball: BallBody): void {
+  ball.slideWalls = false;
+  ball.fieldRemain = 0;
+  ball.healRemain = 0;
+  ball.healDps = 0;
+  ball.shieldRemain = 0;
+  ball.shieldMul = 1;
+  ball.aimBreak = false;
+  clearArmor(ball);
+  clearReflect(ball);
+  clearPin(ball);
 }

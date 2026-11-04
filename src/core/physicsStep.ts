@@ -1,13 +1,17 @@
 import {
   openFineTune,
   tickActiveRam,
+  tickArmor,
   tickFineTune,
   tickHeal,
   tickInvincible,
+  tickPin,
+  tickReflect,
   tickShield,
   tickStun,
   type BallBody,
 } from './ballBody';
+import { NAIL_ARMOR, NAIL_PIN } from '../heroes/nailKit';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
 import { FRICTION, SPEED_CAP } from './constants';
 import { applyFloorSpeed } from './skillStub';
@@ -40,7 +44,7 @@ function applyFrictionAndFacing(ball: BallBody, dt: number): void {
   const damp = Math.exp(-FRICTION * mul * dt);
   ball.vx *= damp;
   ball.vy *= damp;
-  if (mul === 1) {
+  if (mul === 1 && ball.pinRemain <= 0) {
     applyFloorSpeed(ball);
   }
   const speed = Math.hypot(ball.vx, ball.vy);
@@ -141,6 +145,11 @@ export function stepPhysics(
     tickStun(ball, stepDt);
     tickHeal(ball, stepDt);
     tickShield(ball, stepDt);
+    tickArmor(ball, stepDt, (item) => {
+      item.hp = Math.min(item.maxHp, item.hp + NAIL_ARMOR.heal);
+    });
+    tickReflect(ball, stepDt);
+    tickPin(ball, stepDt, NAIL_PIN.breakDist);
     if (collided.has(ball.id)) {
       openFineTune(ball);
     }
