@@ -33,6 +33,7 @@ import { createHpHud } from './ui/hpHud';
 import { createMatchHud } from './ui/matchHud';
 import { createResultPanel } from './ui/resultPanel';
 import { createSettingsPanel } from './ui/settingsPanel';
+import { bootUiTheme, onUiThemeChange } from './ui/uiTheme';
 import './style.css';
 
 const VIEW_PADDING_PX = 32;
@@ -54,15 +55,20 @@ async function boot(): Promise<void> {
     throw new Error('未找到 #app');
   }
 
+  const uiTheme = bootUiTheme();
+
   const app = new Application();
   await app.init({
     resizeTo: host,
-    background: 0x1a2820,
+    background: uiTheme.canvasBg,
     antialias: true,
     autoDensity: true,
     resolution: Math.min(window.devicePixelRatio || 1, 2),
   });
   host.appendChild(app.canvas);
+  onUiThemeChange((theme) => {
+    app.renderer.background.color = theme.canvasBg;
+  });
 
   const world = new Container();
   const arena = createArenaView();

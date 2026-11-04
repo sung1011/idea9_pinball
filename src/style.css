@@ -1,3 +1,187 @@
+/* 四套 HUD 皮：meadow / iron / board / ink —— 设置 → 常规 可切换 */
+
+:root,
+[data-ui-theme='meadow'] {
+  --bg-app: #1a2820;
+  --hud-text: #e8ffff;
+  --hud-muted: #9af6f6;
+  --hud-soft: #c8f6f6;
+  --hud-dim: #e8ffffcc;
+  --accent-hot: #ffe08a;
+  --accent-hot-glow: #ffe08acc;
+  --accent-warm: #ff9a3a88;
+  --team-red: #f68a8a;
+  --team-blue: #8ab4f6;
+  --panel-bg: #0c2c2cee;
+  --panel-border: #9af6f655;
+  --panel-rule: #9af6f633;
+  --panel-shadow: #041616aa;
+  --overlay-bg: #04161699;
+  --fab-bg: #0f3f3fcc;
+  --fab-border: #9af6f6aa;
+  --btn-bg: #164848;
+  --btn-border: #9af6f688;
+  --chip-bg: #163838;
+  --track-bg: #102020;
+  --close-bg: #163838;
+  --skill-border: #7ee8ffaa;
+  --skill-active: #ffe08a;
+  --skill-glow: #ffe08a88;
+  --cancel-border: #e24a4a;
+  --cancel-text: #ffd0d0;
+  --shadow-deep: #041616cc;
+  --charge-panel: #041616d8;
+  --font-ui: 'Noto Sans SC', 'WenQuanYi Micro Hei', 'Droid Sans Fallback', sans-serif;
+  --font-display: 'Noto Sans SC', 'WenQuanYi Micro Hei', 'Droid Sans Fallback', sans-serif;
+  --radius-panel: 16px;
+  --radius-btn: 10px;
+  --radius-fab: 50%;
+  --radius-chip: 12px;
+  --score-weight: 700;
+  --clock-tracking: 0;
+  --panel-pad: 18px 20px 16px;
+  --hud-plate: transparent;
+  --hud-plate-border: transparent;
+  --hud-plate-shadow: none;
+  --hud-plate-radius: 0;
+  --hud-plate-pad: 0;
+}
+
+[data-ui-theme='iron'] {
+  --bg-app: #1c1a17;
+  --hud-text: #f3ebdc;
+  --hud-muted: #c4a574;
+  --hud-soft: #e6d7bc;
+  --hud-dim: #f3ebdccc;
+  --accent-hot: #e8b86a;
+  --accent-hot-glow: #e8b86acc;
+  --accent-warm: #c47a3a88;
+  --team-red: #e07070;
+  --team-blue: #7a9ec8;
+  --panel-bg: #221e1acc;
+  --panel-border: #8a734455;
+  --panel-rule: #8a734433;
+  --panel-shadow: #0a0806bb;
+  --overlay-bg: #0a080699;
+  --fab-bg: #2a241ccc;
+  --fab-border: #a88a5aaa;
+  --btn-bg: #3a3228;
+  --btn-border: #a88a5a88;
+  --chip-bg: #2e281f;
+  --track-bg: #12100e;
+  --close-bg: #2e281f;
+  --skill-border: #c4a574aa;
+  --skill-active: #e8b86a;
+  --skill-glow: #e8b86a88;
+  --cancel-border: #c44a4a;
+  --cancel-text: #f0c8c8;
+  --shadow-deep: #0a0806cc;
+  --charge-panel: #1a1612e0;
+  --font-ui: 'Noto Sans SC', 'WenQuanYi Micro Hei', 'Droid Sans Fallback', sans-serif;
+  --font-display: 'Noto Serif SC', 'Noto Sans SC', 'Songti SC', serif;
+  --radius-panel: 10px;
+  --radius-btn: 6px;
+  --radius-fab: 8px;
+  --radius-chip: 8px;
+  --score-weight: 800;
+  --clock-tracking: 0.04em;
+  --hud-plate: #1a1612b8;
+  --hud-plate-border: #8a734466;
+  --hud-plate-shadow: 0 8px 24px #0a080688;
+  --hud-plate-radius: 10px;
+  --hud-plate-pad: 8px 16px 10px;
+}
+
+[data-ui-theme='board'] {
+  --bg-app: #14181c;
+  --hud-text: #f2f5f8;
+  --hud-muted: #9eb0c0;
+  --hud-soft: #d5deE8;
+  --hud-dim: #f2f5f8cc;
+  --accent-hot: #f0c14a;
+  --accent-hot-glow: #f0c14acc;
+  --accent-warm: #e0903088;
+  --team-red: #ff6b6b;
+  --team-blue: #5eb0ff;
+  --panel-bg: #1a222ccc;
+  --panel-border: #5a708855;
+  --panel-rule: #5a708833;
+  --panel-shadow: #06080abb;
+  --overlay-bg: #06080a99;
+  --fab-bg: #1e2832cc;
+  --fab-border: #7a92a8aa;
+  --btn-bg: #243040;
+  --btn-border: #7a92a888;
+  --chip-bg: #1e2832;
+  --track-bg: #0c1014;
+  --close-bg: #1e2832;
+  --skill-border: #7ab8e8aa;
+  --skill-active: #f0c14a;
+  --skill-glow: #f0c14a88;
+  --cancel-border: #e24a4a;
+  --cancel-text: #ffd0d0;
+  --shadow-deep: #06080acc;
+  --charge-panel: #10161ce8;
+  --font-ui: 'Noto Sans SC', 'WenQuanYi Micro Hei', 'Droid Sans Fallback', sans-serif;
+  --font-display: 'Noto Sans SC', 'WenQuanYi Micro Hei', 'Droid Sans Fallback', sans-serif;
+  --radius-panel: 12px;
+  --radius-btn: 8px;
+  --radius-fab: 10px;
+  --radius-chip: 10px;
+  --score-weight: 800;
+  --clock-tracking: 0.08em;
+  --hud-plate: linear-gradient(180deg, #1e2832ee, #141a22ee);
+  --hud-plate-border: #7a92a866;
+  --hud-plate-shadow: 0 10px 28px #06080a99, inset 0 1px 0 #ffffff14;
+  --hud-plate-radius: 14px;
+  --hud-plate-pad: 10px 22px 12px;
+}
+
+[data-ui-theme='ink'] {
+  --bg-app: #12141c;
+  --hud-text: #f4efe4;
+  --hud-muted: #d4b56a;
+  --hud-soft: #ebe0c8;
+  --hud-dim: #f4efe4cc;
+  --accent-hot: #e8c878;
+  --accent-hot-glow: #e8c878cc;
+  --accent-warm: #c8984088;
+  --team-red: #d45a5a;
+  --team-blue: #6a8ec8;
+  --panel-bg: #181c28ee;
+  --panel-border: #d4b56a55;
+  --panel-rule: #d4b56a33;
+  --panel-shadow: #080a12bb;
+  --overlay-bg: #080a1299;
+  --fab-bg: #1c2230cc;
+  --fab-border: #d4b56aaa;
+  --btn-bg: #242a3a;
+  --btn-border: #d4b56a88;
+  --chip-bg: #1c2230;
+  --track-bg: #0c0e14;
+  --close-bg: #1c2230;
+  --skill-border: #d4b56aaa;
+  --skill-active: #e8c878;
+  --skill-glow: #e8c87888;
+  --cancel-border: #c44a4a;
+  --cancel-text: #f0c8c8;
+  --shadow-deep: #080a12cc;
+  --charge-panel: #141820e8;
+  --font-ui: 'Noto Sans SC', 'WenQuanYi Micro Hei', 'Droid Sans Fallback', sans-serif;
+  --font-display: 'Noto Serif SC', 'Noto Sans SC', 'Songti SC', serif;
+  --radius-panel: 14px;
+  --radius-btn: 8px;
+  --radius-fab: 50%;
+  --radius-chip: 12px;
+  --score-weight: 700;
+  --clock-tracking: 0.06em;
+  --hud-plate: #181c28cc;
+  --hud-plate-border: #d4b56a66;
+  --hud-plate-shadow: 0 0 0 1px #d4b56a22, 0 12px 32px #080a1288;
+  --hud-plate-radius: 14px;
+  --hud-plate-pad: 10px 18px 12px;
+}
+
 html,
 body,
 #app {
@@ -5,7 +189,7 @@ body,
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #1a2820;
+  background: var(--bg-app);
   position: relative;
   touch-action: none;
   overscroll-behavior: none;
@@ -24,12 +208,17 @@ canvas {
   top: 10px;
   transform: translateX(-50%);
   min-width: 280px;
-  color: #e8ffff;
-  font: 14px/1.4 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  color: var(--hud-text);
+  font: 14px/1.4 var(--font-ui);
   pointer-events: none;
   user-select: none;
   z-index: 7;
   text-align: center;
+  padding: var(--hud-plate-pad);
+  border-radius: var(--hud-plate-radius);
+  background: var(--hud-plate);
+  border: 1px solid var(--hud-plate-border);
+  box-shadow: var(--hud-plate-shadow);
 }
 
 .matchHudScore {
@@ -38,38 +227,40 @@ canvas {
   justify-content: center;
   gap: 16px;
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
+  font-weight: var(--score-weight);
+  font-family: var(--font-display);
 }
 
 .matchHudRed {
-  color: #f68a8a;
+  color: var(--team-red);
   font-size: 28px;
 }
 
 .matchHudBlue {
-  color: #8ab4f6;
+  color: var(--team-blue);
   font-size: 28px;
 }
 
 .matchHudClock {
-  color: #e8ffff;
+  color: var(--hud-text);
   font-size: 22px;
   min-width: 5.5em;
+  letter-spacing: var(--clock-tracking);
 }
 
 .matchHudClock.isOvertime {
-  color: #ffe08a;
+  color: var(--accent-hot);
 }
 
 .matchHudClock.isResult {
-  color: #9af6f6;
+  color: var(--hud-muted);
 }
 
 .matchHudClock.isCharge {
-  color: #ffe08a;
+  color: var(--accent-hot);
   font-weight: 800;
   letter-spacing: 0.06em;
-  text-shadow: 0 0 12px #ffe08acc;
+  text-shadow: 0 0 12px var(--accent-hot-glow);
 }
 
 .matchHudMeta {
@@ -77,21 +268,21 @@ canvas {
   display: flex;
   justify-content: center;
   gap: 14px;
-  color: #9af6f6;
+  color: var(--hud-muted);
   font-size: 13px;
 }
 
 .matchHudHold[data-hold='red'] {
-  color: #f68a8a;
+  color: var(--team-red);
 }
 
 .matchHudHold[data-hold='blue'] {
-  color: #8ab4f6;
+  color: var(--team-blue);
 }
 
 .matchHudToast {
   margin-top: 4px;
-  color: #ffe08a;
+  color: var(--accent-hot);
   min-height: 1.2em;
   font-size: 13px;
 }
@@ -105,9 +296,9 @@ canvas {
   z-index: 8;
   pointer-events: none;
   text-align: center;
-  color: #ffe08a;
-  font: 700 16px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  text-shadow: 0 0 18px #041616cc, 0 2px 0 #041616aa;
+  color: var(--accent-hot);
+  font: 700 16px/1.2 var(--font-display);
+  text-shadow: 0 0 18px var(--shadow-deep), 0 2px 0 var(--shadow-deep);
   user-select: none;
 }
 
@@ -124,10 +315,10 @@ canvas {
 
 .openingHud.isCharge {
   padding: 20px 40px 22px;
-  border-radius: 20px;
-  background: #041616d8;
-  border: 2px solid #ffe08acc;
-  box-shadow: 0 0 36px #ffe08a66;
+  border-radius: var(--radius-panel);
+  background: var(--charge-panel);
+  border: 2px solid var(--accent-hot-glow);
+  box-shadow: 0 0 36px color-mix(in srgb, var(--accent-hot) 40%, transparent);
 }
 
 .openingHud.isCharge .openingHudNum {
@@ -135,9 +326,9 @@ canvas {
   letter-spacing: 0.2em;
   animation: chargePulse 0.42s ease-in-out infinite alternate;
   text-shadow:
-    0 0 22px #ffe08acc,
-    0 0 48px #ff9a3a88,
-    0 2px 0 #041616aa;
+    0 0 22px var(--accent-hot-glow),
+    0 0 48px var(--accent-warm),
+    0 2px 0 var(--shadow-deep);
 }
 
 .openingHudTick {
@@ -146,7 +337,7 @@ canvas {
   font-size: clamp(28px, 6vmin, 48px);
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: #ffe08a;
+  color: var(--accent-hot);
 }
 
 .openingHud.isCharge .openingHudTick {
@@ -154,7 +345,7 @@ canvas {
 }
 
 .openingHud.isCharge .openingHudHint {
-  color: #ffe08a;
+  color: var(--accent-hot);
   font-size: clamp(16px, 3vmin, 22px);
   letter-spacing: 0.06em;
 }
@@ -172,9 +363,10 @@ canvas {
 
 .openingHudHint {
   margin-top: 10px;
-  color: #e8ffffcc;
+  color: var(--hud-dim);
   font-size: clamp(13px, 2.4vmin, 18px);
   font-weight: 600;
+  font-family: var(--font-ui);
 }
 
 .helpFab,
@@ -183,11 +375,11 @@ canvas {
   top: 10px;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  border: 2px solid #9af6f6aa;
-  background: #0f3f3fcc;
-  color: #e8ffff;
-  font: 700 20px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  border-radius: var(--radius-fab);
+  border: 2px solid var(--fab-border);
+  background: var(--fab-bg);
+  color: var(--hud-text);
+  font: 700 20px/1 var(--font-ui);
   cursor: pointer;
   z-index: 28;
   pointer-events: auto;
@@ -214,8 +406,8 @@ canvas {
 .helpFab:hover,
 .settingsFab.isOn,
 .settingsFab:hover {
-  border-color: #ffe08a;
-  color: #ffe08a;
+  border-color: var(--accent-hot);
+  color: var(--accent-hot);
 }
 
 .helpOverlay,
@@ -224,7 +416,7 @@ canvas {
   display: none;
   position: absolute;
   inset: 0;
-  background: #04161699;
+  background: var(--overlay-bg);
   z-index: 20;
   pointer-events: auto;
   align-items: center;
@@ -253,13 +445,13 @@ canvas {
   width: min(420px, 92vw);
   max-height: min(86vh, 640px);
   overflow: auto;
-  padding: 18px 20px 16px;
-  border-radius: 16px;
-  background: #0c2c2cee;
-  border: 1px solid #9af6f655;
-  color: #e8ffff;
-  font: 14px/1.5 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  box-shadow: 0 12px 40px #041616aa;
+  padding: var(--panel-pad);
+  border-radius: var(--radius-panel);
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--hud-text);
+  font: 14px/1.5 var(--font-ui);
+  box-shadow: 0 12px 40px var(--panel-shadow);
 }
 
 .helpCardHead {
@@ -270,9 +462,11 @@ canvas {
 }
 
 .helpCard h2,
-.resultPanelTitle {
+.resultPanelTitle,
+.settingsTitle {
   margin: 0;
   font-size: 22px;
+  font-family: var(--font-display);
 }
 
 .helpCardClose,
@@ -281,9 +475,9 @@ canvas {
   width: 32px;
   height: 32px;
   border: 0;
-  border-radius: 50%;
-  background: #163838;
-  color: #e8ffff;
+  border-radius: var(--radius-fab);
+  background: var(--close-bg);
+  color: var(--hud-text);
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
@@ -298,13 +492,14 @@ canvas {
 .helpCardBlock {
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px solid #9af6f633;
+  border-top: 1px solid var(--panel-rule);
 }
 
 .helpCardBlock h3 {
   margin: 0 0 6px;
-  color: #9af6f6;
+  color: var(--hud-muted);
   font-size: 15px;
+  font-family: var(--font-display);
 }
 
 .helpCardBlock ul {
@@ -322,18 +517,18 @@ canvas {
 }
 
 .resultPanelTitle.isWin {
-  color: #9af6f6;
+  color: var(--hud-muted);
 }
 
 .resultPanelTitle.isLose {
-  color: #f68a8a;
+  color: var(--team-red);
 }
 
 .resultPanelReason,
 .resultPanelTime {
   margin: 6px 0 0;
   text-align: center;
-  color: #9af6f6;
+  color: var(--hud-muted);
 }
 
 .resultPanelScores {
@@ -350,7 +545,7 @@ canvas {
 }
 
 .resultPanelRow.isHead {
-  color: #9af6f6;
+  color: var(--hud-muted);
   font-size: 13px;
 }
 
@@ -358,15 +553,16 @@ canvas {
   font-size: 20px;
   font-weight: 700;
   margin-bottom: 4px;
+  font-family: var(--font-display);
 }
 
 .resultPanelRed {
-  color: #f68a8a;
+  color: var(--team-red);
   text-align: right;
 }
 
 .resultPanelBlue {
-  color: #8ab4f6;
+  color: var(--team-blue);
   text-align: right;
 }
 
@@ -375,17 +571,17 @@ canvas {
   width: 100%;
   margin-top: 16px;
   padding: 10px 12px;
-  border: 1px solid #9af6f688;
-  border-radius: 10px;
-  background: #164848;
-  color: #e8ffff;
-  font: 700 16px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-btn);
+  background: var(--btn-bg);
+  color: var(--hud-text);
+  font: 700 16px/1.2 var(--font-ui);
   cursor: pointer;
 }
 
 .resultPanelAgain:hover {
-  border-color: #ffe08a;
-  color: #ffe08a;
+  border-color: var(--accent-hot);
+  color: var(--accent-hot);
 }
 
 .settingsHead {
@@ -395,19 +591,14 @@ canvas {
   margin-bottom: 8px;
 }
 
-.settingsTitle {
-  margin: 0;
-  font-size: 22px;
-}
-
 .settingsTabs {
   display: flex;
   gap: 6px;
   margin: 4px 0 12px;
   padding: 4px;
   border-radius: 999px;
-  background: #163838;
-  border: 1px solid #9af6f655;
+  background: var(--chip-bg);
+  border: 1px solid var(--panel-border);
 }
 
 .settingsTab {
@@ -417,15 +608,15 @@ canvas {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #9af6f6;
-  font: 700 14px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  color: var(--hud-muted);
+  font: 700 14px/1.2 var(--font-ui);
   cursor: pointer;
 }
 
 .settingsTab.isOn {
-  background: #1e5a5a;
-  color: #e8ffff;
-  box-shadow: 0 0 0 1px #9af6f688;
+  background: var(--btn-bg);
+  color: var(--hud-text);
+  box-shadow: 0 0 0 1px var(--btn-border);
 }
 
 .settingsBody {
@@ -439,18 +630,18 @@ canvas {
   width: 100%;
   min-height: 44px;
   padding: 8px 10px;
-  border: 1px solid #9af6f688;
-  border-radius: 10px;
-  background: #164848;
-  color: #e8ffff;
-  font: 700 15px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-btn);
+  background: var(--btn-bg);
+  color: var(--hud-text);
+  font: 700 15px/1.2 var(--font-ui);
   cursor: pointer;
 }
 
 .settingsWide:hover,
 .settingsGmBtn:hover:not(:disabled) {
-  border-color: #ffe08a;
-  color: #ffe08a;
+  border-color: var(--accent-hot);
+  color: var(--accent-hot);
 }
 
 .settingsGmBtn:disabled {
@@ -460,9 +651,55 @@ canvas {
 
 .settingsHint {
   margin: 0;
-  color: #9af6f6;
+  color: var(--hud-muted);
   font-size: 13px;
   line-height: 1.5;
+}
+
+.settingsThemeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.settingsThemeBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-btn);
+  background: var(--btn-bg);
+  color: var(--hud-text);
+  font: 700 14px/1.2 var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.settingsThemeBtn span {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--hud-muted);
+  line-height: 1.35;
+}
+
+.settingsThemeBtn.isOn {
+  border-color: var(--accent-hot);
+  box-shadow: 0 0 0 1px var(--accent-hot-glow);
+  color: var(--accent-hot);
+}
+
+.settingsThemeBtn.isOn span {
+  color: var(--hud-soft);
+}
+
+.settingsThemeTitle {
+  margin: 2px 0 0;
+  color: var(--hud-muted);
+  font-size: 13px;
+  font-family: var(--font-display);
 }
 
 .settingsVerCard {
@@ -470,9 +707,9 @@ canvas {
   flex-direction: column;
   gap: 2px;
   padding: 10px 12px;
-  border: 1px solid #9af6f655;
-  border-radius: 12px;
-  background: #163838;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-chip);
+  background: var(--chip-bg);
 }
 
 .settingsVer {
@@ -482,7 +719,7 @@ canvas {
 
 .settingsNotesTitle {
   margin: 6px 0 0;
-  color: #9af6f6;
+  color: var(--hud-muted);
   font-size: 13px;
 }
 
@@ -511,9 +748,9 @@ canvas {
   height: 26px;
   margin: 0;
   flex: none;
-  border: 2px solid #9af6f688;
+  border: 2px solid var(--btn-border);
   border-radius: 999px;
-  background: #163838;
+  background: var(--chip-bg);
   position: relative;
   cursor: pointer;
 }
@@ -526,13 +763,25 @@ canvas {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #e8ffff;
+  background: var(--hud-text);
   transition: transform 0.16s ease;
 }
 
 .settingsSwitch input:checked {
   background: #2a8a6a;
-  border-color: #9af6f6;
+  border-color: var(--hud-muted);
+}
+
+[data-ui-theme='iron'] .settingsSwitch input:checked {
+  background: #8a6a3a;
+}
+
+[data-ui-theme='board'] .settingsSwitch input:checked {
+  background: #3a6a8a;
+}
+
+[data-ui-theme='ink'] .settingsSwitch input:checked {
+  background: #6a5a2a;
 }
 
 .settingsSwitch input:checked::after {
@@ -547,7 +796,7 @@ canvas {
 
 .settingsGmTitle {
   margin: 2px 0 0;
-  color: #9af6f6;
+  color: var(--hud-muted);
   font-size: 13px;
 }
 
@@ -562,8 +811,8 @@ canvas {
   left: 12px;
   top: 12px;
   min-width: 280px;
-  color: #e8ffff;
-  font: 13px/1.4 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  color: var(--hud-text);
+  font: 13px/1.4 var(--font-ui);
   pointer-events: none;
   user-select: none;
   z-index: 6;
@@ -595,7 +844,7 @@ canvas {
   width: 140px;
   height: 10px;
   border-radius: 5px;
-  background: #102020;
+  background: var(--track-bg);
   overflow: hidden;
 }
 
@@ -605,40 +854,40 @@ canvas {
 }
 
 .hpHudValue {
-  color: #c8f6f6;
+  color: var(--hud-soft);
   font-variant-numeric: tabular-nums;
 }
 
 .hpHudLog {
   margin-top: 8px;
   max-width: 420px;
-  color: #9af6f6;
+  color: var(--hud-muted);
   opacity: 0.88;
 }
 
 .hpHudAction {
   margin-top: 8px;
   max-width: 420px;
-  color: #c8f6f6;
+  color: var(--hud-soft);
   opacity: 0.9;
 }
 
 .hpHudAction.isAiming {
-  color: #7ee8ff;
+  color: var(--skill-border);
   opacity: 1;
 }
 
 .hpHudAction.isFineTune {
-  color: #ffe08a;
+  color: var(--accent-hot);
   opacity: 1;
-  text-shadow: 0 0 10px #ffe08a99;
+  text-shadow: 0 0 10px var(--accent-hot-glow);
 }
 
 .hpHudAction.isCharge {
-  color: #ffe08a;
+  color: var(--accent-hot);
   opacity: 1;
   font-weight: 800;
-  text-shadow: 0 0 12px #ffe08acc;
+  text-shadow: 0 0 12px var(--accent-hot-glow);
 }
 
 .hpHudFineTune {
@@ -646,27 +895,25 @@ canvas {
   margin-top: 6px;
   padding: 2px 8px;
   border-radius: 999px;
-  border: 1px solid #ffe08a88;
-  color: #ffe08acc;
+  border: 1px solid color-mix(in srgb, var(--accent-hot) 53%, transparent);
+  color: var(--accent-hot-glow);
   font-weight: 700;
   letter-spacing: 0.04em;
   opacity: 0.8;
 }
 
-.hpHudFineTune.isOn {
+.hpHudFineTune.isOn,
+.hpHudFineTune.isCharge {
   opacity: 1;
-  color: #102020;
-  background: #ffe08a;
-  border-color: #ffe08a;
-  box-shadow: 0 0 12px #ffe08acc;
+  color: var(--track-bg);
+  background: var(--accent-hot);
+  border-color: var(--accent-hot);
+  box-shadow: 0 0 12px var(--accent-hot-glow);
 }
 
 .hpHudFineTune.isCharge {
-  opacity: 1;
-  color: #102020;
-  background: #ffe08a;
   border-color: #ffb347;
-  box-shadow: 0 0 16px #ffe08add;
+  box-shadow: 0 0 16px var(--accent-hot-glow);
   letter-spacing: 0.16em;
 }
 
@@ -693,21 +940,21 @@ canvas {
   height: min(16.5vmin, 76px);
   min-width: 48px;
   min-height: 48px;
-  border-radius: 50%;
-  border: 3px solid #7ee8ffaa;
-  background: #0f3f3fcc;
-  color: #e8ffff;
-  font: 700 16px/1.1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  box-shadow: 0 0 10px #04161666;
+  border-radius: var(--radius-fab);
+  border: 3px solid var(--skill-border);
+  background: var(--fab-bg);
+  color: var(--hud-text);
+  font: 700 16px/1.1 var(--font-ui);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--panel-shadow) 60%, transparent);
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
 
 .touchSkillBtn.isAiming,
 .touchSkillBtn:active {
-  border-color: #ffe08a;
-  color: #ffe08a;
-  box-shadow: 0 0 16px #ffe08a88;
+  border-color: var(--skill-active);
+  color: var(--skill-active);
+  box-shadow: 0 0 16px var(--skill-glow);
 }
 
 .touchSkillBtn.isCd {
@@ -720,13 +967,13 @@ canvas {
   bottom: calc(max(10px, env(safe-area-inset-bottom)) + min(38vmin, 180px));
   min-width: 68px;
   height: 40px;
-  border-radius: 12px;
-  border: 2px solid #e24a4a;
-  background: #0f3f3fcc;
-  color: #ffd0d0;
+  border-radius: var(--radius-btn);
+  border: 2px solid var(--cancel-border);
+  background: var(--fab-bg);
+  color: var(--cancel-text);
   pointer-events: auto;
   touch-action: none;
-  font: 13px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  font: 13px/1 var(--font-ui);
 }
 
 @media (max-height: 430px) {

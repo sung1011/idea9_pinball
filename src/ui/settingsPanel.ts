@@ -5,6 +5,7 @@ import type { HeroId } from '../heroes/heroIds';
 import { heroZh } from '../heroes/heroIds';
 import { kitSettingsHint } from '../heroes/kitLabels';
 import { APP_VERSION, CHANGE_LOG } from './appVersion';
+import { applyUiTheme, loadUiThemeId, UI_THEMES, type UiThemeId } from './uiTheme';
 
 export type SettingsTab = 'general' | 'version' | 'gm';
 
@@ -134,6 +135,30 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
       close();
     });
     body.appendChild(restart);
+
+    body.appendChild(el('p', 'settingsThemeTitle', '界面主题'));
+    const themeGrid = el('div', 'settingsThemeGrid');
+    const currentTheme = loadUiThemeId();
+    for (const theme of UI_THEMES) {
+      const btn = el('button', 'settingsThemeBtn');
+      btn.type = 'button';
+      btn.classList.toggle('isOn', theme.id === currentTheme);
+      btn.setAttribute('aria-pressed', theme.id === currentTheme ? 'true' : 'false');
+      const name = document.createElement('strong');
+      name.textContent = theme.label;
+      const blurb = document.createElement('span');
+      blurb.textContent = theme.blurb;
+      btn.append(name, blurb);
+      btn.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        applyUiTheme(theme.id as UiThemeId);
+        render();
+      });
+      themeGrid.appendChild(btn);
+    }
+    body.appendChild(themeGrid);
+    addHint(body, '主题只改 HUD / 面板 / 技能键观感，玩法不变；偏好会记在本机。');
+
     addHint(body, kitSettingsHint(actions.getHero?.() ?? 'hook'));
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。右键 / Esc 取消瞄准。');
     addHint(body, '蓝1 默认磁环。GM 开时按 H 循环红方：钩刺 → 磁环 → 链生 → 钉壳 → 闪弧 → 井绳。');
