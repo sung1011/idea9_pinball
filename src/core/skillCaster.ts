@@ -18,6 +18,7 @@ import { createArcCaster } from './arcCaster';
 import { createChainCaster } from './chainCaster';
 import { createNailCaster } from './nailCaster';
 import { createRingCaster } from './ringCaster';
+import { createMirrorCaster } from './mirrorCaster';
 import { createWellCaster } from './wellCaster';
 import { applyPinRamBonus } from './nailCombat';
 import { applySkillDamage } from './skillHits';
@@ -116,6 +117,9 @@ export function createSkillCaster(hero: HeroId = 'hook'): SkillCaster {
   }
   if (hero === 'well') {
     return createWellCaster();
+  }
+  if (hero === 'mirror') {
+    return createMirrorCaster();
   }
   return createHookCaster();
 }

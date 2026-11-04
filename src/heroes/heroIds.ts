@@ -1,6 +1,6 @@
-export type HeroId = 'hook' | 'ring' | 'chain' | 'nail' | 'arc' | 'well';
+export type HeroId = 'hook' | 'ring' | 'chain' | 'nail' | 'arc' | 'well' | 'mirror';
 
-export const HERO_IDS: readonly HeroId[] = ['hook', 'ring', 'chain', 'nail', 'arc', 'well'];
+export const HERO_IDS: readonly HeroId[] = ['hook', 'ring', 'chain', 'nail', 'arc', 'well', 'mirror'];
 
 export function isHeroId(value: string): value is HeroId {
   return (HERO_IDS as readonly string[]).includes(value);
@@ -26,6 +26,9 @@ export function heroZh(hero: HeroId): string {
   }
   if (hero === 'well') {
     return '井绳';
+  }
+  if (hero === 'mirror') {
+    return '镜卫';
   }
   return '钩刺';
 }

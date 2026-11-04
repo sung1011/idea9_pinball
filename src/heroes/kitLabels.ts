@@ -5,6 +5,7 @@ import type { HeroId } from './heroIds';
 import { HOOK_SKILL_NAMES, HOOK_SKILL_SHORT, KIT_DISPLAY_NAME } from './hookKit';
 import { NAIL_KIT_DISPLAY_NAME, NAIL_SKILL_NAMES, NAIL_SKILL_SHORT } from './nailKit';
 import { RING_KIT_DISPLAY_NAME, RING_SKILL_NAMES, RING_SKILL_SHORT } from './ringKit';
+import { MIRROR_KIT_DISPLAY_NAME, MIRROR_SKILL_NAMES, MIRROR_SKILL_SHORT } from './mirrorKit';
 import { WELL_KIT_DISPLAY_NAME, WELL_SKILL_NAMES, WELL_SKILL_SHORT } from './wellKit';
 
 export function kitTitle(hero: HeroId): string {
@@ -22,6 +23,9 @@ export function kitTitle(hero: HeroId): string {
   }
   if (hero === 'well') {
     return WELL_KIT_DISPLAY_NAME;
+  }
+  if (hero === 'mirror') {
+    return MIRROR_KIT_DISPLAY_NAME;
   }
   return KIT_DISPLAY_NAME;
 }
@@ -42,6 +46,9 @@ export function skillShorts(hero: HeroId): readonly [string, string, string, str
   if (hero === 'well') {
     return WELL_SKILL_SHORT;
   }
+  if (hero === 'mirror') {
+    return MIRROR_SKILL_SHORT;
+  }
   return HOOK_SKILL_SHORT;
 }
 
@@ -60,6 +67,9 @@ export function skillNames(hero: HeroId): readonly [string, string, string, stri
   }
   if (hero === 'well') {
     return WELL_SKILL_NAMES;
+  }
+  if (hero === 'mirror') {
+    return MIRROR_SKILL_NAMES;
   }
   return HOOK_SKILL_NAMES;
 }
@@ -107,6 +117,13 @@ const WELL_SKILL_TIPS = [
   '线上敌定身 2 秒不能动',
 ] as const;
 
+const MIRROR_SKILL_TIPS = [
+  '1.5 秒受伤减半并记入账本',
+  '消耗账本扇形打首个敌人',
+  '自伤 24 入账，周围溅 12',
+  '身前短墙，敌弹己开窗',
+] as const;
+
 export function skillTips(hero: HeroId): readonly [string, string, string, string] {
   if (hero === 'ring') {
     return RING_SKILL_TIPS;
@@ -122,6 +139,9 @@ export function skillTips(hero: HeroId): readonly [string, string, string, strin
   }
   if (hero === 'well') {
     return WELL_SKILL_TIPS;
+  }
+  if (hero === 'mirror') {
+    return MIRROR_SKILL_TIPS;
   }
   return HOOK_SKILL_TIPS;
 }
@@ -161,6 +181,9 @@ export function kitHelpSkills(hero: HeroId): string {
   if (hero === 'well') {
     return '技能 1–4：1 索爆（身周四脉冲，有桩则同步炸） / 2 易位 / 3 索桩 / 4 回索。';
   }
+  if (hero === 'mirror') {
+    return '技能 1–4：1 折光（受伤减半入账） / 2 反照 / 3 裂镜 / 4 镜壁。';
+  }
   return '技能 1–4：1 钩矛 / 2 连刺×3 / 3 盾冲 / 4 蓄势。';
 }
 
@@ -179,6 +202,9 @@ export function kitSettingsHint(hero: HeroId): string {
   }
   if (hero === 'well') {
     return '技能 1 索爆 / 2 易位 / 3 索桩 / 4 回索。按下进瞄，再按同键或左键释放。';
+  }
+  if (hero === 'mirror') {
+    return '技能 1 折光 / 2 反照 / 3 裂镜 / 4 镜壁。按下进瞄，再按同键或左键释放。';
   }
   return '技能 1 钩矛 / 2 连刺 / 3 盾冲 / 4 蓄势。按下进瞄，再按同键或左键释放。';
 }

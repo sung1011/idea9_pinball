@@ -1,9 +1,11 @@
 import { Graphics } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
 import { listBoomFlashes } from '../core/boomFlashes';
+import { listMirrorWalls } from '../core/mirrorWalls';
 import { listStakes } from '../core/ropeStakes';
 import { listTrapZones } from '../core/trapZones';
 import { RING_FIELD } from '../heroes/ringKit';
+import { MIRROR_REFRACT, MIRROR_WALL } from '../heroes/mirrorKit';
 import { WELL_STAKE } from '../heroes/wellKit';
 
 export type FieldOverlay = {
@@ -17,6 +19,7 @@ const MARK = 0xf0abfc;
 const GRAZE = 0x7dd3fc;
 const STAKE = 0xf59e0b;
 const BOOM = 0xfb7185;
+const GLASS = 0xa5d8ff;
 
 /** 磁场身周圈 + 困圈落点圈。 */
 export function createFieldOverlay(): FieldOverlay {
@@ -45,6 +48,11 @@ export function createFieldOverlay(): FieldOverlay {
         root.circle(ball.x, ball.y, ball.radius + 0.18);
         root.stroke({ color: GRAZE, width: 0.045, alpha: 0.7 });
       }
+      if (ball.refractRemain > 0) {
+        const pulse = 0.18 + 0.16 * Math.min(1, ball.refractRemain / MIRROR_REFRACT.duration);
+        root.circle(ball.x, ball.y, ball.radius + 0.32);
+        root.stroke({ color: GLASS, width: 0.07, alpha: 0.55 + pulse });
+      }
     }
     for (const zone of listTrapZones()) {
       const pulse = 0.16 + 0.1 * Math.min(1, zone.remain);
@@ -57,6 +65,12 @@ export function createFieldOverlay(): FieldOverlay {
       root.circle(stake.x, stake.y, stake.radius);
       root.fill({ color: STAKE, alpha: pulse });
       root.stroke({ color: STAKE, width: 0.07, alpha: 0.85 });
+    }
+    for (const wall of listMirrorWalls()) {
+      const pulse = 0.22 + 0.16 * Math.min(1, wall.remain / MIRROR_WALL.duration);
+      root.moveTo(wall.x0, wall.y0);
+      root.lineTo(wall.x1, wall.y1);
+      root.stroke({ color: GLASS, width: wall.halfWidth * 2, cap: 'round', alpha: 0.45 + pulse });
     }
     for (const flash of listBoomFlashes()) {
       const life = Math.max(flash.life, 1e-6);

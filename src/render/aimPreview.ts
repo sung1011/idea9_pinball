@@ -7,6 +7,7 @@ import { chainAimShape } from '../heroes/chainKit';
 import { hookAimShape } from '../heroes/hookKit';
 import { nailAimShape } from '../heroes/nailKit';
 import { ringAimShape } from '../heroes/ringKit';
+import { mirrorAimShape } from '../heroes/mirrorKit';
 import { WELL_BLAST, wellAimShape } from '../heroes/wellKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 
@@ -17,6 +18,7 @@ const CHAIN_COLOR = 0x86efac;
 const NAIL_COLOR = 0xf4bf6a;
 const ARC_COLOR = 0x7dd3fc;
 const WELL_COLOR = 0xf59e0b;
+const MIRROR_COLOR = 0xa5d8ff;
 
 function drawCone(
   g: Graphics,
@@ -106,6 +108,7 @@ export function createAimPreview(): AimPreview {
     const nail = player.hero === 'nail';
     const arc = player.hero === 'arc';
     const well = player.hero === 'well';
+    const mirror = player.hero === 'mirror';
     const color = ring
       ? RING_COLOR
       : chain
@@ -116,7 +119,9 @@ export function createAimPreview(): AimPreview {
             ? ARC_COLOR
             : well
               ? WELL_COLOR
-              : HOOK_COLOR;
+              : mirror
+                ? MIRROR_COLOR
+                : HOOK_COLOR;
     const alpha = casting ? 0.16 : 0.28;
     if (ring) {
       const shape = ringAimShape(
@@ -185,6 +190,20 @@ export function createAimPreview(): AimPreview {
         drawCircle(root, stake.x - player.x, stake.y - player.y, WELL_BLAST.radius, color, alpha);
       }
       drawAimArrow(root, fx, fy, color, slot === 1 ? 2.2 : ARROW_LEN);
+      return;
+    }
+    if (mirror) {
+      const shape = mirrorAimShape(slot, player, fx, fy);
+      if (shape?.kind === 'circle') {
+        drawCircle(root, shape.offsetX, shape.offsetY, shape.radius, color, alpha);
+      } else if (shape?.kind === 'cone') {
+        drawCone(root, fx, fy, shape.halfRad, shape.radius, color, alpha);
+      } else if (shape?.kind === 'wall') {
+        root.moveTo(shape.x0 - player.x, shape.y0 - player.y);
+        root.lineTo(shape.x1 - player.x, shape.y1 - player.y);
+        root.stroke({ color, width: shape.halfWidth * 2, cap: 'round', alpha: alpha + 0.18 });
+      }
+      drawAimArrow(root, fx, fy, color, slot === 2 ? 2.6 : ARROW_LEN);
       return;
     }
     const shape = hookAimShape(slot);

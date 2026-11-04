@@ -1,5 +1,6 @@
 import { applyArcOnCollision } from './arcCombat';
 import type { BallBody } from './ballBody';
+import { applyHpLoss } from './hpLoss';
 import { applyNailReflect, applyPinRamBonus } from './nailCombat';
 import {
   ACTIVE_RAM_SPEED_THRESHOLD,
@@ -115,11 +116,14 @@ function hitVictim(
   const facing = incomingFacing(victim.facingX, victim.facingY, incomingX, incomingY);
   const shieldMul = victim.shieldRemain > 0 ? victim.shieldMul : 1;
   const armorMul = victim.armorRemain > 0 ? victim.armorMul : 1;
-  const damage = collisionDamage(relSpeed, threshold, facing.coeff) * shieldMul * armorMul;
+  const incoming = collisionDamage(relSpeed, threshold, facing.coeff) * shieldMul * armorMul;
+  if (incoming <= 0) {
+    return null;
+  }
+  const damage = applyHpLoss(victim, incoming);
   if (damage <= 0) {
     return null;
   }
-  victim.hp = Math.max(0, victim.hp - damage);
   if (victim.armorRemain > 0) {
     victim.armorBroken = true;
   }

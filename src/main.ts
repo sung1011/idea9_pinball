@@ -13,6 +13,7 @@ import { verifyArc } from './core/verifyArc';
 import { verifyNail } from './core/verifyNail';
 import { verifyRing } from './core/verifyRing';
 import { verifyWell } from './core/verifyWell';
+import { verifyMirror } from './core/verifyMirror';
 import { verifyHeroPick } from './core/verifyHeroPick';
 import { verifyHudLayout } from './core/verifyHudLayout';
 import { verifySkillCd } from './core/verifySkillCd';
@@ -20,6 +21,7 @@ import { verifySkillTip } from './core/verifySkillTip';
 import { verifyCombatFloat } from './core/verifyCombatFloat';
 import { resetBoomFlashes } from './core/boomFlashes';
 import { floatsFromHits, resetCombatFloatAcc, takeHealFloats } from './core/combatFloat';
+import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
 import { nextHero, type HeroId } from './heroes/heroIds';
@@ -63,6 +65,7 @@ async function boot(): Promise<void> {
   verifyNail();
   verifyArc();
   verifyWell();
+  verifyMirror();
   verifyHeroPick();
   verifyHudLayout();
   verifySkillTip();
@@ -167,6 +170,7 @@ async function boot(): Promise<void> {
   const restart = (): void => {
     resetTrapZones();
     resetStakes();
+    resetMirrorWalls();
     resetBoomFlashes();
     resetCombatFloatAcc();
     combatFloats.clear();
@@ -185,6 +189,7 @@ async function boot(): Promise<void> {
   const onPairDebug = (): void => {
     resetTrapZones();
     resetStakes();
+    resetMirrorWalls();
     resetBoomFlashes();
     resetCombatFloatAcc();
     combatFloats.clear();

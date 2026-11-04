@@ -9,6 +9,7 @@ import {
   tickInvincible,
   tickPin,
   tickReflect,
+  tickRefract,
   tickShield,
   tickSilence,
   tickStun,
@@ -19,6 +20,7 @@ import type { HealPulse } from './combatFloat';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
 import { FRICTION, SPEED_CAP } from './constants';
 import { applyFloorSpeed } from './skillStub';
+import { resolveAllMirrorWalls, tickAllMirrorWalls } from './mirrorWalls';
 import { resolveAllStakes } from './ropeStakes';
 import { resolveStallInner, stallForBall, type StallFence } from './stallFences';
 import { resolveTrapCages } from './trapZones';
@@ -82,6 +84,7 @@ export function stepPhysics(
   extras: PhysicsExtras = {},
 ): PhysicsStepResult {
   const stepDt = Math.min(Math.max(dt, 0), MAX_DT);
+  tickAllMirrorWalls(stepDt);
   const live = balls.filter((ball) => ball.inPlay);
 
   for (const ball of live) {
@@ -111,6 +114,9 @@ export function stepPhysics(
     for (const ball of live) {
       let blocked = resolveArenaObstacles(ball);
       if (resolveAllStakes(ball)) {
+        blocked = true;
+      }
+      if (resolveAllMirrorWalls(ball)) {
         blocked = true;
       }
       const fence = extras.stalls && extras.stalls.length > 0 ? stallForBall(ball, extras.stalls) : null;
@@ -191,6 +197,7 @@ export function stepPhysics(
     tickPin(ball, stepDt, NAIL_PIN.breakDist);
     tickGraze(ball, stepDt);
     tickEchoMark(ball, stepDt);
+    tickRefract(ball, stepDt);
     if (collided.has(ball.id)) {
       openFineTune(ball);
     }

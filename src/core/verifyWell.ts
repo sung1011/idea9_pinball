@@ -133,7 +133,8 @@ export function verifyWell(): void {
   assert(WELL_REEL.duration === 2, '井绳：收索硬根应为 2s（超出旧硬控 0.6s 上限）');
   assert(nextHero('hook') === 'ring' && nextHero('ring') === 'chain', '井绳：H 循环前段钩刺→磁环→链生');
   assert(nextHero('chain') === 'nail' && nextHero('nail') === 'arc', '井绳：H 循环应接到钉壳再接到闪弧');
-  assert(nextHero('arc') === 'well' && nextHero('well') === 'hook', '井绳：H 循环闪弧→井绳→钩刺');
+  assert(nextHero('arc') === 'well' && nextHero('well') === 'mirror', '井绳：H 循环闪弧→井绳→镜卫');
+  assert(nextHero('mirror') === 'hook', '井绳：H 循环镜卫后回到钩刺');
   assert(nextSpeedTier(9) === 8 && nextSpeedTier(8) === 5, '井绳：9 降到 8、8 降到 5');
   assert(nextSpeedTier(5) === FLOOR_SPEED && nextSpeedTier(2.5) === 0.4, '井绳：5 降到保底、保底降到爬行');
   const tierBall = { vx: 8, vy: 0 };

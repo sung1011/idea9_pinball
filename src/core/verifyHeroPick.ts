@@ -26,11 +26,11 @@ function sample(partial: Partial<ActionSample> = {}): ActionSample {
 
 /** 左下角下拉指定英雄；H 循环后选中值跟随；换 kit 不清血量/位置。 */
 export function verifyHeroPick(): void {
-  assert(HERO_IDS.length === 6, '换英雄：池应为 6 人');
+  assert(HERO_IDS.length === 7, '换英雄：池应为 7 人');
   assert(HERO_IDS.every((id) => isHeroId(id)), '换英雄：池内 id 应全部合法');
   assert(
-    HERO_IDS.map((id) => heroZh(id)).join('/') === '钩刺/磁环/链生/钉壳/闪弧/井绳',
-    '换英雄：中文名应按钩刺/磁环/链生/钉壳/闪弧/井绳',
+    HERO_IDS.map((id) => heroZh(id)).join('/') === '钩刺/磁环/链生/钉壳/闪弧/井绳/镜卫',
+    '换英雄：中文名应按钩刺/磁环/链生/钉壳/闪弧/井绳/镜卫',
   );
 
   const host = document.createElement('div');
@@ -52,7 +52,7 @@ export function verifyHeroPick(): void {
   }
   assert(pick.getAttribute('data-touch-control') === 'hero', '换英雄：下拉应标 data-touch-control');
   assert(isAimUiTarget(pick), '换英雄：点下拉不应抢 Aim');
-  assert(pick.options.length === 6, '换英雄：下拉应列出 6 人');
+  assert(pick.options.length === 7, '换英雄：下拉应列出 7 人');
   assert(pick.value === 'hook', '换英雄：默认应选钩刺');
 
   pick.value = 'nail';

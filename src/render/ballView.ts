@@ -37,7 +37,9 @@ function drawKnightShield(g: Graphics, ball: BallBody): void {
             ? 0x7dd3fc
             : ball.hero === 'well'
               ? 0xf59e0b
-              : SHIELD_RIM;
+              : ball.hero === 'mirror'
+                ? 0xa5d8ff
+                : SHIELD_RIM;
   g.circle(0, 0, BALL_RADIUS);
   g.fill({ color: ball.color, alpha });
   g.stroke({ color: rim, width: 0.055, alpha: 0.95 });
@@ -247,6 +249,10 @@ export function createBallView(ball: BallBody): BallView {
     if (next.phaseRemain > 0) {
       body.circle(0, 0, BALL_RADIUS + 0.16);
       body.stroke({ color: 0xe0f2fe, width: 0.05, alpha: 0.7 });
+    }
+    if (next.refractRemain > 0) {
+      body.circle(0, 0, BALL_RADIUS + 0.3);
+      body.stroke({ color: 0xa5d8ff, width: 0.06, alpha: 0.92 });
     }
 
     hpBar.clear();

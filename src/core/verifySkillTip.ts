@@ -48,6 +48,9 @@ export function verifySkillTip(): void {
   assert(skillTipCopy('well', 1).effect.includes('爆炸'), '技能提示：索爆一行效果应为脉冲爆炸');
   assert(skillTipCopy('well', 4).name === '回索', '技能提示：井绳 4 对外名应为回索');
   assert(skillTipCopy('well', 4).effect.includes('2'), '技能提示：回索一行效果应为定身 2 秒');
+  assert(skillTipCopy('mirror', 1).name === '折光', '技能提示：镜卫 1 对外名应为折光');
+  assert(skillTipCopy('mirror', 3).name === '裂镜', '技能提示：镜卫 3 对外名应为裂镜');
+  assert(skillTipCopy('mirror', 3).effect.includes('24'), '技能提示：裂镜一行效果应写自伤 24');
   assert(skillTipCopy('chain', 4).name === '扰锋', '技能提示：链生 4 对外名应为扰锋');
   assert(skillTipCopy('chain', 4).effect.includes('沉默'), '技能提示：扰锋一行效果应为范围沉默');
 

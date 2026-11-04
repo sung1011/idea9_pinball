@@ -82,6 +82,10 @@ export type BallBody = {
   echoMarkSourceId: number;
   /** 虚晃无碰撞剩余秒数 */
   phaseRemain: number;
+  /** 折光剩余秒数；>0 时受到的伤害 ×0.5，减免差额入反照账本 */
+  refractRemain: number;
+  /** 反照账本：只记折光实际减免与裂镜自伤 */
+  mirrorLedger: number;
 };
 
 export function createBallBody(init: {
@@ -155,6 +159,8 @@ export function createBallBody(init: {
     echoMarkRemain: 0,
     echoMarkSourceId: -1,
     phaseRemain: 0,
+    refractRemain: 0,
+    mirrorLedger: 0,
   };
 }
 
@@ -417,6 +423,18 @@ export function clearGraze(ball: BallBody): void {
   ball.grazeLocks.length = 0;
 }
 
+export function applyRefract(ball: BallBody, duration: number): void {
+  ball.refractRemain = Math.max(ball.refractRemain, duration);
+}
+
+export function tickRefract(ball: BallBody, dt: number): void {
+  if (ball.refractRemain <= 0) {
+    ball.refractRemain = 0;
+    return;
+  }
+  ball.refractRemain = Math.max(0, ball.refractRemain - Math.max(0, dt));
+}
+
 export function clearKitAuras(ball: BallBody): void {
   ball.slideWalls = false;
   ball.fieldRemain = 0;
@@ -432,4 +450,6 @@ export function clearKitAuras(ball: BallBody): void {
   clearEchoMark(ball);
   clearGraze(ball);
   ball.phaseRemain = 0;
+  ball.refractRemain = 0;
+  ball.mirrorLedger = 0;
 }
