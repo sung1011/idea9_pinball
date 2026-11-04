@@ -1,4 +1,5 @@
 import { screenToLogical, type WorldTransform } from '../render/worldTransform';
+import { clientToHostLocal } from '../ui/stageLayout';
 import { isAimUiTarget, type ActionBus } from './actionBus';
 import type { SkillSlot } from './actionTypes';
 
@@ -18,8 +19,9 @@ function trackPointer(
   if (isAimUiTarget(ev.target)) {
     return;
   }
-  const rect = canvas.getBoundingClientRect();
-  const world = screenToLogical(ev.clientX - rect.left, ev.clientY - rect.top, getTransform());
+  const frame = canvas.parentElement ?? canvas;
+  const local = clientToHostLocal(frame, ev.clientX, ev.clientY);
+  const world = screenToLogical(local.x, local.y, getTransform());
   bus.setPointerLogical(world.x, world.y);
 }
 

@@ -39,11 +39,17 @@ import { applyWorldTransform, fitWorldToBox, type WorldTransform } from './rende
 import { createHelpCard } from './ui/helpCard';
 import { createMatchHud } from './ui/matchHud';
 import { createResultPanel } from './ui/resultPanel';
-import { createRotateHint } from './ui/rotateHint';
 import { createAppVersions } from './ui/appVersion';
 import { createSettingsPanel } from './ui/settingsPanel';
 import { createUpdatePrompt } from './ui/updatePrompt';
-import { applyStageVars, computeLandscapeStage, readSafeInsets } from './ui/stageLayout';
+import {
+  applyStageVars,
+  computeLandscapeStage,
+  forceLandscapeViewSize,
+  readSafeInsets,
+  remapInsetsForForceLandscape,
+  syncForceLandscape,
+} from './ui/stageLayout';
 import './style.css';
 
 async function boot(): Promise<void> {
@@ -98,13 +104,19 @@ async function boot(): Promise<void> {
   world.addChild(combatFloats.root);
   app.stage.addChild(world);
 
-  const rotateHint = createRotateHint(host);
-
   const layoutWorld = (): WorldTransform => {
-    const insets = readSafeInsets();
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+    const force = syncForceLandscape(host, viewW, viewH);
+    const frame = force
+      ? forceLandscapeViewSize(viewW, viewH)
+      : { width: host.clientWidth || viewW, height: host.clientHeight || viewH };
+    if (Math.abs(app.screen.width - frame.width) > 1 || Math.abs(app.screen.height - frame.height) > 1) {
+      app.renderer.resize(frame.width, frame.height);
+    }
+    const insets = force ? remapInsetsForForceLandscape(readSafeInsets()) : readSafeInsets();
     const stage = computeLandscapeStage(app.screen.width, app.screen.height, insets);
     applyStageVars(host, stage);
-    rotateHint.sync();
     return fitWorldToBox(stage.x, stage.y, stage.width, stage.height, MAP_WIDTH, MAP_HEIGHT);
   };
 

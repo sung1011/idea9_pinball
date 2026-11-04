@@ -26,6 +26,13 @@ body,
   --stage-center-y: 42%;
 }
 
+#app.isForceLandscape {
+  width: 100dvh;
+  height: 100dvw;
+  transform-origin: top left;
+  transform: translate(100dvw, 0) rotate(90deg);
+}
+
 canvas {
   display: block;
 }
@@ -928,60 +935,6 @@ canvas {
   pointer-events: auto;
   touch-action: none;
   font: 12px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-}
-
-.rotateHint {
-  display: none;
-  position: absolute;
-  inset: 0;
-  z-index: 40;
-  align-items: center;
-  justify-content: center;
-  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
-    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-  background: #071018f2;
-  color: #e8ffff;
-  pointer-events: auto;
-  text-align: center;
-}
-
-.rotateHint.isOn {
-  display: flex;
-}
-
-.rotateHintCard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.rotateHintIcon {
-  color: #9af6f6;
-  animation: rotateHintSpin 1.6s ease-in-out infinite;
-}
-
-.rotateHintTitle {
-  margin: 0;
-  font: 700 22px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-}
-
-.rotateHintSub {
-  margin: 0;
-  color: #9af6f6;
-  font: 14px/1.4 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-}
-
-@keyframes rotateHintSpin {
-  0% {
-    transform: rotate(0deg);
-  }
-  40% {
-    transform: rotate(90deg);
-  }
-  100% {
-    transform: rotate(90deg);
-  }
 }
 
 @media (max-height: 430px) {

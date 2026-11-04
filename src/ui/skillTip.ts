@@ -1,4 +1,5 @@
 import type { SkillTipCopy } from '../heroes/kitLabels';
+import { clientToHostLocal } from './stageLayout';
 
 /** 长按约 0.4s 才出提示，避免挡住点按进瞄 / 同键释放。 */
 export const SKILL_TIP_HOLD_MS = 400;
@@ -33,16 +34,17 @@ export function createSkillTip(host: HTMLElement): SkillTip {
     if (!anchor) {
       return;
     }
-    const hostRect = host.getBoundingClientRect();
     const btnRect = anchor.getBoundingClientRect();
     const tipW = root.offsetWidth;
-    const centerX = btnRect.left + btnRect.width / 2 - hostRect.left;
+    const center = clientToHostLocal(host, btnRect.left + btnRect.width / 2, btnRect.top + btnRect.height / 2);
+    const topLeft = clientToHostLocal(host, btnRect.left, btnRect.top);
+    const botRight = clientToHostLocal(host, btnRect.right, btnRect.bottom);
+    const localTop = Math.min(topLeft.y, botRight.y);
     const minCenter = tipW / 2 + 6;
-    const maxCenter = hostRect.width - tipW / 2 - 6;
-    const x = Math.min(maxCenter, Math.max(minCenter, centerX));
-    const y = btnRect.top - hostRect.top - 8;
+    const maxCenter = host.clientWidth - tipW / 2 - 6;
+    const x = Math.min(maxCenter, Math.max(minCenter, center.x));
     root.style.left = `${x}px`;
-    root.style.top = `${Math.max(6, y)}px`;
+    root.style.top = `${Math.max(6, localTop - 8)}px`;
   };
 
   return {
