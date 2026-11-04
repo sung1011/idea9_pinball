@@ -1,5 +1,5 @@
 # Idea pinball · 工程落地方案 v0
-更新：2026-11-04（M1 物理已落地）
+更新：2026-11-04（GitHub Pages 预览）
 
 ## 栈
 - 客户端：TypeScript + PixiJS + Vite
@@ -7,6 +7,7 @@
 - 输入：Action（Aim / Skill1–4 / FineTune / CancelAim）
 - 技能瞄准：**按下进入瞄准，再按同键释放**（左键可释放；Cancel 取消）
 - 联网后置：Go WebSocket 房间；v0 单机
+- 预览：GitHub Pages 项目站 `https://sung1011.github.io/idea9_pinball/`；`vite.config.ts` 的 `base` 为 `/idea9_pinball/`；推送 `main` 由 `.github/workflows/deploy-pages.yml` 发布；Pages Source 选 GitHub Actions
 
 ## 里程碑
 1. M0 脚手架：Vite+TS+Pixi；20×12 逻辑坐标；调试网格 ✅
