@@ -165,3 +165,60 @@ export function pickFanEnemies(
 ): FanPick[] {
   return fanCandidates(caster, roster, aimX, aimY, halfRad, range, needLos);
 }
+
+function allyCandidates(
+  caster: BallBody,
+  roster: readonly BallBody[],
+  range: number,
+  aim?: { x: number; y: number; halfRad: number },
+): FanPick[] {
+  const out: FanPick[] = [];
+  for (const other of roster) {
+    if (!other.inPlay || other.id === caster.id) {
+      continue;
+    }
+    if (!other.team || !caster.team || other.team !== caster.team) {
+      continue;
+    }
+    const dist = Math.hypot(other.x - caster.x, other.y - caster.y);
+    if (dist > range || dist < EPS) {
+      continue;
+    }
+    if (aim && !inFan(caster.x, caster.y, aim.x, aim.y, other.x, other.y, aim.halfRad, range)) {
+      continue;
+    }
+    out.push({ target: other, dist });
+  }
+  return out;
+}
+
+function nearestOf(items: readonly FanPick[]): FanPick | null {
+  let best: FanPick | null = null;
+  for (const item of items) {
+    if (!best || item.dist < best.dist) {
+      best = item;
+    }
+  }
+  return best;
+}
+
+/** 扇内最近友军（治疗链）。无敌友仍可选。 */
+export function pickFanAlly(
+  caster: BallBody,
+  roster: readonly BallBody[],
+  aimX: number,
+  aimY: number,
+  halfRad: number,
+  range: number,
+): FanPick | null {
+  return nearestOf(allyCandidates(caster, roster, range, { x: aimX, y: aimY, halfRad }));
+}
+
+/** 距内最近友军（护盾 / 勾友）。无友则空。 */
+export function pickNearestAlly(
+  caster: BallBody,
+  roster: readonly BallBody[],
+  range: number,
+): FanPick | null {
+  return nearestOf(allyCandidates(caster, roster, range));
+}

@@ -78,6 +78,11 @@ export function createPlayerControl(initial: HeroId = 'hook'): PlayerControl {
       caster.reset();
       ball.slideWalls = false;
       ball.fieldRemain = 0;
+      ball.healRemain = 0;
+      ball.healDps = 0;
+      ball.shieldRemain = 0;
+      ball.shieldMul = 1;
+      ball.aimBreak = false;
       ball.hero = hero;
       caster = createSkillCaster(hero);
     },

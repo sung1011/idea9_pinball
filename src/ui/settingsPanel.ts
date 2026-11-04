@@ -2,6 +2,7 @@ import { loadGmEnabled, saveGmEnabled } from '../debug/gmState';
 import type { CollisionTestKind } from '../debug/debugVelocity';
 import type { TeamId } from '../core/ballBody';
 import type { HeroId } from '../heroes/heroIds';
+import { heroZh } from '../heroes/heroIds';
 import { kitSettingsHint } from '../heroes/kitLabels';
 import { APP_VERSION, CHANGE_LOG } from './appVersion';
 
@@ -135,7 +136,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     body.appendChild(restart);
     addHint(body, kitSettingsHint(actions.getHero?.() ?? 'hook'));
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。右键 / Esc 取消瞄准。');
-    addHint(body, '蓝1 默认磁环。GM 开时按 H 可把红方换成磁环 / 钩刺。');
+    addHint(body, '蓝1 默认磁环。GM 开时按 H 循环红方：钩刺 → 磁环 → 链生。');
   };
 
   const renderVersion = (): void => {
@@ -200,7 +201,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     });
     toggleRow.append(toggleText, toggle);
     body.appendChild(toggleRow);
-    addHint(body, gmOn ? '调试键已开：Z/X/C/V · F/G · T/Y · H 换英雄。' : 'GM 关：调试键无效，R 仍可重开。');
+    addHint(body, gmOn ? '调试键已开：Z/X/C/V · F/G · T/Y · H 循环钩刺/磁环/链生。' : 'GM 关：调试键无效，R 仍可重开。');
 
     addGmGroup('碰撞测', [
       gmBtn('背后 Z', () => actions.onCollision('back')),
@@ -220,7 +221,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     ]);
     addGmGroup('回场', [gmBtn('立即回场', () => actions.onForceRespawn())]);
     addGmGroup('英雄', [
-      gmBtn(`换英雄 H · 当前${actions.getHero?.() === 'ring' ? '磁环' : '钩刺'}`, () => {
+      gmBtn(`换英雄 H · 当前${heroZh(actions.getHero?.() ?? 'hook')}`, () => {
         actions.onSwapHero?.();
         render();
       }),

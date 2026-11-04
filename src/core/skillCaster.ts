@@ -1,5 +1,5 @@
 import type { BallBody } from './ballBody';
-import { openActiveRam } from './ballBody';
+import { consumeAimBreak, openActiveRam } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import { HARD_CC_DIMINISH_WINDOW } from './constants';
 import type { HeroId } from '../heroes/heroIds';
@@ -14,6 +14,7 @@ import {
 } from '../heroes/hookKit';
 import { RING_TRAP } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
+import { createChainCaster } from './chainCaster';
 import { createRingCaster } from './ringCaster';
 import { applySkillDamage } from './skillHits';
 import { pickFanEnemy, unitVec } from './skillQuery';
@@ -98,7 +99,13 @@ export type SkillCaster = {
 
 /** 按英雄建施放器；默认钩刺，避免拆坏既有 verify。 */
 export function createSkillCaster(hero: HeroId = 'hook'): SkillCaster {
-  return hero === 'ring' ? createRingCaster() : createHookCaster();
+  if (hero === 'ring') {
+    return createRingCaster();
+  }
+  if (hero === 'chain') {
+    return createChainCaster();
+  }
+  return createHookCaster();
 }
 
 /** 钩刺施放：按下进瞄可无限持有；释放后才走前摇，再出效果。 */
@@ -156,6 +163,9 @@ export function createHookCaster(): SkillCaster {
   };
 
   const handleInput = (ball: BallBody, sample: ActionSample, _roster: readonly BallBody[] = []): void => {
+    if (consumeAimBreak(ball)) {
+      aimingSlot = 0;
+    }
     if (!ball.inPlay || ball.stunRemain > 0) {
       aimingSlot = 0;
       return;
@@ -337,6 +347,9 @@ export function createHookCaster(): SkillCaster {
   const tick = (ball: BallBody, dt: number, roster: readonly BallBody[]): CollisionHit[] => {
     const step = Math.max(0, dt);
     now += step;
+    if (consumeAimBreak(ball)) {
+      aimingSlot = 0;
+    }
     for (let i = 0; i < cds.length; i += 1) {
       cds[i] = Math.max(0, cds[i] - step);
     }

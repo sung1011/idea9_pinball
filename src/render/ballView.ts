@@ -26,7 +26,7 @@ function unit(x: number, y: number): { x: number; y: number } {
 /** 圆盾 + 纹章十字 + 中心铆钉。碰撞半径不变，只改外观。 */
 function drawKnightShield(g: Graphics, ball: BallBody): void {
   const alpha = ball.invincibleRemain > 0 ? 0.72 : 1;
-  const rim = ball.hero === 'ring' ? 0xb8fff4 : SHIELD_RIM;
+  const rim = ball.hero === 'ring' ? 0xb8fff4 : ball.hero === 'chain' ? 0x86efac : SHIELD_RIM;
   g.circle(0, 0, BALL_RADIUS);
   g.fill({ color: ball.color, alpha });
   g.stroke({ color: rim, width: 0.055, alpha: 0.95 });
@@ -204,6 +204,14 @@ export function createBallView(ball: BallBody): BallView {
     if (next.fieldRemain > 0) {
       body.circle(0, 0, BALL_RADIUS + 0.22);
       body.stroke({ color: 0x5eead4, width: 0.055, alpha: 0.88 });
+    }
+    if (next.healRemain > 0) {
+      body.circle(0, 0, BALL_RADIUS + 0.2);
+      body.stroke({ color: 0x86efac, width: 0.05, alpha: 0.9 });
+    }
+    if (next.shieldRemain > 0) {
+      body.circle(0, 0, BALL_RADIUS + 0.26);
+      body.stroke({ color: 0xfde68a, width: 0.06, alpha: 0.92 });
     }
 
     hpBar.clear();

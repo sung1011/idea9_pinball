@@ -87,8 +87,10 @@ export function createHpHud(host: HTMLElement): HpHud {
           const tune = ball.fineTuneRemain > 0 ? ` 强拧${ball.fineTuneRemain.toFixed(2)}s` : '';
           const inv = ball.invincibleRemain > 0 ? ` 无敌${ball.invincibleRemain.toFixed(1)}s` : '';
           const stun = ball.stunRemain > 0 ? ` 硬直${ball.stunRemain.toFixed(2)}s` : '';
+          const heal = ball.healRemain > 0 ? ` 愈${ball.healRemain.toFixed(1)}s` : '';
+          const shield = ball.shieldRemain > 0 ? ` 盾${ball.shieldRemain.toFixed(1)}s` : '';
           const charge = status?.charging ? ' 冲锋' : '';
-          value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${charge}${inv}${ram}${tune}${stun}`;
+          value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${charge}${inv}${ram}${tune}${stun}${heal}${shield}`;
         }
         row.classList.toggle('isOut', !ball.inPlay);
 

@@ -68,8 +68,10 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
       kitHelpSkills(hero),
       '按下进瞄，再按同键或左键释放；右键 / Esc 取消。',
       ...(hero === 'ring'
-        ? ['囚环内敌方不能放位移技（钩矛 / 盾冲 / 蓄势 / 壁行）；圈内强放进 2 秒短 CD。']
-        : []),
+        ? ['囚环内敌方不能放位移技（钩矛 / 盾冲 / 蓄势 / 壁行 / 援勾）；圈内强放进 2 秒短 CD。']
+        : hero === 'chain'
+          ? ['愈链给己+扇内最近友 HOT；盾脉罩最近友（无则仅己）；援勾拉自己或轻拉残血友；扰锋拧敌朝向并打断短瞄准。']
+          : []),
     ]);
     addBlock(body, '怎么得分', [
       '击破对方 +15。',

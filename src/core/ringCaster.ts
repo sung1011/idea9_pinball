@@ -1,5 +1,5 @@
 import type { BallBody } from './ballBody';
-import { openActiveRam } from './ballBody';
+import { consumeAimBreak, openActiveRam } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import type { HeroId } from '../heroes/heroIds';
 import {
@@ -217,6 +217,9 @@ export function createRingCaster(): SkillCaster {
 
   const handleInput = (ball: BallBody, sample: ActionSample, roster: readonly BallBody[] = []): void => {
     bindOwner(ball);
+    if (consumeAimBreak(ball)) {
+      aimingSlot = 0;
+    }
     if (!ball.inPlay || ball.stunRemain > 0) {
       aimingSlot = 0;
       return;
@@ -284,6 +287,9 @@ export function createRingCaster(): SkillCaster {
   const tick = (ball: BallBody, dt: number, roster: readonly BallBody[]): CollisionHit[] => {
     const step = Math.max(0, dt);
     bindOwner(ball);
+    if (consumeAimBreak(ball)) {
+      aimingSlot = 0;
+    }
     for (let i = 0; i < cds.length; i += 1) {
       cds[i] = Math.max(0, cds[i] - step);
     }

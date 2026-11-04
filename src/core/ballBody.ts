@@ -48,6 +48,14 @@ export type BallBody = {
   slideWalls: boolean;
   /** 磁场剩余秒数；>0 时身周圈可见 */
   fieldRemain: number;
+  /** 治疗链 HOT 剩余秒数；>0 时每秒回血 */
+  healRemain: number;
+  healDps: number;
+  /** 护盾脉冲剩余秒数；>0 时碰撞伤乘 shieldMul */
+  shieldRemain: number;
+  shieldMul: number;
+  /** 朝向打乱：打断短瞄准，施放器下帧清空 */
+  aimBreak: boolean;
 };
 
 export function createBallBody(init: {
@@ -98,6 +106,11 @@ export function createBallBody(init: {
     hero: init.hero ?? 'hook',
     slideWalls: false,
     fieldRemain: 0,
+    healRemain: 0,
+    healDps: 0,
+    shieldRemain: 0,
+    shieldMul: 1,
+    aimBreak: false,
   };
 }
 
@@ -143,4 +156,50 @@ export function tickStun(ball: BallBody, dt: number): void {
     return;
   }
   ball.stunRemain = Math.max(0, ball.stunRemain - dt);
+}
+
+export function applyHealHot(ball: BallBody, dps: number, duration: number): void {
+  ball.healDps = dps;
+  ball.healRemain = Math.max(ball.healRemain, duration);
+}
+
+export function applyShield(ball: BallBody, mul: number, duration: number): void {
+  ball.shieldMul = mul;
+  ball.shieldRemain = Math.max(ball.shieldRemain, duration);
+}
+
+export function tickHeal(ball: BallBody, dt: number): void {
+  if (ball.healRemain <= 0) {
+    ball.healRemain = 0;
+    ball.healDps = 0;
+    return;
+  }
+  const step = Math.min(Math.max(0, dt), ball.healRemain);
+  if (ball.inPlay && ball.healDps > 0) {
+    ball.hp = Math.min(ball.maxHp, ball.hp + ball.healDps * step);
+  }
+  ball.healRemain = Math.max(0, ball.healRemain - step);
+  if (ball.healRemain <= 0) {
+    ball.healDps = 0;
+  }
+}
+
+export function tickShield(ball: BallBody, dt: number): void {
+  if (ball.shieldRemain <= 0) {
+    ball.shieldRemain = 0;
+    ball.shieldMul = 1;
+    return;
+  }
+  ball.shieldRemain = Math.max(0, ball.shieldRemain - Math.max(0, dt));
+  if (ball.shieldRemain <= 0) {
+    ball.shieldMul = 1;
+  }
+}
+
+export function consumeAimBreak(ball: BallBody): boolean {
+  if (!ball.aimBreak) {
+    return false;
+  }
+  ball.aimBreak = false;
+  return true;
 }

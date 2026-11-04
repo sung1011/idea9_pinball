@@ -201,6 +201,11 @@ function resetBall(ball: BallBody, openingInvincible: number): void {
   ball.hasAim = false;
   ball.slideWalls = false;
   ball.fieldRemain = 0;
+  ball.healRemain = 0;
+  ball.healDps = 0;
+  ball.shieldRemain = 0;
+  ball.shieldMul = 1;
+  ball.aimBreak = false;
   if (ball.team === 'blue') {
     ball.facingX = -1;
     ball.facingY = 0;
@@ -333,6 +338,11 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     ball.hasAim = false;
     ball.slideWalls = false;
     ball.fieldRemain = 0;
+    ball.healRemain = 0;
+    ball.healDps = 0;
+    ball.shieldRemain = 0;
+    ball.shieldMul = 1;
+    ball.aimBreak = false;
     respawns[ball.id] = RESPAWN_SEC;
   };
 
@@ -353,6 +363,11 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     ball.hasAim = false;
     ball.slideWalls = false;
     ball.fieldRemain = 0;
+    ball.healRemain = 0;
+    ball.healDps = 0;
+    ball.shieldRemain = 0;
+    ball.shieldMul = 1;
+    ball.aimBreak = false;
     grantInvincible(ball, SPAWN_INVINCIBLE_SEC);
     if (ball.team === 'blue') {
       ball.facingX = -1;

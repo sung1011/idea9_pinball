@@ -2,7 +2,9 @@ import {
   openFineTune,
   tickActiveRam,
   tickFineTune,
+  tickHeal,
   tickInvincible,
+  tickShield,
   tickStun,
   type BallBody,
 } from './ballBody';
@@ -137,6 +139,8 @@ export function stepPhysics(
     tickFineTune(ball, stepDt);
     tickInvincible(ball, stepDt);
     tickStun(ball, stepDt);
+    tickHeal(ball, stepDt);
+    tickShield(ball, stepDt);
     if (collided.has(ball.id)) {
       openFineTune(ball);
     }

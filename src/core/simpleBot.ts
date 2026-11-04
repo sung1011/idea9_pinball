@@ -9,6 +9,7 @@ import {
   MAP_WIDTH,
 } from './constants';
 import type { HeroId } from '../heroes/heroIds';
+import { CHAIN_HEAL, CHAIN_SCRAMBLE, CHAIN_SHIELD, CHAIN_TOW } from '../heroes/chainKit';
 import { HOOK_PULL } from '../heroes/hookKit';
 import { RING_FIELD, RING_TRAP, RING_WAVE } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
@@ -38,6 +39,22 @@ export type SimpleBotOpts = {
 
 function nextWait(random: () => number): number {
   return BOT_INTERVAL_SEC + random() * BOT_INTERVAL_JITTER_SEC;
+}
+
+function nearestAlly(bot: BallBody, roster: readonly BallBody[]): BallBody | null {
+  let best: BallBody | null = null;
+  let bestD = Number.POSITIVE_INFINITY;
+  for (const other of roster) {
+    if (!other.inPlay || other.id === bot.id || other.team !== bot.team) {
+      continue;
+    }
+    const d = Math.hypot(other.x - bot.x, other.y - bot.y);
+    if (d < bestD) {
+      bestD = d;
+      best = other;
+    }
+  }
+  return best;
 }
 
 function nearestEnemy(bot: BallBody, roster: readonly BallBody[]): BallBody | null {
@@ -162,8 +179,38 @@ function pickRingAction(
   return null;
 }
 
+function pickChainAction(
+  bot: BallBody,
+  ally: BallBody | null,
+  enemy: BallBody | null,
+  cds: SkillCds,
+  jx: number,
+  jy: number,
+): ActionSample | null {
+  const allyD = ally ? Math.hypot(ally.x - bot.x, ally.y - bot.y) : Number.POSITIVE_INFINITY;
+  const enemyD = enemy ? Math.hypot(enemy.x - bot.x, enemy.y - bot.y) : Number.POSITIVE_INFINITY;
+  const px = ally?.x ?? enemy?.x ?? bot.x + jx * 2;
+  const py = ally?.y ?? enemy?.y ?? bot.y + jy * 2;
+  if (enemy && enemyD <= CHAIN_SCRAMBLE.range && cds[3] <= 0) {
+    return castSample(4, jx, jy, px, py);
+  }
+  if (ally && ally.hp < ally.maxHp * CHAIN_TOW.lowHpRatio && allyD <= CHAIN_TOW.range && cds[2] <= 0) {
+    return castSample(3, jx, jy, px, py);
+  }
+  if (ally && ally.hp < ally.maxHp * 0.85 && allyD <= CHAIN_HEAL.range && cds[0] <= 0) {
+    return castSample(1, (ally.x - bot.x) || jx, (ally.y - bot.y) || jy, px, py);
+  }
+  if (((ally && allyD <= CHAIN_SHIELD.range) || !ally) && cds[1] <= 0 && (ally || enemyD < 3.5)) {
+    return castSample(2, jx, jy, px, py);
+  }
+  if (ally && allyD <= CHAIN_TOW.range && cds[2] <= 0) {
+    return castSample(3, jx, jy, px, py);
+  }
+  return null;
+}
+
 /**
- * 简化 AI：钩刺保底冲靠近 + 急停 + 偶勾；磁环推波 / 困圈 / 磁场 / 近壁粘壁。
+ * 简化 AI：钩刺保底冲靠近 + 急停 + 偶勾；磁环推波 / 困圈 / 磁场 / 近壁粘壁；链生扰锋 / 愈链 / 援勾。
  */
 export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): SimpleBot {
   const random = opts.random ?? Math.random;
@@ -187,6 +234,7 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
       }
 
       const enemy = nearestEnemy(bot, roster);
+      const ally = nearestAlly(bot, roster);
       const approach = pickApproachAim(bot, enemy);
       const aimLen = Math.hypot(approach.x, approach.y);
       let aimX = bot.facingX;
@@ -234,6 +282,8 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
         const picked =
           hero === 'ring'
             ? pickRingAction(bot, enemy, approach.enemyD, cds, jx, jy)
+            : hero === 'chain'
+              ? pickChainAction(bot, ally, enemy, cds, jx, jy)
             : pickHookAction(
                 cds,
                 speed,

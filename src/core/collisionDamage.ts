@@ -111,7 +111,8 @@ function hitVictim(
   threshold: number,
 ): CollisionHit | null {
   const facing = incomingFacing(victim.facingX, victim.facingY, incomingX, incomingY);
-  const damage = collisionDamage(relSpeed, threshold, facing.coeff);
+  const shieldMul = victim.shieldRemain > 0 ? victim.shieldMul : 1;
+  const damage = collisionDamage(relSpeed, threshold, facing.coeff) * shieldMul;
   if (damage <= 0) {
     return null;
   }
