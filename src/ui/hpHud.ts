@@ -9,8 +9,13 @@ const ZONE_LABEL: Record<FacingZone, string> = {
 
 const MAX_HIT_LINES = 4;
 
+export type HudStatus = {
+  aimingSlot: number;
+  skillCd: number;
+};
+
 export type HpHud = {
-  sync: (balls: BallBody[]) => void;
+  sync: (balls: BallBody[], status?: HudStatus) => void;
   pushHits: (hits: CollisionHit[]) => void;
   resetLog: () => void;
 };
@@ -31,17 +36,23 @@ export function createHpHud(host: HTMLElement): HpHud {
 
   const rows = document.createElement('div');
   rows.className = 'hpHudRows';
+  const action = document.createElement('div');
+  action.className = 'hpHudAction';
+  action.textContent = '红球：按 1–4 / QWE 瞄准，再按同键或左键释放';
+  const fineTune = document.createElement('div');
+  fineTune.className = 'hpHudFineTune';
+  fineTune.textContent = '微调';
   const hintText = '碰撞：轻蹭只改方向；相对速度≥4 或主动撞窗才掉血';
   const log = document.createElement('div');
   log.className = 'hpHudLog';
   log.textContent = hintText;
 
-  root.append(rows, log);
+  root.append(rows, action, fineTune, log);
   host.appendChild(root);
 
   const lines: string[] = [];
 
-  const sync = (balls: BallBody[]): void => {
+  const sync = (balls: BallBody[], status?: HudStatus): void => {
     rows.replaceChildren(
       ...balls.map((ball) => {
         const row = document.createElement('div');
@@ -64,12 +75,33 @@ export function createHpHud(host: HTMLElement): HpHud {
         const value = document.createElement('span');
         value.className = 'hpHudValue';
         const ram = ball.activeRamRemain > 0 ? ` 撞窗${ball.activeRamRemain.toFixed(2)}s` : '';
-        value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${ram}`;
+        const tune = ball.fineTuneRemain > 0 ? ` 微调${ball.fineTuneRemain.toFixed(2)}s` : '';
+        value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${ram}${tune}`;
 
         row.append(name, track, value);
         return row;
       }),
     );
+
+    const player = balls[0];
+    const fine = player?.fineTuneRemain ?? 0;
+    const parts: string[] = [];
+    if (status && status.aimingSlot > 0) {
+      parts.push(`瞄准技能${status.aimingSlot} · 再按同键或左键释放 · 右键/Esc/点空白取消`);
+    }
+    if (fine > 0) {
+      parts.push(`微调 ${fine.toFixed(2)}s`);
+    } else if (status && status.skillCd > 0 && (!status.aimingSlot || status.aimingSlot === 0)) {
+      parts.push(`技能CD ${status.skillCd.toFixed(2)}s`);
+    }
+    if (parts.length === 0) {
+      parts.push('红球：按 1–4 / QWE 瞄准，再按同键或左键释放');
+    }
+    action.textContent = parts.join(' · ');
+    action.classList.toggle('isFineTune', fine > 0);
+    action.classList.toggle('isAiming', !!status && status.aimingSlot > 0);
+    fineTune.classList.toggle('isOn', fine > 0);
+    fineTune.textContent = fine > 0 ? `微调 ${fine.toFixed(2)}s` : '微调';
   };
 
   const pushHits = (hits: CollisionHit[]): void => {

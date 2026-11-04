@@ -62,6 +62,10 @@ export function createBallView(ball: BallBody): BallView {
       body.circle(0, 0, BALL_RADIUS + 0.08);
       body.stroke({ color: 0xffe08a, width: 0.055, alpha: 0.95 });
     }
+    if (next.fineTuneRemain > 0) {
+      body.circle(0, 0, BALL_RADIUS + 0.16);
+      body.stroke({ color: 0x7ee8ff, width: 0.05, alpha: 0.9 });
+    }
 
     hpBar.clear();
     drawHpBar(hpBar, next.hp, next.maxHp);

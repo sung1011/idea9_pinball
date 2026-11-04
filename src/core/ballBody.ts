@@ -1,4 +1,4 @@
-import { ACTIVE_RAM_WINDOW, BALL_RADIUS, MAX_HP } from './constants';
+import { ACTIVE_RAM_WINDOW, BALL_RADIUS, FINE_TUNE_WINDOW, MAX_HP } from './constants';
 
 let nextBallId = 1;
 
@@ -17,6 +17,8 @@ export type BallBody = {
   maxHp: number;
   /** 主动撞窗口剩余秒数；>0 时碰撞按主动撞阈值结算 */
   activeRamRemain: number;
+  /** 碰撞后微调窗口剩余秒数；窗内用 Aim 拧速度方向 */
+  fineTuneRemain: number;
 };
 
 export function createBallBody(init: {
@@ -46,6 +48,7 @@ export function createBallBody(init: {
     hp: init.hp ?? MAX_HP,
     maxHp: MAX_HP,
     activeRamRemain: 0,
+    fineTuneRemain: 0,
   };
 }
 
@@ -59,4 +62,16 @@ export function tickActiveRam(ball: BallBody, dt: number): void {
     return;
   }
   ball.activeRamRemain = Math.max(0, ball.activeRamRemain - dt);
+}
+
+export function openFineTune(ball: BallBody): void {
+  ball.fineTuneRemain = FINE_TUNE_WINDOW;
+}
+
+export function tickFineTune(ball: BallBody, dt: number): void {
+  if (ball.fineTuneRemain <= 0) {
+    ball.fineTuneRemain = 0;
+    return;
+  }
+  ball.fineTuneRemain = Math.max(0, ball.fineTuneRemain - dt);
 }

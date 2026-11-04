@@ -9,7 +9,7 @@ function stepUntilHit(
 ): number {
   let count = 0;
   for (let i = 0; i < frames; i += 1) {
-    count += stepPhysics(balls, 1 / 60).length;
+    count += stepPhysics(balls, 1 / 60).hits.length;
   }
   return count;
 }

@@ -3,7 +3,13 @@ import { createBallBody } from './core/ballBody';
 import { MAP_HEIGHT, MAP_WIDTH } from './core/constants';
 import { stepPhysics } from './core/physicsStep';
 import { verifyM2 } from './core/verifyM2';
+import { verifyM3 } from './core/verifyM3';
 import { bindDebugVelocity } from './debug/debugVelocity';
+import { createActionBus } from './input/actionBus';
+import { bindPcInput } from './input/pcInput';
+import { createPlayerControl } from './input/playerControl';
+import { createTouchPad } from './input/touchPad';
+import { createAimPreview } from './render/aimPreview';
 import { createArenaView } from './render/arenaView';
 import { createBallView } from './render/ballView';
 import { applyWorldTransform, fitWorldToScreen, type WorldTransform } from './render/worldTransform';
@@ -23,12 +29,13 @@ function mountDebugHint(host: HTMLElement): void {
   const hint = document.createElement('div');
   hint.className = 'debugHint';
   hint.textContent =
-    '调试：点击/方向键/WASD/空格=满速+0.25s主动撞窗；C正面对撞 Z背后 X侧面 V轻蹭 R重置';
+    '红球：1–4/QWE 瞄，再按同键或左键放，右键/Esc/点空白取消。调试 C正对 Z背后 X侧面 V轻蹭 R重置';
   host.appendChild(hint);
 }
 
 async function boot(): Promise<void> {
   verifyM2();
+  verifyM3();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -50,10 +57,13 @@ async function boot(): Promise<void> {
   world.addChild(createArenaView());
 
   const balls = createPlaceholderBalls();
+  const player = balls[0];
   const views = balls.map((ball) => createBallView(ball));
   for (const view of views) {
     world.addChild(view.root);
   }
+  const aimPreview = createAimPreview();
+  world.addChild(aimPreview.root);
   app.stage.addChild(world);
 
   let transform: WorldTransform = fitWorldToScreen(
@@ -81,17 +91,38 @@ async function boot(): Promise<void> {
   const hpHud = createHpHud(host);
   hpHud.sync(balls);
 
-  bindDebugVelocity({
+  const bus = createActionBus();
+  const control = createPlayerControl();
+  const touchPad = createTouchPad(host, bus);
+  bindPcInput({
     canvas: app.canvas,
     getTransform: () => transform,
+    bus,
+  });
+  bindDebugVelocity({
     balls,
-    onReset: () => hpHud.resetLog(),
+    onReset: () => {
+      control.reset();
+      bus.reset();
+      hpHud.resetLog();
+    },
   });
 
   app.ticker.add((ticker) => {
-    const hits = stepPhysics(balls, ticker.deltaMS / 1000);
-    hpHud.pushHits(hits);
-    hpHud.sync(balls);
+    const dt = ticker.deltaMS / 1000;
+    const sample = bus.sample(player.x, player.y);
+    control.tick(player, sample, dt);
+    const step = stepPhysics(balls, dt);
+    const aimingSlot = control.getAimingSlot();
+    const skillCd = control.getSkillCd();
+    hpHud.pushHits(step.hits);
+    hpHud.sync(balls, { aimingSlot, skillCd });
+    touchPad.sync({
+      aimingSlot,
+      skillCd,
+      fineTuneOn: player.fineTuneRemain > 0,
+    });
+    aimPreview.sync(player, aimingSlot, sample);
     for (let i = 0; i < balls.length; i += 1) {
       views[i].sync(balls[i]);
     }

@@ -81,3 +81,15 @@ export const KNOCKBACK_FEEL_CAP = 2.5;
 
 /** 刚放位移 / 调试冲刺后的主动撞窗口（秒） */
 export const ACTIVE_RAM_WINDOW = 0.25;
+
+/** 技能释放 stub 冲量（格/秒）；受 SPEED_CAP 盖帽 */
+export const SKILL_IMPULSE = 3;
+
+/** 技能短 CD，防连点（秒） */
+export const SKILL_STUB_CD = 0.4;
+
+/** 任意碰撞（含轻蹭）后的微调窗口（秒） */
+export const FINE_TUNE_WINDOW = 0.3;
+
+/** 微调：把速度方向拧向瞄准，约 90°/s */
+export const FINE_TUNE_TURN_RAD_PER_SEC = Math.PI / 2;

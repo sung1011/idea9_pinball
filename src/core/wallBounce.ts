@@ -17,22 +17,23 @@ function hypot2(x: number, y: number): number {
   return Math.hypot(x, y);
 }
 
-/** 沿指向场地内部的法线反射速度。 */
-function bounceAlongInwardNormal(ball: BallBody, nx: number, ny: number): void {
+/** 沿指向场地内部的法线反射速度；发生反弹时返回 true。 */
+function bounceAlongInwardNormal(ball: BallBody, nx: number, ny: number): boolean {
   const vn = ball.vx * nx + ball.vy * ny;
   if (vn >= 0) {
-    return;
+    return false;
   }
   const scale = 1 + WALL_RESTITUTION;
   ball.vx -= scale * vn * nx;
   ball.vy -= scale * vn * ny;
+  return true;
 }
 
 /**
  * 把圆心约束进「场地圆角矩形内缩球半径」的可玩区，并在穿墙时反弹。
  * 内缩后角半径 = 场地角半径 − 球半径。
  */
-export function resolveArenaWall(ball: BallBody): void {
+export function resolveArenaWall(ball: BallBody): boolean {
   const minX = BALL_RADIUS;
   const maxX = MAP_WIDTH - BALL_RADIUS;
   const minY = BALL_RADIUS;
@@ -90,13 +91,13 @@ export function resolveArenaWall(ball: BallBody): void {
   }
 
   if (!hit) {
-    return;
+    return false;
   }
   const nlen = hypot2(nx, ny);
   if (nlen < EPS) {
-    return;
+    return false;
   }
-  bounceAlongInwardNormal(ball, nx / nlen, ny / nlen);
+  return bounceAlongInwardNormal(ball, nx / nlen, ny / nlen);
 }
 
 /**
@@ -105,7 +106,7 @@ export function resolveArenaWall(ball: BallBody): void {
 export function resolvePillarWall(
   ball: BallBody,
   pillar: { readonly x: number; readonly y: number },
-): void {
+): boolean {
   const halfLen = (PILLAR_WIDTH - PILLAR_HEIGHT) / 2;
   const closestX = Math.min(pillar.x + halfLen, Math.max(pillar.x - halfLen, ball.x));
   const closestY = pillar.y;
@@ -115,7 +116,7 @@ export function resolvePillarWall(
   const minDist = BALL_RADIUS + PILLAR_HEIGHT / 2;
 
   if (dist >= minDist) {
-    return;
+    return false;
   }
 
   let nx: number;
@@ -131,13 +132,14 @@ export function resolvePillarWall(
 
   ball.x = closestX + nx * minDist;
   ball.y = closestY + ny * minDist;
-  bounceAlongInwardNormal(ball, nx, ny);
+  return bounceAlongInwardNormal(ball, nx, ny);
 }
 
-export function resolveArenaObstacles(ball: BallBody): void {
-  resolveArenaWall(ball);
-  resolvePillarWall(ball, LEFT_PILLAR);
-  resolvePillarWall(ball, RIGHT_PILLAR);
+export function resolveArenaObstacles(ball: BallBody): boolean {
+  const wall = resolveArenaWall(ball);
+  const left = resolvePillarWall(ball, LEFT_PILLAR);
+  const right = resolvePillarWall(ball, RIGHT_PILLAR);
+  return wall || left || right;
 }
 
 export type BallOverlap = {
