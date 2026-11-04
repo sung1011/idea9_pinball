@@ -22,17 +22,10 @@ import { createHelpCard } from './ui/helpCard';
 import { createHpHud } from './ui/hpHud';
 import { createMatchHud } from './ui/matchHud';
 import { createResultPanel } from './ui/resultPanel';
+import { createSettingsPanel } from './ui/settingsPanel';
 import './style.css';
 
 const VIEW_PADDING_PX = 32;
-
-function mountDebugHint(host: HTMLElement): void {
-  const hint = document.createElement('div');
-  hint.className = 'debugHint';
-  hint.textContent =
-    '钩刺：1勾 2捅 3推 4急停 · 点地纠偏 · 同键/左键释放。R重开  F/G±10分  T跳30s  Y时钟1s  ·  Z背后×1.35  X侧面×0.7  C正面×1.0  V轻蹭';
-  host.appendChild(hint);
-}
 
 async function boot(): Promise<void> {
   verifyM2();
@@ -55,7 +48,6 @@ async function boot(): Promise<void> {
     resolution: Math.min(window.devicePixelRatio || 1, 2),
   });
   host.appendChild(app.canvas);
-  mountDebugHint(host);
 
   const world = new Container();
   const arena = createArenaView();
@@ -97,7 +89,6 @@ async function boot(): Promise<void> {
 
   const hpHud = createHpHud(host);
   const matchHud = createMatchHud(host);
-  createHelpCard(host);
   hpHud.sync(balls);
   matchHud.sync(match.snapshot(), balls);
 
@@ -123,17 +114,48 @@ async function boot(): Promise<void> {
   const resultPanel = createResultPanel(host, restart);
   resultPanel.sync(match.snapshot());
 
-  bindDebugVelocity({
+  const onPairDebug = (): void => {
+    control.reset();
+    for (const bot of bots) {
+      bot.reset();
+    }
+  };
+
+  let settingsIsGmOn = (): boolean => true;
+  let settingsClose = (): void => {};
+  const debug = bindDebugVelocity({
     balls,
     onReset: restart,
-    onPairDebug: () => {
-      control.reset();
-      for (const bot of bots) {
-        bot.reset();
-      }
+    onPairDebug,
+    isGmOn: () => settingsIsGmOn(),
+  });
+  bindDebugMatch(match, { isGmOn: () => settingsIsGmOn() });
+
+  const help = createHelpCard(host, { onOpen: () => settingsClose() });
+  const settings = createSettingsPanel(host, {
+    onOpen: () => help.close(),
+    onRestart: () => {
+      restart();
+      settings.close();
+    },
+    onCollision: (kind) => {
+      debug.runCollision(kind);
+    },
+    onScore: (team, points) => {
+      match.debugAddScore(team, points);
+    },
+    onAdvance: (sec) => {
+      match.debugAdvance(sec);
+    },
+    onJumpClock: (sec) => {
+      match.debugJumpClock(sec);
+    },
+    onForceRespawn: () => {
+      match.debugForceRespawn();
     },
   });
-  bindDebugMatch(match);
+  settingsIsGmOn = () => settings.isGmOn();
+  settingsClose = settings.close;
 
   app.ticker.add((ticker) => {
     const dt = ticker.deltaMS / 1000;

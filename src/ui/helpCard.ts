@@ -2,6 +2,10 @@ export type HelpCard = {
   close: () => void;
 };
 
+export type HelpCardOpts = {
+  onOpen?: () => void;
+};
+
 function addBlock(host: HTMLElement, title: string, lines: readonly string[]): void {
   const block = document.createElement('section');
   block.className = 'helpCardBlock';
@@ -17,8 +21,8 @@ function addBlock(host: HTMLElement, title: string, lines: readonly string[]): v
   host.appendChild(block);
 }
 
-/** 右上角 `?`：点击开关；点空白或关闭钮收起。 */
-export function createHelpCard(host: HTMLElement): HelpCard {
+/** 右上角 `?`：点击开关；点空白或关闭钮收起。与齿轮设置分开。 */
+export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard {
   const fab = document.createElement('button');
   fab.type = 'button';
   fab.className = 'helpFab';
@@ -81,7 +85,11 @@ export function createHelpCard(host: HTMLElement): HelpCard {
   fab.addEventListener('click', (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
-    setOpen(!overlay.classList.contains('isOn'));
+    const next = !overlay.classList.contains('isOn');
+    if (next) {
+      opts?.onOpen?.();
+    }
+    setOpen(next);
   });
   closeBtn.addEventListener('click', (ev) => {
     ev.preventDefault();

@@ -622,11 +622,18 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
       if (phase === 'result') {
         return;
       }
+      if (points < 0) {
+        const current = team === 'red' ? redScore : blueScore;
+        points = Math.max(points, -current);
+      }
+      if (points === 0) {
+        return;
+      }
       addScore(team, points, {
         kind: 'score',
         team,
         points,
-        text: `调试 ${team === 'red' ? '红' : '蓝'} +${points}`,
+        text: `调试 ${team === 'red' ? '红' : '蓝'} ${points > 0 ? '+' : ''}${points}`,
       });
       tryFinishByScore();
     },
@@ -643,6 +650,20 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
         return;
       }
       timeLeft = Math.max(0.05, sec);
+    },
+    debugForceRespawn(): number {
+      let n = 0;
+      for (const ball of balls) {
+        if (ball.inPlay) {
+          continue;
+        }
+        respawnBall(ball);
+        n += 1;
+      }
+      if (n > 0) {
+        pushEvent({ kind: 'phase', text: `调试 立即回场 ×${n}` });
+      }
+      return n;
     },
   };
 }

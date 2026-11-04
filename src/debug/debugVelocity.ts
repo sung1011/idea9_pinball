@@ -1,8 +1,17 @@
 import { openActiveRam, type BallBody } from '../core/ballBody';
 import { SPEED_CAP } from '../core/constants';
 
+export type CollisionTestKind = 'back' | 'side' | 'front' | 'graze';
+
 export type DebugVelocityHandle = {
-  getTargetIndex: () => number;
+  runCollision: (kind: CollisionTestKind) => boolean;
+};
+
+const KEY_TO_KIND: Record<string, CollisionTestKind> = {
+  z: 'back',
+  x: 'side',
+  c: 'front',
+  v: 'graze',
 };
 
 function setFacing(ball: BallBody, dx: number, dy: number): void {
@@ -46,69 +55,75 @@ function debugPair(balls: BallBody[]): [BallBody, BallBody] | null {
   return a && b ? [a, b] : null;
 }
 
-/** 调试：Z 背后×1.35 / X 侧面×0.7 / C 正面×1.0 / V 轻蹭；R 只重开。点击 / WASD / 方向键不再给速。 */
+/** 碰撞测：Z 背后×1.35 / X 侧面×0.7 / C 正面×1.0 / V 轻蹭。双方在场才生效。 */
+export function applyCollisionTest(
+  balls: readonly BallBody[],
+  kind: CollisionTestKind,
+  onPairDebug?: () => void,
+): boolean {
+  const pair = debugPair(balls as BallBody[]);
+  if (!pair || !pair[0].inPlay || !pair[1].inPlay) {
+    return false;
+  }
+  onPairDebug?.();
+  if (kind === 'front') {
+    placeBall(pair[0], 8.7, 6, 1, 0);
+    placeBall(pair[1], 11.3, 6, -1, 0);
+    impart(pair[0], 1, 0);
+    impart(pair[1], -1, 0);
+    return true;
+  }
+  if (kind === 'back') {
+    placeBall(pair[0], 8.7, 6, 1, 0);
+    placeBall(pair[1], 11.3, 6, 1, 0);
+    impart(pair[0], 1, 0);
+    return true;
+  }
+  if (kind === 'side') {
+    placeBall(pair[0], 10, 5.15, 0, 1);
+    placeBall(pair[1], 10, 6.85, 1, 0);
+    impart(pair[0], 0, 1);
+    return true;
+  }
+  placeBall(pair[0], 9.5, 6, 1, 0);
+  placeBall(pair[1], 10.35, 6.5, 1, 0);
+  impart(pair[0], 1, 0, 2.5, false);
+  impart(pair[1], 1, 0, 2.5, false);
+  return true;
+}
+
+/** 调试：Z/X/C/V 碰撞测（GM 开时）；R 只重开，正式也可用。 */
 export function bindDebugVelocity(opts: {
   balls: BallBody[];
   onReset?: () => void;
   onPairDebug?: () => void;
+  isGmOn?: () => boolean;
 }): DebugVelocityHandle {
+  const runCollision = (kind: CollisionTestKind): boolean =>
+    applyCollisionTest(opts.balls, kind, opts.onPairDebug);
+
   const onKey = (ev: KeyboardEvent): void => {
     if (ev.repeat) {
       return;
     }
     const key = ev.key.toLowerCase();
-    const pair = debugPair(opts.balls);
-    if (!pair) {
-      return;
-    }
-    if (key === 'c' || key === 'z' || key === 'x' || key === 'v') {
-      if (!pair[0].inPlay || !pair[1].inPlay) {
-        return;
-      }
-    }
-    if (key === 'c') {
-      ev.preventDefault();
-      opts.onPairDebug?.();
-      placeBall(pair[0], 8.7, 6, 1, 0);
-      placeBall(pair[1], 11.3, 6, -1, 0);
-      impart(pair[0], 1, 0);
-      impart(pair[1], -1, 0);
-      return;
-    }
-    if (key === 'z') {
-      ev.preventDefault();
-      opts.onPairDebug?.();
-      placeBall(pair[0], 8.7, 6, 1, 0);
-      placeBall(pair[1], 11.3, 6, 1, 0);
-      impart(pair[0], 1, 0);
-      return;
-    }
-    if (key === 'x') {
-      ev.preventDefault();
-      opts.onPairDebug?.();
-      placeBall(pair[0], 10, 5.15, 0, 1);
-      placeBall(pair[1], 10, 6.85, 1, 0);
-      impart(pair[0], 0, 1);
-      return;
-    }
-    if (key === 'v') {
-      ev.preventDefault();
-      opts.onPairDebug?.();
-      placeBall(pair[0], 9.5, 6, 1, 0);
-      placeBall(pair[1], 10.35, 6.5, 1, 0);
-      impart(pair[0], 1, 0, 2.5, false);
-      impart(pair[1], 1, 0, 2.5, false);
-      return;
-    }
     if (key === 'r') {
       ev.preventDefault();
       opts.onReset?.();
+      return;
     }
+    if (!(opts.isGmOn?.() ?? true)) {
+      return;
+    }
+    const kind = KEY_TO_KIND[key];
+    if (!kind) {
+      return;
+    }
+    ev.preventDefault();
+    runCollision(kind);
   };
 
   window.addEventListener('keydown', onKey);
 
-  return {
-    getTargetIndex: () => 0,
-  };
+  return { runCollision };
 }

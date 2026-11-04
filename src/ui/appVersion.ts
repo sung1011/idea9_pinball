@@ -1,0 +1,15 @@
+export type ChangeLogItem = {
+  title: string;
+};
+
+export const APP_VERSION = {
+  version: __APP_VERSION__,
+  sha: __GIT_SHA__,
+};
+
+export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '设置面板：常规 / 版本 / GM；R 正式可重开；GM 默认开' },
+  { title: '领地文案、右上角 ? 说明卡、局结束结算' },
+  { title: '钩刺四技能；击破 5s 回场' },
+  { title: '点地纠偏、无左摇杆' },
+];
