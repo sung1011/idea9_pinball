@@ -18,8 +18,10 @@ import { createAimPreview } from './render/aimPreview';
 import { createArenaView } from './render/arenaView';
 import { createBallView } from './render/ballView';
 import { applyWorldTransform, fitWorldToScreen, type WorldTransform } from './render/worldTransform';
+import { createHelpCard } from './ui/helpCard';
 import { createHpHud } from './ui/hpHud';
 import { createMatchHud } from './ui/matchHud';
+import { createResultPanel } from './ui/resultPanel';
 import './style.css';
 
 const VIEW_PADDING_PX = 32;
@@ -95,6 +97,7 @@ async function boot(): Promise<void> {
 
   const hpHud = createHpHud(host);
   const matchHud = createMatchHud(host);
+  createHelpCard(host);
   hpHud.sync(balls);
   matchHud.sync(match.snapshot(), balls);
 
@@ -116,6 +119,9 @@ async function boot(): Promise<void> {
       bot.reset();
     }
   };
+
+  const resultPanel = createResultPanel(host, restart);
+  resultPanel.sync(match.snapshot());
 
   bindDebugVelocity({
     balls,
@@ -155,6 +161,7 @@ async function boot(): Promise<void> {
     }
     hpHud.sync(balls, { aimingSlot, skillCds, windup, respawns: next.respawns });
     matchHud.sync(next, balls);
+    resultPanel.sync(next);
     arena.syncHold(next.midpoint);
     touchPad.sync({
       aimingSlot,

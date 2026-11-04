@@ -30,12 +30,12 @@ function formatClock(snap: MatchSnapshot): string {
 
 function holdText(hold: MatchSnapshot['midpoint']): string {
   if (hold === 'red') {
-    return '中点 红';
+    return '领地 红';
   }
   if (hold === 'blue') {
-    return '中点 蓝';
+    return '领地 蓝';
   }
-  return '中点 争夺';
+  return '领地 争夺';
 }
 
 export function createMatchHud(host: HTMLElement): MatchHud {
@@ -63,10 +63,7 @@ export function createMatchHud(host: HTMLElement): MatchHud {
   const toast = document.createElement('div');
   toast.className = 'matchHudToast';
 
-  const result = document.createElement('div');
-  result.className = 'matchHudResult';
-
-  root.append(score, meta, toast, result);
+  root.append(score, meta, toast);
   host.appendChild(root);
 
   return {
@@ -91,15 +88,6 @@ export function createMatchHud(host: HTMLElement): MatchHud {
         (event) => event.kind === 'knockout' || event.kind === 'assist' || event.kind === 'phase',
       );
       toast.textContent = tip?.text ?? '';
-
-      if (snap.phase === 'result') {
-        const who = snap.winner === 'red' ? '红方胜' : snap.winner === 'blue' ? '蓝方胜' : '结束';
-        result.textContent = `${who}  ${snap.redScore}:${snap.blueScore}  ·  R 重开`;
-        result.classList.add('isOn');
-      } else {
-        result.textContent = '';
-        result.classList.remove('isOn');
-      }
     },
   };
 }

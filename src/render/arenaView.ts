@@ -89,7 +89,7 @@ function drawControlPoint(): { group: Container; syncHold: (hold: MidpointHold) 
   const labelWorldHeight = 0.55;
   const labelFontPx = 64;
   const label = new Text({
-    text: '中点',
+    text: '领地',
     style: {
       fontFamily: '"WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif',
       fontSize: labelFontPx,
@@ -112,7 +112,7 @@ export type ArenaView = {
   syncHold: (hold: MidpointHold) => void;
 };
 
-/** 俯视场地：圆角矩形 + 中点圈 + 左右矮柱 + 半场出生点。 */
+/** 俯视场地：圆角矩形 + 领地圈 + 左右矮柱 + 半场出生点。 */
 export function createArenaView(): ArenaView {
   const root = new Container();
 

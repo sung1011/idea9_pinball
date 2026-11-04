@@ -20,11 +20,11 @@ canvas {
 
 .debugHint {
   position: absolute;
-  right: 12px;
-  top: 12px;
+  right: 56px;
+  top: 16px;
   left: auto;
   bottom: auto;
-  max-width: min(360px, 42vw);
+  max-width: min(320px, 38vw);
   color: #9af6f6;
   font: 12px/1.4 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   opacity: 0.85;
@@ -105,19 +105,190 @@ canvas {
   font-size: 13px;
 }
 
-.matchHudResult {
-  display: none;
-  margin-top: 8px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: #041616cc;
-  border: 1px solid #9af6f688;
+.helpFab {
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #9af6f6aa;
+  background: #0f3f3fcc;
   color: #e8ffff;
-  font-weight: 700;
+  font: 700 20px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  cursor: pointer;
+  z-index: 22;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.matchHudResult.isOn {
-  display: inline-block;
+.helpFab.isOn,
+.helpFab:hover {
+  border-color: #ffe08a;
+  color: #ffe08a;
+}
+
+.helpOverlay,
+.resultOverlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: #04161699;
+  z-index: 20;
+  pointer-events: auto;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.helpOverlay.isOn,
+.resultOverlay.isOn {
+  display: flex;
+}
+
+.resultOverlay {
+  z-index: 24;
+}
+
+.helpCard,
+.resultPanel {
+  position: relative;
+  width: min(420px, 92vw);
+  max-height: min(86vh, 640px);
+  overflow: auto;
+  padding: 18px 20px 16px;
+  border-radius: 16px;
+  background: #0c2c2cee;
+  border: 1px solid #9af6f655;
+  color: #e8ffff;
+  font: 14px/1.5 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  box-shadow: 0 12px 40px #041616aa;
+}
+
+.helpCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.helpCard h2,
+.resultPanelTitle {
+  margin: 0;
+  font-size: 22px;
+}
+
+.helpCardClose,
+.resultPanelClose {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: #163838;
+  color: #e8ffff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.resultPanelClose {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+}
+
+.helpCardBlock {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #9af6f633;
+}
+
+.helpCardBlock h3 {
+  margin: 0 0 6px;
+  color: #9af6f6;
+  font-size: 15px;
+}
+
+.helpCardBlock ul {
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+.helpCardBlock li + li {
+  margin-top: 4px;
+}
+
+.resultPanelTitle {
+  text-align: center;
+  padding-right: 28px;
+}
+
+.resultPanelTitle.isWin {
+  color: #9af6f6;
+}
+
+.resultPanelTitle.isLose {
+  color: #f68a8a;
+}
+
+.resultPanelReason,
+.resultPanelTime {
+  margin: 6px 0 0;
+  text-align: center;
+  color: #9af6f6;
+}
+
+.resultPanelScores {
+  margin-top: 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.resultPanelRow {
+  display: grid;
+  grid-template-columns: 1fr 64px 64px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.resultPanelRow.isHead {
+  color: #9af6f6;
+  font-size: 13px;
+}
+
+.resultPanelRow.isTotal {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.resultPanelRed {
+  color: #f68a8a;
+  text-align: right;
+}
+
+.resultPanelBlue {
+  color: #8ab4f6;
+  text-align: right;
+}
+
+.resultPanelAgain {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px 12px;
+  border: 1px solid #9af6f688;
+  border-radius: 10px;
+  background: #164848;
+  color: #e8ffff;
+  font: 700 16px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.resultPanelAgain:hover {
+  border-color: #ffe08a;
+  color: #ffe08a;
 }
 
 .hpHud {
@@ -278,8 +449,15 @@ canvas {
 
 @media (max-height: 430px) {
   .debugHint {
-    max-width: min(280px, 36vw);
+    right: 50px;
+    max-width: min(260px, 34vw);
     font-size: 11px;
+  }
+
+  .helpFab {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
   }
 
   .hpHud {

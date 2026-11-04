@@ -44,6 +44,12 @@ export type MatchSnapshot = {
   suddenDeath: boolean;
   redScore: number;
   blueScore: number;
+  redBreakScore: number;
+  blueBreakScore: number;
+  redHoldScore: number;
+  blueHoldScore: number;
+  elapsedSec: number;
+  finishReason: string;
   midpoint: MidpointHold;
   winner: MatchWinner;
   events: MatchEvent[];
@@ -203,6 +209,12 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   let suddenDeath = false;
   let redScore = 0;
   let blueScore = 0;
+  let redBreakScore = 0;
+  let blueBreakScore = 0;
+  let redHoldScore = 0;
+  let blueHoldScore = 0;
+  let elapsedSec = 0;
+  let finishReason = '';
   let hold: MidpointHold = 'none';
   let winner: MatchWinner = null;
   let now = 0;
@@ -220,6 +232,24 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     }
   };
 
+  const addBreakdown = (team: TeamId, points: number, kind: MatchEvent['kind']): void => {
+    if (kind === 'knockout' || kind === 'assist') {
+      if (team === 'red') {
+        redBreakScore += points;
+      } else {
+        blueBreakScore += points;
+      }
+      return;
+    }
+    if (kind === 'midpoint') {
+      if (team === 'red') {
+        redHoldScore += points;
+      } else {
+        blueHoldScore += points;
+      }
+    }
+  };
+
   const addScore = (team: TeamId, points: number, event: MatchEvent): void => {
     if (points === 0) {
       return;
@@ -229,6 +259,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     } else {
       blueScore += points;
     }
+    addBreakdown(team, points, event.kind);
     pushEvent(event);
   };
 
@@ -251,6 +282,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   const finish = (team: TeamId, reason: string): void => {
     phase = 'result';
     winner = team;
+    finishReason = reason;
     timeLeft = 0;
     suddenDeath = false;
     for (const ball of balls) {
@@ -452,7 +484,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
         kind: 'midpoint',
         team: hold,
         points: MIDPOINT_SCORE_PER_SEC,
-        text: `中点 ${hold === 'red' ? '红' : '蓝'} +${MIDPOINT_SCORE_PER_SEC}`,
+        text: `领地 ${hold === 'red' ? '红' : '蓝'} +${MIDPOINT_SCORE_PER_SEC}`,
       });
       if (tryFinishByScore()) {
         return;
@@ -477,7 +509,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     timeLeft = overtimeSec;
     suddenDeath = false;
     midpointAcc = 0;
-    pushEvent({ kind: 'phase', text: '加时 30 秒 · 只计中点分' });
+    pushEvent({ kind: 'phase', text: '加时 30 秒 · 只计领地分' });
   };
 
   const enterSuddenDeath = (): void => {
@@ -525,6 +557,12 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     suddenDeath = false;
     redScore = 0;
     blueScore = 0;
+    redBreakScore = 0;
+    blueBreakScore = 0;
+    redHoldScore = 0;
+    blueHoldScore = 0;
+    elapsedSec = 0;
+    finishReason = '';
     hold = 'none';
     winner = null;
     now = 0;
@@ -549,6 +587,9 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
       const clockDt = Math.max(0, dt) * Math.max(0, clockScale);
       const before = recent.length;
       now += clockDt;
+      if (phase === 'playing' || phase === 'overtime') {
+        elapsedSec += clockDt;
+      }
       processKnockouts(hits);
       tickRespawns(clockDt);
       tickMidpoint(clockDt);
@@ -565,6 +606,12 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
         suddenDeath,
         redScore,
         blueScore,
+        redBreakScore,
+        blueBreakScore,
+        redHoldScore,
+        blueHoldScore,
+        elapsedSec,
+        finishReason,
         midpoint: hold,
         winner,
         events: [...recent],

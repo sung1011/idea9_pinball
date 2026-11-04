@@ -46,11 +46,11 @@ function assert(cond: boolean, message: string): void {
   }
 }
 
-/** 一局规则：击破/助攻、回场无敌、中点、加时与下次击破。 */
+/** 一局规则：击破/助攻、回场无敌、领地、加时与下次击破。 */
 export function verifyM4(): void {
-  assert(CONTROL_POINT.radius === 2.5, 'M4：中点半径应为 2.5');
-  assert(CONTROL_POINT.x === 10 && CONTROL_POINT.y === 6, 'M4：中点应在地图中心');
-  assert(midpointHold(2, 1) === 'red' && midpointHold(1, 1) === 'none', 'M4：中点须严格多数');
+  assert(CONTROL_POINT.radius === 2.5, 'M4：领地半径应为 2.5');
+  assert(CONTROL_POINT.x === 10 && CONTROL_POINT.y === 6, 'M4：领地应在地图中心');
+  assert(midpointHold(2, 1) === 'red' && midpointHold(1, 1) === 'none', 'M4：领地须严格多数');
   const roster = createMatchRoster();
   assert(roster.length === 3 && roster[0].team === 'red' && roster[2].team === 'blue', 'M4：默认 1 红 vs 2 蓝 bot');
 
@@ -104,6 +104,7 @@ export function verifyM4(): void {
   assistMatch.tick(0, [hit(blue, redA, 8), hit(blue, redB, 20)]);
   let snap = assistMatch.snapshot();
   assert(snap.redScore === KNOCKOUT_SCORE + ASSIST_SCORE, `M4：击破+助攻应为 20，实得 ${snap.redScore}`);
+  assert(snap.redBreakScore === KNOCKOUT_SCORE + ASSIST_SCORE && snap.redHoldScore === 0, 'M4：击破分应与领地分拆开');
   assert(!blue.inPlay, 'M4：击破后应离场');
   assert(Math.abs((snap.respawns[blue.id] ?? 0) - RESPAWN_SEC) < 1e-6, 'M4：离场后回场应为 5s');
 
@@ -185,13 +186,16 @@ export function verifyM4(): void {
   midRed.invincibleRemain = 0;
   midBlue.invincibleRemain = 0;
   midMatch.tick(1, []);
+  assert(Math.abs(midMatch.snapshot().elapsedSec - 1) < 1e-6, 'M4：开战应用时应累加');
   assert(midMatch.snapshot().redScore === MIDPOINT_SCORE_PER_SEC, 'M4：区内人多一方每秒 +2');
-  assert(midMatch.snapshot().midpoint === 'red', 'M4：HUD 中点归属应为红');
+  assert(midMatch.snapshot().redHoldScore === MIDPOINT_SCORE_PER_SEC, 'M4：领地分应计入分项');
+  assert(midMatch.snapshot().redBreakScore === 0, 'M4：领地分不应记进击破');
+  assert(midMatch.snapshot().midpoint === 'red', 'M4：HUD 领地归属应为红');
 
   midBlue.x = CONTROL_POINT.x;
   midBlue.y = CONTROL_POINT.y;
   midMatch.tick(1, []);
-  assert(midMatch.snapshot().redScore === MIDPOINT_SCORE_PER_SEC, 'M4：人数相等中点不得分');
+  assert(midMatch.snapshot().redScore === MIDPOINT_SCORE_PER_SEC, 'M4：人数相等领地不得分');
 
   const deadRed = createBallBody({
     x: CONTROL_POINT.x,
@@ -214,13 +218,16 @@ export function verifyM4(): void {
   sameFrame.tick(1, [hit(deadRed, liveBlue)]);
   const sameSnap = sameFrame.snapshot();
   assert(!deadRed.inPlay, 'M4：当帧击破应离场');
-  assert(sameSnap.blueScore === KNOCKOUT_SCORE + MIDPOINT_SCORE_PER_SEC, 'M4：离场当帧不占中点人');
+  assert(sameSnap.blueScore === KNOCKOUT_SCORE + MIDPOINT_SCORE_PER_SEC, 'M4：离场当帧不占领地点人');
+  assert(sameSnap.blueBreakScore === KNOCKOUT_SCORE && sameSnap.blueHoldScore === MIDPOINT_SCORE_PER_SEC, 'M4：击破与领地分项应分开');
 
   const limitRed = createBallBody({ x: 4, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
   const limitBlue = createBallBody({ x: 16, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
   const limit = createMatchSession([limitRed, limitBlue], { countdownSec: 0, playSec: 240 });
   limit.debugAddScore('red', MATCH_SCORE_LIMIT);
-  assert(limit.snapshot().phase === 'result' && limit.snapshot().winner === 'red', 'M4：先到 100 应立即结束');
+  const limitSnap = limit.snapshot();
+  assert(limitSnap.phase === 'result' && limitSnap.winner === 'red', 'M4：先到 100 应立即结束');
+  assert(limitSnap.finishReason === '先到分', 'M4：结算应记下先到分');
 
   const timeRed = createBallBody({ x: 4, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
   const timeBlue = createBallBody({ x: 16, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
@@ -253,7 +260,8 @@ export function verifyM4(): void {
   assert(ot.snapshot().redScore === 0, 'M4：加时击破不应加分');
   assert(!otBlue.inPlay, 'M4：加时击破仍离场');
   ot.tick(1, []);
-  assert(ot.snapshot().redScore === MIDPOINT_SCORE_PER_SEC, 'M4：加时只计中点分');
+  assert(ot.snapshot().redScore === MIDPOINT_SCORE_PER_SEC, 'M4：加时只计领地分');
+  assert(ot.snapshot().redHoldScore === MIDPOINT_SCORE_PER_SEC && ot.snapshot().redBreakScore === 0, 'M4：加时领地分项应为 +2');
   assert(ot.snapshot().phase === 'result' && ot.snapshot().winner === 'red', 'M4：加时分高者胜');
 
   const sdRed = createBallBody({ x: 6, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
