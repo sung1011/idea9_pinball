@@ -30,18 +30,17 @@ export const CHAIN_TOW = {
   pullDist: 2,
 } as const;
 
+/** 扰锋 / CHAOS：身周范围沉默（orientation scramble） */
 export const CHAIN_SCRAMBLE = {
   slot: 4,
-  cd: 7,
+  cd: 15,
   windup: 0.2,
-  fanDeg: 50,
-  range: 4,
-  damage: 4,
-  turnRad: Math.PI / 2,
+  range: 5,
+  duration: 3,
 } as const;
 
-/** 对内仍是链生四槽：治疗链 / 护盾脉冲 / 勾友 / 朝向打乱 */
-export const CHAIN_SKILL_INTERNAL = ['治疗链', '护盾脉冲', '勾友', '朝向打乱'] as const;
+/** 对内仍是链生四槽：治疗链 / 护盾脉冲 / 勾友 / 范围沉默 */
+export const CHAIN_SKILL_INTERNAL = ['治疗链', '护盾脉冲', '勾友', '范围沉默'] as const;
 /** 骑士链生对外显示名 */
 export const CHAIN_SKILL_NAMES = ['愈链', '盾脉', '援勾', '扰锋'] as const;
 export const CHAIN_SKILL_SHORT = ['愈', '盾', '援', '扰'] as const;
@@ -70,12 +69,12 @@ export function chainSkillCd(slot: SkillSlot): number {
   return CHAIN_CDS[slot - 1];
 }
 
-/** 勾友是位移技；治疗 / 护盾 / 打乱不是。 */
+/** 勾友是位移技；治疗 / 护盾 / 沉默不是。 */
 export function chainIsDisplace(slot: SkillSlot): boolean {
   return slot === 3;
 }
 
-/** 瞄准预览：愈链/扰锋用扇，盾脉/援勾用搜友圆。 */
+/** 瞄准预览：愈链用扇，盾脉/援勾/扰锋用圆。 */
 export function chainAimShape(slot: SkillSlot): ChainAimShape | null {
   if (slot === 1) {
     return { kind: 'cone', halfRad: (CHAIN_HEAL.fanDeg * Math.PI) / 360, radius: CHAIN_HEAL.range };
@@ -87,11 +86,7 @@ export function chainAimShape(slot: SkillSlot): ChainAimShape | null {
     return { kind: 'circle', radius: CHAIN_TOW.range, offsetX: 0, offsetY: 0 };
   }
   if (slot === 4) {
-    return {
-      kind: 'cone',
-      halfRad: (CHAIN_SCRAMBLE.fanDeg * Math.PI) / 360,
-      radius: CHAIN_SCRAMBLE.range,
-    };
+    return { kind: 'circle', radius: CHAIN_SCRAMBLE.range, offsetX: 0, offsetY: 0 };
   }
   return null;
 }

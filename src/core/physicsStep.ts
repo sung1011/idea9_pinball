@@ -10,6 +10,7 @@ import {
   tickPin,
   tickReflect,
   tickShield,
+  tickSilence,
   tickStun,
   type BallBody,
 } from './ballBody';
@@ -164,6 +165,7 @@ export function stepPhysics(
     tickFineTune(ball, stepDt);
     tickInvincible(ball, stepDt);
     tickStun(ball, stepDt);
+    tickSilence(ball, stepDt);
     tickHeal(ball, stepDt);
     tickShield(ball, stepDt);
     tickArmor(ball, stepDt, (item) => {

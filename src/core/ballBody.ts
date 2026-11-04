@@ -54,8 +54,10 @@ export type BallBody = {
   /** 护盾脉冲剩余秒数；>0 时碰撞伤乘 shieldMul */
   shieldRemain: number;
   shieldMul: number;
-  /** 朝向打乱：打断短瞄准，施放器下帧清空 */
+  /** 打断短瞄准：施放器下帧清空 */
   aimBreak: boolean;
+  /** 沉默剩余秒数；>0 时不能进瞄/放技能，仍可滑/可撞 */
+  silenceRemain: number;
   /** 叠甲剩余秒数；>0 时碰撞伤乘 armorMul */
   armorRemain: number;
   armorMul: number;
@@ -133,6 +135,7 @@ export function createBallBody(init: {
     shieldRemain: 0,
     shieldMul: 1,
     aimBreak: false,
+    silenceRemain: 0,
     armorRemain: 0,
     armorMul: 1,
     armorBroken: false,
@@ -240,6 +243,24 @@ export function consumeAimBreak(ball: BallBody): boolean {
   }
   ball.aimBreak = false;
   return true;
+}
+
+export function applySilence(ball: BallBody, duration: number): void {
+  ball.silenceRemain = Math.max(ball.silenceRemain, duration);
+  ball.aimBreak = true;
+}
+
+export function tickSilence(ball: BallBody, dt: number): void {
+  if (ball.silenceRemain <= 0) {
+    ball.silenceRemain = 0;
+    return;
+  }
+  ball.silenceRemain = Math.max(0, ball.silenceRemain - Math.max(0, dt));
+}
+
+/** 硬直或沉默时不能进瞄 / 放技能。 */
+export function skillsBlocked(ball: BallBody): boolean {
+  return ball.stunRemain > 0 || ball.silenceRemain > 0;
 }
 
 export function applyArmor(ball: BallBody, mul: number, duration: number): void {
@@ -381,6 +402,7 @@ export function clearKitAuras(ball: BallBody): void {
   ball.shieldRemain = 0;
   ball.shieldMul = 1;
   ball.aimBreak = false;
+  ball.silenceRemain = 0;
   clearArmor(ball);
   clearReflect(ball);
   clearPin(ball);

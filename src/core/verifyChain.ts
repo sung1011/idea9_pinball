@@ -1,4 +1,4 @@
-import { applyShield, createBallBody, tickHeal, tickShield, type BallBody } from './ballBody';
+import { applyShield, createBallBody, tickHeal, tickShield, tickSilence, type BallBody } from './ballBody';
 import {
   applyCollisionCombat,
   collisionDamage,
@@ -127,19 +127,26 @@ function tickPinned(
     for (const item of roster) {
       tickHeal(item, dt);
       tickShield(item, dt);
+      tickSilence(item, dt);
     }
     left -= dt;
   }
 }
 
-/** 链生四技能：治疗 HOT、护盾减伤、勾友拉人、朝向打乱打断瞄准。 */
+/** 链生四技能：治疗 HOT、护盾减伤、勾友拉人、范围沉默打断瞄准。 */
 export function verifyChain(): void {
   resetTrapZones();
   assert(CHAIN_HEAL.cd === 10 && CHAIN_HEAL.dps === 6 && CHAIN_HEAL.duration === 4, '链生：治疗链应为 CD10 / 每秒6 / 4s');
   assert(CHAIN_HEAL.windup === 0.3 && CHAIN_HEAL.fanDeg === 40 && CHAIN_HEAL.range === 6, '链生：治疗链应为前摇0.3 / ±40° / 距6');
   assert(CHAIN_SHIELD.cd === 12 && CHAIN_SHIELD.mul === 0.45 && CHAIN_SHIELD.duration === 3.2, '链生：护盾应为 CD12 / ×0.45 / 3.2s');
   assert(CHAIN_TOW.cd === 8 && CHAIN_TOW.lowHpRatio === 0.4 && CHAIN_TOW.pullDist === 2, '链生：勾友应为 CD8 / 残血40% / 轻拉2');
-  assert(CHAIN_SCRAMBLE.cd === 7 && CHAIN_SCRAMBLE.windup === 0.2 && CHAIN_SCRAMBLE.damage === 4, '链生：打乱应为 CD7 / 前摇0.2 / 伤4');
+  assert(
+    CHAIN_SCRAMBLE.cd === 15 &&
+      CHAIN_SCRAMBLE.windup === 0.2 &&
+      CHAIN_SCRAMBLE.range === 5 &&
+      CHAIN_SCRAMBLE.duration === 3,
+    '链生：扰锋应为 CD15 / 前摇0.2 / 半径5 / 沉默3s',
+  );
 
   const [healRed, healAlly, healBlue] = redAllyBlue(8, 6, 10.5, 6, 14, 6);
   healRed.hp = 70;
@@ -231,25 +238,65 @@ export function verifyChain(): void {
   assert(pullRed.activeRamRemain === 0, '链生：残血勾友不算主动撞');
 
   resetTrapZones();
-  const [scrRed, , scrBlue] = redAllyBlue(8, 6, 6, 6, 10.5, 6);
+  const [scrRed, scrAlly, scrBlue] = redAllyBlue(8, 6, 6, 6, 10.5, 6);
+  const scrFar = createBallBody({
+    x: 16,
+    y: 6,
+    color: 0x3d7cf0,
+    label: '蓝远',
+    team: 'blue',
+    facingX: -1,
+    hero: 'hook',
+  });
+  const scrNear = createBallBody({
+    x: 8,
+    y: 9,
+    color: 0x3d7cf0,
+    label: '蓝近',
+    team: 'blue',
+    facingX: -1,
+    hero: 'hook',
+  });
   scrBlue.facingX = 1;
   scrBlue.facingY = 0;
   scrBlue.vx = 2.5;
   scrBlue.vy = 0;
+  const scrRoster = [scrRed, scrAlly, scrBlue, scrFar, scrNear];
   const scramble = createSkillCaster('chain');
   const victimAim = createSkillCaster('hook');
-  victimAim.handleInput(scrBlue, sample({ skillPress: 1, aimX: -1, aimY: 0 }), [scrRed, scrBlue]);
-  assert(victimAim.getAimingSlot() === 1, '链生：打乱前目标应在短瞄准');
-  fire(scramble, scrRed, 4, [scrRed, scrBlue]);
-  assert(scramble.getWindup()?.slot === 4, '链生：打乱应走 0.2s 前摇');
-  tickPinned(scramble, scrRed, [scrRed, scrBlue], 0.18);
-  assert(scrBlue.hp === MAX_HP, '链生：打乱前摇未结束不应出伤');
-  tickPinned(scramble, scrRed, [scrRed, scrBlue], 0.05);
-  assert(Math.abs(scrBlue.hp - (MAX_HP - CHAIN_SCRAMBLE.damage)) < 1e-6, '链生：打乱应伤 4');
-  assert(Math.abs(scrBlue.facingX) < 0.12 && scrBlue.facingY > 0.9, '链生：打乱应把朝向拧 +90°');
-  victimAim.tick(scrBlue, 1 / 60, [scrRed, scrBlue]);
-  assert(victimAim.getAimingSlot() === 0, '链生：打乱应打断短瞄准');
+  victimAim.handleInput(scrBlue, sample({ skillPress: 1, aimX: -1, aimY: 0 }), scrRoster);
+  assert(victimAim.getAimingSlot() === 1, '链生：扰锋前目标应在短瞄准');
+  fire(scramble, scrRed, 4, scrRoster);
+  assert(scramble.getWindup()?.slot === 4, '链生：扰锋应走 0.2s 前摇');
+  assert(Math.abs(scramble.getCds()[3] - CHAIN_SCRAMBLE.cd) < 1e-6, '链生：扰锋应进 15s CD');
+  tickPinned(scramble, scrRed, scrRoster, 0.18);
+  assert(scrBlue.silenceRemain === 0 && scrBlue.hp === MAX_HP, '链生：扰锋前摇未结束不应沉默');
+  tickPinned(scramble, scrRed, scrRoster, 0.05);
+  assert(scrBlue.hp === MAX_HP, '链生：扰锋不应造成伤害');
+  assert(scrBlue.facingX > 0.9 && Math.abs(scrBlue.facingY) < 0.12, '链生：扰锋不应拧朝向');
+  assert(scrBlue.stunRemain === 0, '链生：沉默不是硬直');
+  assert(scrBlue.silenceRemain > 2.9 && scrBlue.silenceRemain <= 3, '链生：半径内敌人应沉默 3s');
+  assert(scrNear.silenceRemain > 2.9, '链生：半径内另一敌人也应沉默');
+  assert(scrAlly.silenceRemain === 0, '链生：友军不受扰锋影响');
+  assert(scrFar.silenceRemain === 0, '链生：半径外敌人不应沉默');
+  victimAim.tick(scrBlue, 1 / 60, scrRoster);
+  assert(victimAim.getAimingSlot() === 0, '链生：扰锋应打断短瞄准');
   assert(!scrBlue.aimBreak, '链生：瞄准打断标记应被施放器吃掉');
+  victimAim.handleInput(scrBlue, sample({ skillPress: 1, aimX: -1, aimY: 0 }), scrRoster);
+  assert(victimAim.getAimingSlot() === 0, '链生：沉默中不能进瞄');
+  const slideX = scrBlue.x;
+  scrBlue.vx = 2.5;
+  scrBlue.vy = 0;
+  stepPhysics([scrBlue], 1 / 20);
+  assert(scrBlue.x > slideX + 0.08, '链生：沉默后仍可滑');
+  tickPinned(scramble, scrRed, scrRoster, 2.8);
+  assert(scrBlue.silenceRemain > 0, '链生：沉默约 2.9s 后仍应在');
+  victimAim.handleInput(scrBlue, sample({ skillPress: 1, aimX: -1, aimY: 0 }), scrRoster);
+  assert(victimAim.getAimingSlot() === 0, '链生：沉默未结束仍不能进瞄');
+  tickPinned(scramble, scrRed, scrRoster, 0.25);
+  assert(scrBlue.silenceRemain === 0, '链生：沉默 3s 后应结束');
+  victimAim.handleInput(scrBlue, sample({ skillPress: 1, aimX: -1, aimY: 0 }), scrRoster);
+  assert(victimAim.getAimingSlot() === 1, '链生：沉默结束后应能再进瞄');
 
   resetTrapZones();
   const hookKeep = createSkillCaster('hook');

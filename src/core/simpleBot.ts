@@ -1,4 +1,4 @@
-import type { BallBody } from './ballBody';
+import { skillsBlocked, type BallBody } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import {
   BOT_AIM_JITTER_RAD,
@@ -347,7 +347,7 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
       let sample = idleSample(aimX, aimY, pointerX, pointerY);
       const cds = caster.getCds();
       const speed = Math.hypot(bot.vx, bot.vy);
-      const canAct = wait <= 0 && !caster.isHardBusy() && bot.stunRemain <= 0;
+      const canAct = wait <= 0 && !caster.isHardBusy() && !skillsBlocked(bot);
 
       if (canAct) {
         wait = nextWait(random);

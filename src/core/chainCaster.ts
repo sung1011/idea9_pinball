@@ -1,4 +1,11 @@
-import { applyHealHot, applyShield, consumeAimBreak, type BallBody } from './ballBody';
+import {
+  applyHealHot,
+  applyShield,
+  applySilence,
+  consumeAimBreak,
+  skillsBlocked,
+  type BallBody,
+} from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import type { HeroId } from '../heroes/heroIds';
 import {
@@ -12,8 +19,7 @@ import {
 } from '../heroes/chainKit';
 import { RING_TRAP } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
-import { applySkillDamage } from './skillHits';
-import { pickFanAlly, pickFanEnemy, pickNearestAlly, unitVec } from './skillQuery';
+import { pickEnemiesInRange, pickFanAlly, pickNearestAlly, unitVec } from './skillQuery';
 import type { SkillCaster, SkillCds, WindupInfo } from './skillCaster';
 import { setFacingFrom } from './skillStub';
 import { isInEnemyTrap } from './trapZones';
@@ -39,21 +45,6 @@ function aimOf(ball: BallBody, sample: ActionSample): { x: number; y: number } {
   }
   const face = unitVec(ball.facingX, ball.facingY);
   return face ?? { x: 1, y: 0 };
-}
-
-function rotateFacing(ball: BallBody, rad: number): void {
-  const c = Math.cos(rad);
-  const s = Math.sin(rad);
-  const fx = ball.facingX * c - ball.facingY * s;
-  const fy = ball.facingX * s + ball.facingY * c;
-  const face = unitVec(fx, fy) ?? { x: 1, y: 0 };
-  ball.facingX = face.x;
-  ball.facingY = face.y;
-  const speed = Math.hypot(ball.vx, ball.vy);
-  if (speed > 1e-8) {
-    ball.vx = face.x * speed;
-    ball.vy = face.y * speed;
-  }
 }
 
 /** 链生施放：按下进瞄可无限持有；释放后才走前摇，再出效果。 */
@@ -126,33 +117,10 @@ export function createChainCaster(): SkillCaster {
     effect = { kind: 'allyFly', targetId: picked.target.id };
   };
 
-  const resolveScramble = (
-    ball: BallBody,
-    aimX: number,
-    aimY: number,
-    roster: readonly BallBody[],
-  ): CollisionHit[] => {
-    const dir = unitVec(aimX, aimY) ?? { x: ball.facingX, y: ball.facingY };
-    const picked = pickFanEnemy(
-      ball,
-      roster,
-      dir.x,
-      dir.y,
-      (CHAIN_SCRAMBLE.fanDeg * Math.PI) / 360,
-      CHAIN_SCRAMBLE.range,
-      false,
-    );
-    if (!picked) {
-      return [];
+  const resolveScramble = (ball: BallBody, roster: readonly BallBody[]): void => {
+    for (const picked of pickEnemiesInRange(ball, roster, CHAIN_SCRAMBLE.range)) {
+      applySilence(picked.target, CHAIN_SCRAMBLE.duration);
     }
-    const hits: CollisionHit[] = [];
-    const dmg = applySkillDamage(picked.target, ball, CHAIN_SCRAMBLE.damage);
-    if (dmg) {
-      hits.push(dmg);
-    }
-    rotateFacing(picked.target, CHAIN_SCRAMBLE.turnRad);
-    picked.target.aimBreak = true;
-    return hits;
   };
 
   const finishWindup = (
@@ -178,11 +146,12 @@ export function createChainCaster(): SkillCaster {
       resolveTow(ball, roster);
       return [];
     }
-    return resolveScramble(ball, aimX, aimY, roster);
+    resolveScramble(ball, roster);
+    return [];
   };
 
   const tryRelease = (ball: BallBody, sample: ActionSample, roster: readonly BallBody[]): void => {
-    if (aimingSlot === 0 || (effect && effect.kind === 'windup') || ball.stunRemain > 0) {
+    if (aimingSlot === 0 || (effect && effect.kind === 'windup') || skillsBlocked(ball)) {
       return;
     }
     const slot = aimingSlot;
@@ -217,7 +186,7 @@ export function createChainCaster(): SkillCaster {
     if (consumeAimBreak(ball)) {
       aimingSlot = 0;
     }
-    if (!ball.inPlay || ball.stunRemain > 0) {
+    if (!ball.inPlay || skillsBlocked(ball)) {
       aimingSlot = 0;
       return;
     }

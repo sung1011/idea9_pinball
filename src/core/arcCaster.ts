@@ -1,4 +1,4 @@
-import { applyEchoMark, consumeAimBreak, type BallBody } from './ballBody';
+import { applyEchoMark, consumeAimBreak, skillsBlocked, type BallBody } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import type { HeroId } from '../heroes/heroIds';
 import {
@@ -126,7 +126,7 @@ export function createArcCaster(): SkillCaster {
   };
 
   const tryRelease = (ball: BallBody, sample: ActionSample, roster: readonly BallBody[]): void => {
-    if (aimingSlot === 0 || effect || ball.stunRemain > 0 || phaseRemain > 0) {
+    if (aimingSlot === 0 || effect || skillsBlocked(ball) || phaseRemain > 0) {
       return;
     }
     const slot = aimingSlot;
@@ -164,7 +164,7 @@ export function createArcCaster(): SkillCaster {
     if (consumeAimBreak(ball)) {
       aimingSlot = 0;
     }
-    if (!ball.inPlay || ball.stunRemain > 0) {
+    if (!ball.inPlay || skillsBlocked(ball)) {
       aimingSlot = 0;
       return;
     }

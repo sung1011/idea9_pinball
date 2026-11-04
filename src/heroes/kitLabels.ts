@@ -83,7 +83,7 @@ const CHAIN_SKILL_TIPS = [
   '己与友军持续回血',
   '最近友减碰撞伤害',
   '拉自己向友或轻拉残血友',
-  '拧敌朝向并打断瞄准',
+  '身周范围沉默，敌不能放技能',
 ] as const;
 
 const NAIL_SKILL_TIPS = [
@@ -150,7 +150,7 @@ export function kitHelpSkills(hero: HeroId): string {
     return '技能 1–4：1 辉环（身周磁场） / 2 斥波 / 3 壁行 / 4 囚环（物理关死出不去）。';
   }
   if (hero === 'chain') {
-    return '技能 1–4：1 愈链（治疗链） / 2 盾脉 / 3 援勾 / 4 扰锋（朝向打乱）。';
+    return '技能 1–4：1 愈链（治疗链） / 2 盾脉 / 3 援勾 / 4 扰锋（范围沉默）。';
   }
   if (hero === 'nail') {
     return '技能 1–4：1 甲垒（叠甲） / 2 刺盾 / 3 顶冲 / 4 钉锚（定锚）。';

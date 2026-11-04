@@ -4,6 +4,7 @@ import {
   applyReflectWindow,
   consumeAimBreak,
   openActiveRam,
+  skillsBlocked,
   type BallBody,
 } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
@@ -156,7 +157,7 @@ export function createNailCaster(): SkillCaster {
   };
 
   const tryRelease = (ball: BallBody, sample: ActionSample, roster: readonly BallBody[]): void => {
-    if (aimingSlot === 0 || (effect && effect.kind === 'windup') || ball.stunRemain > 0) {
+    if (aimingSlot === 0 || (effect && effect.kind === 'windup') || skillsBlocked(ball)) {
       return;
     }
     if (effect && effect.kind === 'dash') {
@@ -194,7 +195,7 @@ export function createNailCaster(): SkillCaster {
     if (consumeAimBreak(ball)) {
       aimingSlot = 0;
     }
-    if (!ball.inPlay || ball.stunRemain > 0) {
+    if (!ball.inPlay || skillsBlocked(ball)) {
       aimingSlot = 0;
       return;
     }

@@ -45,6 +45,8 @@ export function verifySkillTip(): void {
   assert(skillTipCopy('ring', 4).name === '囚环', '技能提示：磁环 4 对外名应为囚环');
   assert(skillTipCopy('ring', 4).effect.includes('物理关死出不去'), '技能提示：囚环应写物理关死出不去');
   assert(skillTipCopy('well', 1).name === '双索', '技能提示：井绳 1 对外名应为双索');
+  assert(skillTipCopy('chain', 4).name === '扰锋', '技能提示：链生 4 对外名应为扰锋');
+  assert(skillTipCopy('chain', 4).effect.includes('沉默'), '技能提示：扰锋一行效果应为范围沉默');
 
   const delayedHost = document.createElement('div');
   const delayedBus = createActionBus();

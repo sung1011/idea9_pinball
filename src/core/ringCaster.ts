@@ -1,5 +1,5 @@
 import type { BallBody } from './ballBody';
-import { consumeAimBreak, openActiveRam } from './ballBody';
+import { consumeAimBreak, openActiveRam, skillsBlocked } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import type { HeroId } from '../heroes/heroIds';
 import {
@@ -182,7 +182,7 @@ export function createRingCaster(): SkillCaster {
   };
 
   const tryRelease = (ball: BallBody, sample: ActionSample, roster: readonly BallBody[]): void => {
-    if (aimingSlot === 0 || effect || ball.stunRemain > 0) {
+    if (aimingSlot === 0 || effect || skillsBlocked(ball)) {
       return;
     }
     const slot = aimingSlot;
@@ -221,7 +221,7 @@ export function createRingCaster(): SkillCaster {
     if (consumeAimBreak(ball)) {
       aimingSlot = 0;
     }
-    if (!ball.inPlay || ball.stunRemain > 0) {
+    if (!ball.inPlay || skillsBlocked(ball)) {
       aimingSlot = 0;
       return;
     }

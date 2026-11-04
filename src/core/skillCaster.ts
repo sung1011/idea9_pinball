@@ -1,5 +1,5 @@
 import type { BallBody } from './ballBody';
-import { consumeAimBreak, openActiveRam } from './ballBody';
+import { consumeAimBreak, openActiveRam, skillsBlocked } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import type { HeroId } from '../heroes/heroIds';
 import { applyHardCc } from './hardCc';
@@ -145,7 +145,7 @@ export function createHookCaster(): SkillCaster {
   };
 
   const tryRelease = (ball: BallBody, sample: ActionSample): void => {
-    if (aimingSlot === 0 || isHardBusy(effect) || ball.stunRemain > 0) {
+    if (aimingSlot === 0 || isHardBusy(effect) || skillsBlocked(ball)) {
       return;
     }
     const slot = aimingSlot;
@@ -178,7 +178,7 @@ export function createHookCaster(): SkillCaster {
     if (consumeAimBreak(ball)) {
       aimingSlot = 0;
     }
-    if (!ball.inPlay || ball.stunRemain > 0) {
+    if (!ball.inPlay || skillsBlocked(ball)) {
       aimingSlot = 0;
       return;
     }
