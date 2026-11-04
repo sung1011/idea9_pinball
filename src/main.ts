@@ -13,9 +13,10 @@ import { verifyArc } from './core/verifyArc';
 import { verifyNail } from './core/verifyNail';
 import { verifyRing } from './core/verifyRing';
 import { verifyWell } from './core/verifyWell';
+import { verifyHeroPick } from './core/verifyHeroPick';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
-import { nextHero } from './heroes/heroIds';
+import { nextHero, type HeroId } from './heroes/heroIds';
 import { createFieldOverlay } from './render/fieldOverlay';
 import { bindDebugMatch } from './debug/debugMatch';
 import { bindDebugVelocity } from './debug/debugVelocity';
@@ -48,6 +49,7 @@ async function boot(): Promise<void> {
   verifyNail();
   verifyArc();
   verifyWell();
+  verifyHeroPick();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -105,11 +107,6 @@ async function boot(): Promise<void> {
   app.renderer.on('resize', layout);
 
   const hpHud = createHpHud(host);
-  const matchHud = createMatchHud(host);
-  hpHud.sync(balls);
-  matchHud.sync(match.snapshot(), balls);
-  arena.syncStalls(match.snapshot().stalls);
-
   const bus = createActionBus();
   const control = createPlayerControl();
   const touchPad = createTouchPad(host, bus);
@@ -121,10 +118,25 @@ async function boot(): Promise<void> {
 
   let syncHeroUi = (): void => {};
 
-  const swapPlayerHero = (): void => {
-    control.setHero(player, nextHero(player.hero));
+  const applyPlayerHero = (hero: HeroId): void => {
+    if (player.hero !== hero) {
+      control.setHero(player, hero);
+      bus.reset();
+    }
     syncHeroUi();
   };
+
+  const swapPlayerHero = (): void => {
+    applyPlayerHero(nextHero(player.hero));
+  };
+
+  const matchHud = createMatchHud(host, {
+    hero: player.hero,
+    onPickHero: applyPlayerHero,
+  });
+  hpHud.sync(balls);
+  matchHud.sync(match.snapshot(), balls);
+  arena.syncStalls(match.snapshot().stalls);
 
   const restart = (): void => {
     resetTrapZones();
@@ -164,7 +176,9 @@ async function boot(): Promise<void> {
   const help = createHelpCard(host, { onOpen: () => settingsClose() });
   syncHeroUi = () => {
     help.setHero(player.hero);
+    matchHud.setHero(player.hero);
   };
+  syncHeroUi();
   const settings = createSettingsPanel(host, {
     onOpen: () => help.close(),
     onRestart: () => {

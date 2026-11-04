@@ -5,10 +5,21 @@ import {
   OPENING_CHARGE_SEC,
   OPENING_CHARGE_SPEED,
 } from '../core/constants';
+import { HERO_IDS, heroZh, isHeroId, type HeroId } from '../heroes/heroIds';
 
 export type MatchHud = {
   sync: (snap: MatchSnapshot, balls: readonly BallBody[]) => void;
+  setHero: (hero: HeroId) => void;
 };
+
+export type MatchHudOpts = {
+  hero?: HeroId;
+  onPickHero?: (hero: HeroId) => void;
+};
+
+function stopHudUi(ev: Event): void {
+  ev.stopPropagation();
+}
 
 function formatClock(snap: MatchSnapshot): string {
   if (snap.phase === 'countdown') {
@@ -43,9 +54,12 @@ function holdText(hold: MatchSnapshot['midpoint']): string {
   return '领地 争夺';
 }
 
-export function createMatchHud(host: HTMLElement): MatchHud {
+export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): MatchHud {
   const root = document.createElement('div');
   root.className = 'matchHud';
+
+  const bar = document.createElement('div');
+  bar.className = 'matchHudBar';
 
   const score = document.createElement('div');
   score.className = 'matchHudScore';
@@ -56,6 +70,30 @@ export function createMatchHud(host: HTMLElement): MatchHud {
   const blue = document.createElement('span');
   blue.className = 'matchHudBlue';
   score.append(red, clock, blue);
+
+  const pick = document.createElement('select');
+  pick.className = 'matchHudHero';
+  pick.setAttribute('data-touch-control', 'hero');
+  pick.setAttribute('aria-label', '切换英雄');
+  for (const id of HERO_IDS) {
+    const option = document.createElement('option');
+    option.value = id;
+    option.textContent = heroZh(id);
+    pick.appendChild(option);
+  }
+  pick.value = opts.hero ?? 'hook';
+  for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'keydown', 'keyup'] as const) {
+    pick.addEventListener(type, stopHudUi);
+  }
+  pick.addEventListener('change', (ev) => {
+    ev.stopPropagation();
+    if (!isHeroId(pick.value)) {
+      pick.value = opts.hero ?? 'hook';
+      return;
+    }
+    opts.onPickHero?.(pick.value);
+  });
+  bar.append(score, pick);
 
   const meta = document.createElement('div');
   meta.className = 'matchHudMeta';
@@ -78,10 +116,13 @@ export function createMatchHud(host: HTMLElement): MatchHud {
   openingHint.className = 'openingHudHint';
   opening.append(openingNum, openingTick, openingHint);
 
-  root.append(score, meta, toast);
+  root.append(bar, meta, toast);
   host.append(root, opening);
 
   return {
+    setHero(hero) {
+      pick.value = hero;
+    },
     sync(snap, balls) {
       red.textContent = String(snap.redScore);
       blue.textContent = String(snap.blueScore);

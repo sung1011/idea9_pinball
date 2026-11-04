@@ -136,7 +136,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     body.appendChild(restart);
     addHint(body, kitSettingsHint(actions.getHero?.() ?? 'hook'));
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。右键 / Esc 取消瞄准。');
-    addHint(body, '蓝1 默认磁环。GM 开时按 H 循环红方：钩刺 → 磁环 → 链生 → 钉壳 → 闪弧 → 井绳。');
+    addHint(body, '顶栏比分旁可随时换英雄（只换技能组）。蓝1 默认磁环。GM 开时按 H 仍循环红方：钩刺 → 磁环 → 链生 → 钉壳 → 闪弧 → 井绳。');
   };
 
   const renderVersion = (): void => {

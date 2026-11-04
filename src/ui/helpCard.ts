@@ -65,6 +65,7 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
     ]);
     addBlock(body, '怎么动', [
       '骑士一直保底冲（约 2.5），点地 / 鼠标只纠偏方向，不加油门。金矛尖跟瞄准。',
+      '顶栏比分旁可随时换英雄，只换技能组，血量 / 位置 / 对局不变。',
       kitHelpSkills(hero),
       '按下进瞄，再按同键或左键释放；右键 / Esc 取消。',
       ...(hero === 'ring'

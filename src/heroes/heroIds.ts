@@ -1,21 +1,14 @@
 export type HeroId = 'hook' | 'ring' | 'chain' | 'nail' | 'arc' | 'well';
 
-const HERO_CYCLE: readonly HeroId[] = ['hook', 'ring', 'chain', 'nail', 'arc', 'well'];
+export const HERO_IDS: readonly HeroId[] = ['hook', 'ring', 'chain', 'nail', 'arc', 'well'];
 
 export function isHeroId(value: string): value is HeroId {
-  return (
-    value === 'hook' ||
-    value === 'ring' ||
-    value === 'chain' ||
-    value === 'nail' ||
-    value === 'arc' ||
-    value === 'well'
-  );
+  return (HERO_IDS as readonly string[]).includes(value);
 }
 
 export function nextHero(hero: HeroId): HeroId {
-  const idx = HERO_CYCLE.indexOf(hero);
-  return HERO_CYCLE[(idx + 1) % HERO_CYCLE.length] ?? 'hook';
+  const idx = HERO_IDS.indexOf(hero);
+  return HERO_IDS[(idx + 1) % HERO_IDS.length] ?? 'hook';
 }
 
 export function heroZh(hero: HeroId): string {

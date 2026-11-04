@@ -32,6 +32,14 @@ canvas {
   text-align: center;
 }
 
+.matchHudBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
 .matchHudScore {
   display: flex;
   align-items: baseline;
@@ -39,6 +47,41 @@ canvas {
   gap: 16px;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+}
+
+.matchHudHero {
+  pointer-events: auto;
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 28px;
+  min-width: 4.8em;
+  padding: 3px 22px 3px 8px;
+  border: 2px solid #9af6f6aa;
+  border-radius: 8px;
+  background-color: #0f3f3fcc;
+  background-image: linear-gradient(45deg, transparent 50%, #e8ffff 50%),
+    linear-gradient(135deg, #e8ffff 50%, transparent 50%);
+  background-position: calc(100% - 12px) calc(50% - 2px), calc(100% - 7px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  color: #e8ffff;
+  font: 700 13px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  cursor: pointer;
+  user-select: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.matchHudHero:hover,
+.matchHudHero:focus-visible {
+  border-color: #ffe08a;
+  color: #ffe08a;
+  outline: none;
+}
+
+.matchHudHero option {
+  background: #0f3f3f;
+  color: #e8ffff;
 }
 
 .matchHudRed {
@@ -763,6 +806,12 @@ canvas {
 
   .matchHudClock {
     font-size: 16px;
+  }
+
+  .matchHudHero {
+    min-height: 26px;
+    font-size: 12px;
+    padding: 2px 20px 2px 6px;
   }
 
   .openingHudNum {

@@ -1,5 +1,5 @@
 # Idea pinball · 工程落地方案 v0
-更新：2026-11-04（井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋 2s 峰值 7.5）
+更新：2026-11-04（对局顶栏可随时换英雄；井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋 2s 峰值 7.5）
 
 ## 栈
 - 客户端：TypeScript + PixiJS + Vite
@@ -42,6 +42,7 @@
 - `src/core/trapZones.ts`：困圈软区（禁敌位移技，友军不受困）
 - `src/core/skillQuery.ts`：扇形选取 / 友军选取 / 勾索墙挡
 - `src/core/skillHits.ts`：技能直伤（计入击破/助攻；纯治疗/护盾不记）
+- `src/heroes/heroIds.ts`：6 人池 `HERO_IDS`、中文名、`nextHero` 循环
 - `src/heroes/hookKit.ts`：钩刺四技能数值与瞄准扇形；对外显示钩矛 / 连刺 / 盾冲 / 蓄势
 - `src/heroes/ringKit.ts`：磁环四技能数值与瞄准圆/扇；对外显示辉环 / 斥波 / 壁行 / 囚环
 - `src/heroes/chainKit.ts`：链生四技能数值与瞄准扇/圆；对外显示愈链 / 盾脉 / 援勾 / 扰锋
@@ -54,7 +55,8 @@
 - `src/debug/gmState.ts`：GM 开关，默认开，记本地
 - `src/core/collisionDamage.ts`：相对速度阈值 / 朝向乘区 / 掉血弹开；无敌或同队不结算伤害
 - `src/ui/hpHud.ts`：血量条、瞄准/弱拧强拧/回场/无敌、最近碰撞日志
-- `src/ui/matchHud.ts`：双方分、倒计时、领地归属、回场与击破提示
+- `src/ui/matchHud.ts`：双方分、倒计时、领地归属、回场与击破提示；比分旁英雄下拉（正式功能，不依赖 GM；指定英雄只换 kit）
+- `src/core/verifyHeroPick.ts`：下拉指定 / H 循环同步选中 / 换 kit 保留血量位置
 - `src/ui/helpCard.ts`：右上角 `?` 说明卡（开局 / 怎么动 / 怎么得分 / 怎么赢 / 回场）；点空白或关闭钮收起
 - `src/ui/settingsPanel.ts`：右上角齿轮设置（常规 / 版本 / GM，对齐 idle/story 分页）；点空白关；与 `?` 分开
 - `src/ui/appVersion.ts`：版本号 + 构建短 SHA + 简短 changelog
@@ -103,7 +105,7 @@
 - 回场：HP≤0 立即离场（当帧无 hit 也会扫到并进 5s 回场）；己方半场出生；回场 2s 无敌（可滑、可放技能）。开局无敌并入冲锋 2s，不另叠。无敌或同队只做弹性分离
 - 领地：圆心地图中心、半径 2.5 格；每秒结算；区内活人数严格更多 +2；相等 0；离场当帧不占人
 - 简 bot：无寻路；保底冲靠近 + 急停 + 偶勾；不用方向捅连招；可被撞死并回场
-- 调试：齿轮 → GM（默认开）；`Z` 背后×1.35 / `X` 侧面×0.7 / `C` 正面×1.0 / `V` 轻蹭（不重置一局）；`R` 只重开（正式也可用）；`F`/`G` ±分；`T` 跳 30s；`Y` 当前阶段剩 1s；`H` 红方换英雄；立即回场；`DEBUG_CLOCK_SCALE` 默认可加速时钟。GM 关则调试键无效，`R` 仍可用
+- 调试：齿轮 → GM（默认开）；`Z` 背后×1.35 / `X` 侧面×0.7 / `C` 正面×1.0 / `V` 轻蹭（不重置一局）；`R` 只重开（正式也可用）；`F`/`G` ±分；`T` 跳 30s；`Y` 当前阶段剩 1s；`H` 红方循环换英雄（顶栏下拉也可随时指定，不依赖 GM；只换 kit）；立即回场；`DEBUG_CLOCK_SCALE` 默认可加速时钟。GM 关则调试键无效，`R` 仍可用
 - 本里程碑不做：其余英雄、匹配、联网、满编 3v3 假人 AI。骑士换皮已另做（表现层）
 
 ## 验收
@@ -150,11 +152,11 @@
 - 本里程碑不做：联网、满编连招 AI。骑士换皮已另做（表现层，碰撞仍圆）
 
 ## M5 自测
-- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35` + `verifyM4` + `verifyM5` + `verifyRing` + `verifyChain` + `verifyNail` + `verifyArc` + `verifyWell`
+- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35` + `verifyM4` + `verifyM5` + `verifyRing` + `verifyChain` + `verifyNail` + `verifyArc` + `verifyWell` + `verifyHeroPick`
 - 按 `1` 进瞄可一直持有，再按 `1` 或左键后 0.4s 才出勾；未中 CD 约 4s
 - 蓄势→钩矛→连刺→盾冲可依次打出；HUD 分槽显示钩/刺/冲/蓄 CD
 - 蓝1 磁环会推波/困圈；蓝2 钩刺会保底靠近并偶尔勾，不会打捅×3 连招
-- GM `H` 循环红方钩刺 → 磁环 → 链生 → 钉壳 → 闪弧 → 井绳；HUD / `?` / 四键文案跟随 kit
+- 顶栏比分旁下拉可随时指定红方 6 英雄（正式功能，不依赖 GM）；只换 kit，血量/位置/对局不变；瞄准/前摇取消。GM `H` 与设置 GM「换英雄」仍循环；下拉选中值跟随 `player.hero`；HUD / `?` / 四键文案跟随 kit
 - 磁环：辉环跳秒伤、斥波击退、壁行贴墙不反弹后弹出、囚环内钩矛/盾冲/壁行失败进 2s 短 CD
 - 链生：愈链 HOT 己+友、盾脉碰撞伤×0.45、援勾拉自己或轻拉残血友、扰锋拧朝向并打断短瞄准
 - 钉壳：甲垒碰撞伤×0.4 未破甲回 8、刺盾被动反 12 / 主动反 16、顶冲 3 格+10、钉锚 0.6s 被推≥1 断钉、友军主动撞额外 10

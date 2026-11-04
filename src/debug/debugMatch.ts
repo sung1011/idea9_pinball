@@ -1,4 +1,5 @@
 import type { MatchSession } from '../core/matchSession';
+import { isAimUiTarget } from '../input/actionBus';
 
 /** 调试加分 / 跳时钟；不改默认锁点数值。键盘仅 GM 开时生效。 */
 export function bindDebugMatch(
@@ -7,6 +8,9 @@ export function bindDebugMatch(
 ): () => void {
   const onKey = (ev: KeyboardEvent): void => {
     if (ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) {
+      return;
+    }
+    if (isAimUiTarget(ev.target)) {
       return;
     }
     if (!(opts?.isGmOn?.() ?? true)) {

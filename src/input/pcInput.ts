@@ -54,6 +54,9 @@ export function bindPcInput(opts: {
     if (ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) {
       return;
     }
+    if (isAimUiTarget(ev.target)) {
+      return;
+    }
     const key = ev.key.toLowerCase();
     if (key === 'escape') {
       ev.preventDefault();
