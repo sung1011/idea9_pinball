@@ -63,8 +63,8 @@ export const STRONG_STEER_RAD_PER_SEC = (STRONG_STEER_DEG_PER_SEC * Math.PI) / 1
 /** 墙/柱弹性系数；1 = 完全弹性反弹 */
 export const WALL_RESTITUTION = 1;
 
-/** 基础血量 */
-export const MAX_HP = 100;
+/** 基础血量（共用 / 英雄；开局与回场满血基线） */
+export const MAX_HP = 300;
 
 /** 碰撞掉血：相对速度阈值（格/秒） */
 export const COLLISION_SPEED_THRESHOLD = 4;
