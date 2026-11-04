@@ -517,6 +517,96 @@ canvas {
   gap: 6px;
 }
 
+.settingsFlash {
+  margin: 0;
+  color: #ffe08a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.settingsVerRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid #9af6f655;
+  border-radius: 12px;
+  background: #163838;
+}
+
+.settingsVerMeta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.settingsVerMeta span {
+  color: #9af6f6;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.updatePrompt {
+  display: none;
+  position: absolute;
+  top: calc(var(--stage-top) + var(--hud-pad) + 36px);
+  left: calc(var(--stage-right) - var(--hud-pad));
+  transform: translateX(-100%);
+  z-index: 29;
+  width: min(280px, 42vw);
+  max-height: min(50vh, 360px);
+  overflow: auto;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #9af6f655;
+  background: #0c2c2cee;
+  color: #e8ffff;
+  box-shadow: 0 8px 24px #041616aa;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  font: 13px/1.45 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+}
+
+.updatePrompt.isOn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.updatePromptTitle {
+  margin: 0;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.updatePromptList {
+  margin: 0;
+  padding-left: 1.15em;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.updatePromptBtn {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #9af6f688;
+  border-radius: 10px;
+  background: #164848;
+  color: #e8ffff;
+  font: 700 15px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.updatePromptBtn:hover {
+  border-color: #ffe08a;
+  color: #ffe08a;
+}
+
 .settingsSwitch {
   display: flex;
   align-items: center;

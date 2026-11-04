@@ -40,7 +40,9 @@ import { createHelpCard } from './ui/helpCard';
 import { createMatchHud } from './ui/matchHud';
 import { createResultPanel } from './ui/resultPanel';
 import { createRotateHint } from './ui/rotateHint';
+import { createAppVersions } from './ui/appVersion';
 import { createSettingsPanel } from './ui/settingsPanel';
+import { createUpdatePrompt } from './ui/updatePrompt';
 import { applyStageVars, computeLandscapeStage, readSafeInsets } from './ui/stageLayout';
 import './style.css';
 
@@ -196,9 +198,12 @@ async function boot(): Promise<void> {
     matchHud.setHero(player.hero);
   };
   syncHeroUi();
+  const appVersions = createAppVersions();
+  createUpdatePrompt(host, appVersions);
   const settings = createSettingsPanel(host, {
     onOpen: () => help.close(),
     onOpenHelp: () => help.open(),
+    versions: appVersions,
     onRestart: () => {
       restart();
       settings.close();

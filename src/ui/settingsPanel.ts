@@ -4,7 +4,7 @@ import type { TeamId } from '../core/ballBody';
 import type { HeroId } from '../heroes/heroIds';
 import { heroZh } from '../heroes/heroIds';
 import { kitSettingsHint } from '../heroes/kitLabels';
-import { APP_VERSION, CHANGE_LOG } from './appVersion';
+import { APP_VERSION, CHANGE_LOG, type AppVersions } from './appVersion';
 
 export type SettingsTab = 'general' | 'version' | 'gm';
 
@@ -26,6 +26,7 @@ export type SettingsActions = {
   onForceRespawn: () => void;
   getHero?: () => HeroId;
   onSwapHero?: () => void;
+  versions: AppVersions;
 };
 
 const TABS: readonly { id: SettingsTab; label: string }[] = [
@@ -149,8 +150,10 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
   };
 
   const renderVersion = (): void => {
+    const state = actions.versions.getState();
+    const current = state.installed?.version ?? APP_VERSION.version;
     const card = el('div', 'settingsVerCard');
-    card.appendChild(el('p', 'settingsVer', `当前版本 ${APP_VERSION.version}`));
+    card.appendChild(el('p', 'settingsVer', `当前版本 ${current}`));
     card.appendChild(el('p', 'settingsHint', `构建 ${APP_VERSION.sha}`));
     body.appendChild(card);
 
@@ -158,15 +161,44 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     check.type = 'button';
     check.addEventListener('click', (ev) => {
       ev.preventDefault();
-      location.reload();
+      void actions.versions.checkUpdate();
     });
     body.appendChild(check);
-    addHint(body, '检查更新会刷新当前页。Pages 发版后若仍是旧页，再刷一次。');
+    if (state.pending.length > 0) {
+      const apply = el('button', 'settingsWide', '更新');
+      apply.type = 'button';
+      apply.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        void actions.versions.applyUpdate();
+      });
+      body.appendChild(apply);
+    }
+    if (state.flash) {
+      body.appendChild(el('p', 'settingsFlash', state.flash));
+    }
+    addHint(body, '新版只靠轮询 versions.json。确认后本机记住，不再反复弹。发版请往该文件追加条目。');
 
+    const notes = state.history;
+    if (notes.length > 0) {
+      body.appendChild(el('p', 'settingsNotesTitle', '最近更新'));
+      for (const group of notes) {
+        const row = el('div', 'settingsVerRow');
+        const meta = el('p', 'settingsVerMeta');
+        meta.append(el('strong', '', group.version), el('span', '', group.date));
+        row.appendChild(meta);
+        const list = el('ul', 'settingsNotes');
+        for (const line of group.summaries) {
+          list.appendChild(el('li', '', line));
+        }
+        row.appendChild(list);
+        body.appendChild(row);
+      }
+      return;
+    }
     if (CHANGE_LOG.length > 0) {
-      body.appendChild(el('p', 'settingsNotesTitle', '更新记录'));
+      body.appendChild(el('p', 'settingsNotesTitle', '最近更新'));
       const list = el('ol', 'settingsNotes');
-      for (const item of CHANGE_LOG) {
+      for (const item of CHANGE_LOG.slice(0, 10)) {
         list.appendChild(el('li', '', item.title));
       }
       body.appendChild(list);
@@ -289,6 +321,11 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
   );
 
   render();
+  actions.versions.subscribe(() => {
+    if (tab === 'version') {
+      render();
+    }
+  });
   return {
     open,
     close,
