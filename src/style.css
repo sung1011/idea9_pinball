@@ -34,6 +34,92 @@ canvas {
   z-index: 6;
 }
 
+.matchHud {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  transform: translateX(-50%);
+  min-width: 280px;
+  color: #e8ffff;
+  font: 14px/1.4 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  pointer-events: none;
+  user-select: none;
+  z-index: 7;
+  text-align: center;
+}
+
+.matchHudScore {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.matchHudRed {
+  color: #f68a8a;
+  font-size: 28px;
+}
+
+.matchHudBlue {
+  color: #8ab4f6;
+  font-size: 28px;
+}
+
+.matchHudClock {
+  color: #e8ffff;
+  font-size: 22px;
+  min-width: 5.5em;
+}
+
+.matchHudClock.isOvertime {
+  color: #ffe08a;
+}
+
+.matchHudClock.isResult {
+  color: #9af6f6;
+}
+
+.matchHudMeta {
+  margin-top: 4px;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  color: #9af6f6;
+  font-size: 13px;
+}
+
+.matchHudHold[data-hold='red'] {
+  color: #f68a8a;
+}
+
+.matchHudHold[data-hold='blue'] {
+  color: #8ab4f6;
+}
+
+.matchHudToast {
+  margin-top: 4px;
+  color: #ffe08a;
+  min-height: 1.2em;
+  font-size: 13px;
+}
+
+.matchHudResult {
+  display: none;
+  margin-top: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #041616cc;
+  border: 1px solid #9af6f688;
+  color: #e8ffff;
+  font-weight: 700;
+}
+
+.matchHudResult.isOn {
+  display: inline-block;
+}
+
 .hpHud {
   position: absolute;
   left: 12px;
@@ -59,8 +145,12 @@ canvas {
 }
 
 .hpHudName {
-  width: 2em;
+  width: 2.6em;
   font-weight: 700;
+}
+
+.hpHudRow.isOut {
+  opacity: 0.55;
 }
 
 .hpHudTrack {
@@ -226,5 +316,20 @@ canvas {
 
   .hpHudTrack {
     width: 110px;
+  }
+
+  .matchHud {
+    top: 6px;
+    min-width: 220px;
+    font-size: 12px;
+  }
+
+  .matchHudRed,
+  .matchHudBlue {
+    font-size: 22px;
+  }
+
+  .matchHudClock {
+    font-size: 16px;
   }
 }

@@ -42,7 +42,7 @@ export function createAimPreview(): AimPreview {
   const sync = (player: BallBody, aimingSlot: number, sample: ActionSample): void => {
     root.clear();
     root.position.set(player.x, player.y);
-    if (!sample.hasAim) {
+    if (!player.inPlay || !sample.hasAim) {
       return;
     }
     const aiming = aimingSlot !== 0;

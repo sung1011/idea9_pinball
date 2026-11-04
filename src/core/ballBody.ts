@@ -2,6 +2,8 @@ import { ACTIVE_RAM_WINDOW, BALL_RADIUS, FINE_TUNE_WINDOW, MAX_HP } from './cons
 
 let nextBallId = 1;
 
+export type TeamId = 'red' | 'blue';
+
 export type BallBody = {
   id: number;
   label: string;
@@ -19,6 +21,12 @@ export type BallBody = {
   activeRamRemain: number;
   /** 碰撞后微调窗口剩余秒数；窗内用 Aim 拧速度方向 */
   fineTuneRemain: number;
+  /** 未设则不算组队（M2 公式球仍可互伤） */
+  team?: TeamId;
+  inPlay: boolean;
+  invincibleRemain: number;
+  spawnX: number;
+  spawnY: number;
 };
 
 export function createBallBody(init: {
@@ -31,6 +39,9 @@ export function createBallBody(init: {
   facingX?: number;
   facingY?: number;
   hp?: number;
+  team?: TeamId;
+  spawnX?: number;
+  spawnY?: number;
 }): BallBody {
   const id = nextBallId;
   nextBallId += 1;
@@ -49,6 +60,11 @@ export function createBallBody(init: {
     maxHp: MAX_HP,
     activeRamRemain: 0,
     fineTuneRemain: 0,
+    team: init.team,
+    inPlay: true,
+    invincibleRemain: 0,
+    spawnX: init.spawnX ?? init.x,
+    spawnY: init.spawnY ?? init.y,
   };
 }
 
@@ -74,4 +90,16 @@ export function tickFineTune(ball: BallBody, dt: number): void {
     return;
   }
   ball.fineTuneRemain = Math.max(0, ball.fineTuneRemain - dt);
+}
+
+export function tickInvincible(ball: BallBody, dt: number): void {
+  if (ball.invincibleRemain <= 0) {
+    ball.invincibleRemain = 0;
+    return;
+  }
+  ball.invincibleRemain = Math.max(0, ball.invincibleRemain - dt);
+}
+
+export function grantInvincible(ball: BallBody, sec: number): void {
+  ball.invincibleRemain = Math.max(ball.invincibleRemain, sec);
 }

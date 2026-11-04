@@ -52,12 +52,21 @@ export function createBallView(ball: BallBody): BallView {
   root.addChild(body, hpBar, arrow);
 
   const sync = (next: BallBody): void => {
+    root.visible = next.inPlay;
     root.position.set(next.x, next.y);
+    if (!next.inPlay) {
+      return;
+    }
 
     body.clear();
     body.circle(0, 0, BALL_RADIUS);
-    body.fill({ color: next.color });
+    body.fill({ color: next.color, alpha: next.invincibleRemain > 0 ? 0.72 : 1 });
     body.stroke({ color: 0xffffff, width: 0.045, alpha: 0.9 });
+    if (next.invincibleRemain > 0) {
+      const pulse = 0.45 + 0.45 * (0.5 + 0.5 * Math.sin(next.invincibleRemain * 10));
+      body.circle(0, 0, BALL_RADIUS + 0.14);
+      body.stroke({ color: 0xffffff, width: 0.07, alpha: pulse });
+    }
     if (next.activeRamRemain > 0) {
       body.circle(0, 0, BALL_RADIUS + 0.08);
       body.stroke({ color: 0xffe08a, width: 0.055, alpha: 0.95 });

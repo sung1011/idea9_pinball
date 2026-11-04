@@ -10,11 +10,11 @@ export const BALL_RADIUS = 0.5;
 /** 圆角矩形场地的角半径（格） */
 export const ARENA_CORNER_RADIUS = 1.5;
 
-/** 中区控点：圆心在地图中心，直径 4 格 */
+/** 中区控点：圆心在地图中心，半径 2.5 格 */
 export const CONTROL_POINT = {
   x: MAP_WIDTH / 2,
   y: MAP_HEIGHT / 2,
-  radius: 2,
+  radius: 2.5,
 } as const;
 
 /**
@@ -93,3 +93,40 @@ export const FINE_TUNE_WINDOW = 0.3;
 
 /** 微调：把速度方向拧向瞄准，约 90°/s */
 export const FINE_TUNE_TURN_RAD_PER_SEC = Math.PI / 2;
+
+/** 本机蓝方简 bot 数量；1～2，默认 2 */
+export const BLUE_BOT_COUNT = 2;
+
+/** 一局：倒计时 / 正赛 / 加时（秒） */
+export const MATCH_COUNTDOWN_SEC = 3;
+export const MATCH_PLAY_SEC = 240;
+export const MATCH_OVERTIME_SEC = 30;
+
+/** 先到此分立即结束 */
+export const MATCH_SCORE_LIMIT = 100;
+
+export const KNOCKOUT_SCORE = 15;
+export const ASSIST_SCORE = 5;
+export const ASSIST_WINDOW_SEC = 3;
+
+export const RESPAWN_SEC = 8;
+export const SPAWN_INVINCIBLE_SEC = 2;
+
+/** 中点每秒结算：人数严格更多一方 */
+export const MIDPOINT_SCORE_PER_SEC = 2;
+export const MIDPOINT_TICK_SEC = 1;
+
+/** 调试：仅加速一局时钟（倒计时/回场/中点），物理仍按真实 dt。默认 1 */
+export const DEBUG_CLOCK_SCALE = 1;
+
+export const RED_SPAWNS = [{ x: 4.5, y: 6, facingX: 1, facingY: 0 }] as const;
+
+export const BLUE_SPAWNS = [
+  { x: 15.5, y: 4.2, facingX: -1, facingY: 0 },
+  { x: 15.5, y: 7.8, facingX: -1, facingY: 0 },
+] as const;
+
+/** 简 bot：周期给 stub 冲量 */
+export const BOT_INTERVAL_SEC = 1.5;
+export const BOT_INTERVAL_JITTER_SEC = 0.7;
+export const BOT_AIM_JITTER_RAD = 0.5;

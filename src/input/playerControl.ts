@@ -35,6 +35,10 @@ export function createPlayerControl(): PlayerControl {
   return {
     tick: (player: BallBody, sample: ActionSample, dt: number) => {
       skillCd = Math.max(0, skillCd - Math.max(0, dt));
+      if (!player.inPlay) {
+        aimingSlot = 0;
+        return;
+      }
 
       if (sample.cancelAim) {
         aimingSlot = 0;

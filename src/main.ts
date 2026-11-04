@@ -1,9 +1,12 @@
 import { Application, Container } from 'pixi.js';
-import { createBallBody } from './core/ballBody';
 import { MAP_HEIGHT, MAP_WIDTH } from './core/constants';
+import { createMatchRoster, createMatchSession } from './core/matchSession';
 import { stepPhysics } from './core/physicsStep';
+import { createSimpleBot } from './core/simpleBot';
 import { verifyM2 } from './core/verifyM2';
 import { verifyM3 } from './core/verifyM3';
+import { verifyM4 } from './core/verifyM4';
+import { bindDebugMatch } from './debug/debugMatch';
 import { bindDebugVelocity } from './debug/debugVelocity';
 import { createActionBus } from './input/actionBus';
 import { bindPcInput } from './input/pcInput';
@@ -14,28 +17,23 @@ import { createArenaView } from './render/arenaView';
 import { createBallView } from './render/ballView';
 import { applyWorldTransform, fitWorldToScreen, type WorldTransform } from './render/worldTransform';
 import { createHpHud } from './ui/hpHud';
+import { createMatchHud } from './ui/matchHud';
 import './style.css';
 
 const VIEW_PADDING_PX = 32;
-
-function createPlaceholderBalls() {
-  return [
-    createBallBody({ x: 6, y: 3.5, color: 0xe24a4a, label: '红', facingX: 1, facingY: 0 }),
-    createBallBody({ x: 14, y: 8.5, color: 0x3d7cf0, label: '蓝', facingX: -1, facingY: 0 }),
-  ];
-}
 
 function mountDebugHint(host: HTMLElement): void {
   const hint = document.createElement('div');
   hint.className = 'debugHint';
   hint.textContent =
-    '红球：1–4/QWE 瞄，再按同键或左键放，右键/Esc/点空白取消。调试 C正对 Z背后 X侧面 V轻蹭 R重置';
+    '红球：1–4/QWE 瞄，再按同键或左键放。R重开  F/G±10分  T跳30s  Y时钟1s  ·  C/Z/X/V 对撞';
   host.appendChild(hint);
 }
 
 async function boot(): Promise<void> {
   verifyM2();
   verifyM3();
+  verifyM4();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -54,10 +52,13 @@ async function boot(): Promise<void> {
   mountDebugHint(host);
 
   const world = new Container();
-  world.addChild(createArenaView());
+  const arena = createArenaView();
+  world.addChild(arena.root);
 
-  const balls = createPlaceholderBalls();
+  const balls = createMatchRoster();
   const player = balls[0];
+  const bots = balls.slice(1).map((ball) => createSimpleBot(ball));
+  const match = createMatchSession(balls);
   const views = balls.map((ball) => createBallView(ball));
   for (const view of views) {
     world.addChild(view.root);
@@ -89,7 +90,9 @@ async function boot(): Promise<void> {
   app.renderer.on('resize', layout);
 
   const hpHud = createHpHud(host);
+  const matchHud = createMatchHud(host);
   hpHud.sync(balls);
+  matchHud.sync(match.snapshot(), balls);
 
   const bus = createActionBus();
   const control = createPlayerControl();
@@ -99,24 +102,42 @@ async function boot(): Promise<void> {
     getTransform: () => transform,
     bus,
   });
+
+  const restart = (): void => {
+    match.reset();
+    control.reset();
+    bus.reset();
+    hpHud.resetLog();
+    for (const bot of bots) {
+      bot.reset();
+    }
+  };
+
   bindDebugVelocity({
     balls,
-    onReset: () => {
-      control.reset();
-      bus.reset();
-      hpHud.resetLog();
-    },
+    onReset: restart,
   });
+  bindDebugMatch(match);
 
   app.ticker.add((ticker) => {
     const dt = ticker.deltaMS / 1000;
+    const snap = match.snapshot();
     const sample = bus.sample(player.x, player.y);
     control.tick(player, sample, dt);
+    for (const bot of bots) {
+      bot.tick(dt, balls, snap.phase);
+    }
     const step = stepPhysics(balls, dt);
+    const events = match.tick(dt, step.hits);
+    const next = match.snapshot();
     const aimingSlot = control.getAimingSlot();
     const skillCd = control.getSkillCd();
-    hpHud.pushHits(step.hits);
-    hpHud.sync(balls, { aimingSlot, skillCd });
+    if (events.length > 0 || step.hits.length > 0) {
+      hpHud.pushHits(step.hits);
+    }
+    hpHud.sync(balls, { aimingSlot, skillCd, respawns: next.respawns });
+    matchHud.sync(next, balls);
+    arena.syncHold(next.midpoint);
     touchPad.sync({
       aimingSlot,
       skillCd,

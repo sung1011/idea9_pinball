@@ -12,6 +12,7 @@ const MAX_HIT_LINES = 4;
 export type HudStatus = {
   aimingSlot: number;
   skillCd: number;
+  respawns?: Record<number, number>;
 };
 
 export type HpHud = {
@@ -74,9 +75,16 @@ export function createHpHud(host: HTMLElement): HpHud {
 
         const value = document.createElement('span');
         value.className = 'hpHudValue';
-        const ram = ball.activeRamRemain > 0 ? ` 撞窗${ball.activeRamRemain.toFixed(2)}s` : '';
-        const tune = ball.fineTuneRemain > 0 ? ` 微调${ball.fineTuneRemain.toFixed(2)}s` : '';
-        value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${ram}${tune}`;
+        if (!ball.inPlay) {
+          const left = status?.respawns?.[ball.id] ?? 0;
+          value.textContent = `回场 ${left.toFixed(1)}s`;
+        } else {
+          const ram = ball.activeRamRemain > 0 ? ` 撞窗${ball.activeRamRemain.toFixed(2)}s` : '';
+          const tune = ball.fineTuneRemain > 0 ? ` 微调${ball.fineTuneRemain.toFixed(2)}s` : '';
+          const inv = ball.invincibleRemain > 0 ? ` 无敌${ball.invincibleRemain.toFixed(1)}s` : '';
+          value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${inv}${ram}${tune}`;
+        }
+        row.classList.toggle('isOut', !ball.inPlay);
 
         row.append(name, track, value);
         return row;

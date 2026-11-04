@@ -24,6 +24,7 @@ function placeBall(ball: BallBody, x: number, y: number, facingX: number, facing
   ball.facingY = facingY;
   ball.activeRamRemain = 0;
   ball.fineTuneRemain = 0;
+  ball.invincibleRemain = 0;
 }
 
 function impart(ball: BallBody, dx: number, dy: number, speed = SPEED_CAP, ram = true): void {
@@ -51,6 +52,11 @@ export function bindDebugVelocity(opts: { balls: BallBody[]; onReset?: () => voi
     const pair = debugPair(opts.balls);
     if (!pair) {
       return;
+    }
+    if (key === 'c' || key === 'z' || key === 'x' || key === 'v') {
+      if (!pair[0].inPlay || !pair[1].inPlay) {
+        return;
+      }
     }
     if (key === 'c') {
       ev.preventDefault();
@@ -84,10 +90,6 @@ export function bindDebugVelocity(opts: { balls: BallBody[]; onReset?: () => voi
     }
     if (key === 'r') {
       ev.preventDefault();
-      placeBall(pair[0], 6, 3.5, 1, 0);
-      placeBall(pair[1], 14, 8.5, -1, 0);
-      pair[0].hp = pair[0].maxHp;
-      pair[1].hp = pair[1].maxHp;
       opts.onReset?.();
     }
   };

@@ -1,4 +1,10 @@
-import { openFineTune, tickActiveRam, tickFineTune, type BallBody } from './ballBody';
+import {
+  openFineTune,
+  tickActiveRam,
+  tickFineTune,
+  tickInvincible,
+  type BallBody,
+} from './ballBody';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
 import { FRICTION, REST_SPEED, SPEED_CAP } from './constants';
 import { resolveArenaObstacles, resolveBallBall } from './wallBounce';
@@ -43,8 +49,9 @@ export type PhysicsStepResult = {
 /** 每帧：积分位移 → 墙/柱/球弹性分离 → 达标碰撞掉血弹开 → 摩擦 → 速度盖帽。 */
 export function stepPhysics(balls: BallBody[], dt: number): PhysicsStepResult {
   const stepDt = Math.min(Math.max(dt, 0), MAX_DT);
+  const live = balls.filter((ball) => ball.inPlay);
 
-  for (const ball of balls) {
+  for (const ball of live) {
     ball.x += ball.vx * stepDt;
     ball.y += ball.vy * stepDt;
   }
@@ -60,27 +67,27 @@ export function stepPhysics(balls: BallBody[], dt: number): PhysicsStepResult {
   }> = [];
 
   for (let i = 0; i < COLLISION_ITERS; i += 1) {
-    for (const ball of balls) {
+    for (const ball of live) {
       if (resolveArenaObstacles(ball)) {
         collided.add(ball.id);
       }
     }
-    for (let a = 0; a < balls.length; a += 1) {
-      for (let b = a + 1; b < balls.length; b += 1) {
-        const contact = resolveBallBall(balls[a], balls[b]);
+    for (let a = 0; a < live.length; a += 1) {
+      for (let b = a + 1; b < live.length; b += 1) {
+        const contact = resolveBallBall(live[a], live[b]);
         if (!contact || !contact.approaching) {
           continue;
         }
-        collided.add(balls[a].id);
-        collided.add(balls[b].id);
-        const key = pairKey(balls[a], balls[b]);
+        collided.add(live[a].id);
+        collided.add(live[b].id);
+        const key = pairKey(live[a], live[b]);
         if (seen.has(key)) {
           continue;
         }
         seen.add(key);
         pending.push({
-          a: balls[a],
-          b: balls[b],
+          a: live[a],
+          b: live[b],
           nx: contact.nx,
           ny: contact.ny,
           relSpeed: contact.relSpeed,
@@ -96,11 +103,12 @@ export function stepPhysics(balls: BallBody[], dt: number): PhysicsStepResult {
     );
   }
 
-  for (const ball of balls) {
+  for (const ball of live) {
     applyFrictionAndFacing(ball, stepDt);
     capSpeed(ball);
     tickActiveRam(ball, stepDt);
     tickFineTune(ball, stepDt);
+    tickInvincible(ball, stepDt);
     if (collided.has(ball.id)) {
       openFineTune(ball);
     }

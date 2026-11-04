@@ -144,6 +144,12 @@ export function applyCollisionCombat(
   ny: number,
   relSpeed: number,
 ): CollisionHit[] {
+  if (a.invincibleRemain > 0 || b.invincibleRemain > 0) {
+    return [];
+  }
+  if (a.team && b.team && a.team === b.team) {
+    return [];
+  }
   const activeRam = a.activeRamRemain > 0 || b.activeRamRemain > 0;
   const threshold = collisionThreshold(activeRam);
   if (relSpeed < threshold) {
