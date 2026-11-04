@@ -24,7 +24,7 @@ function sample(partial: Partial<ActionSample> = {}): ActionSample {
   };
 }
 
-/** 顶栏下拉指定英雄；H 循环后选中值跟随；换 kit 不清血量/位置。 */
+/** 左下角下拉指定英雄；H 循环后选中值跟随；换 kit 不清血量/位置。 */
 export function verifyHeroPick(): void {
   assert(HERO_IDS.length === 6, '换英雄：池应为 6 人');
   assert(HERO_IDS.every((id) => isHeroId(id)), '换英雄：池内 id 应全部合法');
@@ -48,7 +48,7 @@ export function verifyHeroPick(): void {
   });
   const pick = host.querySelector<HTMLSelectElement>('select.matchHudHero');
   if (!pick) {
-    throw new Error('换英雄：比分旁应有下拉');
+    throw new Error('换英雄：战场应有英雄下拉');
   }
   assert(pick.getAttribute('data-touch-control') === 'hero', '换英雄：下拉应标 data-touch-control');
   assert(isAimUiTarget(pick), '换英雄：点下拉不应抢 Aim');

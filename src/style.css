@@ -4,8 +4,10 @@ body,
   margin: 0;
   width: 100%;
   height: 100%;
+  width: 100dvw;
+  height: 100dvh;
   overflow: hidden;
-  background: #1a2820;
+  background: #071018;
   position: relative;
   touch-action: none;
   overscroll-behavior: none;
@@ -14,90 +16,85 @@ body,
   -webkit-touch-callout: none;
 }
 
+#app {
+  --hud-pad: 8px;
+  --stage-left: 8px;
+  --stage-top: 8px;
+  --stage-right: calc(100% - 8px);
+  --stage-bottom: calc(100% - 8px);
+  --stage-center-x: 50%;
+  --stage-center-y: 42%;
+}
+
 canvas {
   display: block;
 }
 
 .matchHud {
   position: absolute;
-  left: 50%;
-  top: 10px;
-  transform: translateX(-50%);
-  min-width: 280px;
+  inset: 0;
   color: #e8ffff;
-  font: 14px/1.4 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  font: 13px/1.3 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   pointer-events: none;
   user-select: none;
   z-index: 7;
-  text-align: center;
 }
 
-.matchHudBar {
+.matchHudPill,
+.matchHudClock {
+  position: absolute;
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-}
-
-.matchHudScore {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 16px;
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #0b1014cc;
+  border: 1px solid #ffffff22;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-}
-
-.matchHudHero {
-  pointer-events: auto;
-  appearance: none;
-  -webkit-appearance: none;
-  min-height: 28px;
-  min-width: 4.8em;
-  padding: 3px 22px 3px 8px;
-  border: 2px solid #9af6f6aa;
-  border-radius: 8px;
-  background-color: #0f3f3fcc;
-  background-image: linear-gradient(45deg, transparent 50%, #e8ffff 50%),
-    linear-gradient(135deg, #e8ffff 50%, transparent 50%);
-  background-position: calc(100% - 12px) calc(50% - 2px), calc(100% - 7px) calc(50% - 2px);
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-  color: #e8ffff;
-  font: 700 13px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  cursor: pointer;
-  user-select: auto;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.matchHudHero:hover,
-.matchHudHero:focus-visible {
-  border-color: #ffe08a;
-  color: #ffe08a;
-  outline: none;
-}
-
-.matchHudHero option {
-  background: #0f3f3f;
-  color: #e8ffff;
+  backdrop-filter: blur(6px);
 }
 
 .matchHudRed {
+  top: calc(var(--stage-top) + var(--hud-pad));
+  left: calc(var(--stage-left) + var(--hud-pad));
   color: #f68a8a;
-  font-size: 28px;
 }
 
 .matchHudBlue {
+  top: calc(var(--stage-top) + var(--hud-pad));
+  left: calc(var(--stage-right) - var(--hud-pad) - 36px);
+  transform: translateX(-100%);
   color: #8ab4f6;
-  font-size: 28px;
+}
+
+.matchHudScoreVal {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.matchHudMark {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+}
+
+.matchHudMarkSvg {
+  display: block;
+  width: 14px;
+  height: 14px;
 }
 
 .matchHudClock {
+  top: calc(var(--stage-top) + var(--hud-pad));
+  left: var(--stage-center-x);
+  transform: translateX(-50%);
   color: #e8ffff;
-  font-size: 22px;
-  min-width: 5.5em;
+  font-size: 13px;
+  min-width: 4.6em;
+  justify-content: center;
 }
 
 .matchHudClock.isOvertime {
@@ -108,42 +105,72 @@ canvas {
   color: #9af6f6;
 }
 
-.matchHudClock.isCharge {
+.matchHudClock[data-hold='red'] {
+  box-shadow: inset 0 0 0 1px #f68a8a66;
+}
+
+.matchHudClock[data-hold='blue'] {
+  box-shadow: inset 0 0 0 1px #8ab4f666;
+}
+
+.matchHudHero {
+  position: absolute;
+  left: calc(var(--stage-left) + var(--hud-pad));
+  top: calc(var(--stage-bottom) - var(--hud-pad));
+  transform: translateY(-100%);
+  pointer-events: auto;
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 28px;
+  min-width: 4.4em;
+  padding: 3px 22px 3px 10px;
+  border: 1px solid #ffffff28;
+  border-radius: 999px;
+  background-color: #0b1014cc;
+  background-image: linear-gradient(45deg, transparent 50%, #e8ffff 50%),
+    linear-gradient(135deg, #e8ffff 50%, transparent 50%);
+  background-position: calc(100% - 12px) calc(50% - 2px), calc(100% - 7px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  color: #e8ffff;
+  font: 700 12px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  cursor: pointer;
+  user-select: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(6px);
+}
+
+.matchHudHero:hover,
+.matchHudHero:focus-visible {
+  border-color: #ffe08a;
   color: #ffe08a;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-shadow: 0 0 12px #ffe08acc;
+  outline: none;
 }
 
-.matchHudMeta {
-  margin-top: 4px;
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  color: #9af6f6;
-  font-size: 13px;
-}
-
-.matchHudHold[data-hold='red'] {
-  color: #f68a8a;
-}
-
-.matchHudHold[data-hold='blue'] {
-  color: #8ab4f6;
+.matchHudHero option {
+  background: #0b1014;
+  color: #e8ffff;
 }
 
 .matchHudToast {
-  margin-top: 4px;
+  position: absolute;
+  top: calc(var(--stage-top) + var(--hud-pad) + 34px);
+  left: var(--stage-center-x);
+  transform: translateX(-50%);
   color: #ffe08a;
-  min-height: 1.2em;
-  font-size: 13px;
+  min-height: 0;
+  font-size: 12px;
+  text-align: center;
+  text-shadow: 0 1px 6px #071018cc;
+  max-width: min(52vw, 420px);
 }
 
 .openingHud {
   display: none;
   position: absolute;
-  left: 50%;
-  top: 42%;
+  left: var(--stage-center-x, 50%);
+  top: var(--stage-center-y, 42%);
   transform: translate(-50%, -50%);
   z-index: 8;
   pointer-events: none;
@@ -220,41 +247,33 @@ canvas {
   font-weight: 600;
 }
 
-.helpFab,
 .settingsFab {
   position: absolute;
-  top: 10px;
-  width: 36px;
-  height: 36px;
+  top: calc(var(--stage-top) + var(--hud-pad));
+  left: calc(var(--stage-right) - var(--hud-pad));
+  transform: translateX(-100%);
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  border: 2px solid #9af6f6aa;
-  background: #0f3f3fcc;
+  border: 1px solid #ffffff28;
+  background: #0b1014cc;
   color: #e8ffff;
-  font: 700 20px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  font: 700 16px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   cursor: pointer;
   z-index: 28;
   pointer-events: auto;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-.helpFab {
-  right: 56px;
-}
-
-.settingsFab {
-  right: 12px;
   display: grid;
   place-items: center;
   padding: 0;
+  backdrop-filter: blur(6px);
 }
 
 .settingsFab svg {
   display: block;
 }
 
-.helpFab.isOn,
-.helpFab:hover,
 .settingsFab.isOn,
 .settingsFab:hover {
   border-color: #ffe08a;
@@ -601,6 +620,7 @@ canvas {
 }
 
 .hpHud {
+  display: none;
   position: absolute;
   left: 12px;
   top: 12px;
@@ -722,28 +742,30 @@ canvas {
 
 .touchSkills {
   position: absolute;
-  right: max(10px, env(safe-area-inset-right));
-  bottom: max(10px, env(safe-area-inset-bottom));
+  left: calc(var(--stage-right) - var(--hud-pad));
+  top: calc(var(--stage-bottom) - var(--hud-pad));
+  transform: translate(-100%, -100%);
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(8px, 2.2vmin, 14px);
+  gap: 8px;
   pointer-events: auto;
   touch-action: none;
 }
 
 .touchSkillBtn {
-  width: min(16.5vmin, 76px);
-  height: min(16.5vmin, 76px);
-  min-width: 48px;
-  min-height: 48px;
+  width: min(11vmin, 48px);
+  height: min(11vmin, 48px);
+  min-width: 40px;
+  min-height: 40px;
   border-radius: 50%;
-  border: 3px solid #7ee8ffaa;
-  background: #0f3f3fcc;
+  border: 2px solid #ffffff2a;
+  background: #0b1014cc;
   color: #e8ffff;
-  font: 700 16px/1.1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  box-shadow: 0 0 10px #04161666;
+  font: 700 11px/1.1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  box-shadow: 0 0 8px #04161666;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(6px);
 }
 
 .touchSkillBtn.isAiming,
@@ -759,59 +781,97 @@ canvas {
 
 .touchCancel {
   position: absolute;
-  right: max(10px, env(safe-area-inset-right));
-  bottom: calc(max(10px, env(safe-area-inset-bottom)) + min(38vmin, 180px));
-  min-width: 68px;
-  height: 40px;
-  border-radius: 12px;
-  border: 2px solid #e24a4a;
-  background: #0f3f3fcc;
+  left: calc(var(--stage-right) - var(--hud-pad));
+  top: calc(var(--stage-bottom) - var(--hud-pad) - 116px);
+  transform: translate(-100%, -100%);
+  min-width: 56px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid #e24a4a;
+  background: #0b1014cc;
   color: #ffd0d0;
   pointer-events: auto;
   touch-action: none;
-  font: 13px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  font: 12px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+}
+
+.rotateHint {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: #071018f2;
+  color: #e8ffff;
+  pointer-events: auto;
+  text-align: center;
+}
+
+.rotateHint.isOn {
+  display: flex;
+}
+
+.rotateHintCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.rotateHintIcon {
+  color: #9af6f6;
+  animation: rotateHintSpin 1.6s ease-in-out infinite;
+}
+
+.rotateHintTitle {
+  margin: 0;
+  font: 700 22px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+}
+
+.rotateHintSub {
+  margin: 0;
+  color: #9af6f6;
+  font: 14px/1.4 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+}
+
+@keyframes rotateHintSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  40% {
+    transform: rotate(90deg);
+  }
+  100% {
+    transform: rotate(90deg);
+  }
 }
 
 @media (max-height: 430px) {
-  .helpFab,
   .settingsFab {
-    width: 32px;
-    height: 32px;
-    font-size: 18px;
+    width: 26px;
+    height: 26px;
   }
 
-  .helpFab {
-    right: 50px;
-  }
-
-  .hpHud {
-    min-width: 220px;
-    font-size: 12px;
-  }
-
-  .hpHudTrack {
-    width: 110px;
-  }
-
-  .matchHud {
-    top: 6px;
-    min-width: 220px;
-    font-size: 12px;
-  }
-
-  .matchHudRed,
-  .matchHudBlue {
-    font-size: 22px;
-  }
-
-  .matchHudClock {
-    font-size: 16px;
-  }
-
+  .matchHudPill,
+  .matchHudClock,
   .matchHudHero {
-    min-height: 26px;
+    min-height: 24px;
     font-size: 12px;
-    padding: 2px 20px 2px 6px;
+  }
+
+  .matchHudScoreVal {
+    font-size: 13px;
+  }
+
+  .touchSkillBtn {
+    width: 40px;
+    height: 40px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 10px;
   }
 
   .openingHudNum {

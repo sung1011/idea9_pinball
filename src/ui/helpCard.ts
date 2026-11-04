@@ -2,6 +2,7 @@ import type { HeroId } from '../heroes/heroIds';
 import { kitHelpSkills } from '../heroes/kitLabels';
 
 export type HelpCard = {
+  open: () => void;
   close: () => void;
   isOpen: () => boolean;
   setHero: (hero: HeroId) => void;
@@ -26,15 +27,8 @@ function addBlock(host: HTMLElement, title: string, lines: readonly string[]): v
   host.appendChild(block);
 }
 
-/** 右上角 `?`：点击开关；点空白或关闭钮收起。与齿轮设置分开。 */
+/** 说明卡：设置「怎么玩」打开；点空白或关闭钮收起。战场不再放 `?` 浮钮。 */
 export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard {
-  const fab = document.createElement('button');
-  fab.type = 'button';
-  fab.className = 'helpFab';
-  fab.textContent = '?';
-  fab.setAttribute('data-touch-control', '');
-  fab.setAttribute('aria-label', '说明');
-
   const overlay = document.createElement('div');
   overlay.className = 'helpOverlay';
   overlay.setAttribute('data-touch-control', '');
@@ -65,7 +59,7 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
     ]);
     addBlock(body, '怎么动', [
       '骑士一直保底冲（约 2.5），点地 / 鼠标只纠偏方向，不加油门。金矛尖跟瞄准。',
-      '顶栏比分旁可随时换英雄，只换技能组，血量 / 位置 / 对局不变。',
+      '左下角可随时换英雄，只换技能组，血量 / 位置 / 对局不变。',
       kitHelpSkills(hero),
       '按下进瞄，再按同键或左键释放；右键 / Esc 取消。',
       ...(hero === 'ring'
@@ -98,27 +92,21 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
 
   card.append(head, body);
   overlay.appendChild(card);
-  host.append(fab, overlay);
+  host.appendChild(overlay);
 
   const setOpen = (open: boolean): void => {
     overlay.classList.toggle('isOn', open);
-    fab.classList.toggle('isOn', open);
-    fab.setAttribute('aria-expanded', open ? 'true' : 'false');
   };
 
   const close = (): void => {
     setOpen(false);
   };
 
-  fab.addEventListener('click', (ev) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    const next = !overlay.classList.contains('isOn');
-    if (next) {
-      opts?.onOpen?.();
-    }
-    setOpen(next);
-  });
+  const open = (): void => {
+    opts?.onOpen?.();
+    setOpen(true);
+  };
+
   closeBtn.addEventListener('click', (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
@@ -144,6 +132,7 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
   );
 
   return {
+    open,
     close,
     isOpen: () => overlay.classList.contains('isOn'),
     setHero: (hero) => {

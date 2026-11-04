@@ -1,14 +1,12 @@
 import { Container, Graphics } from 'pixi.js';
 import {
   ARENA_CORNER_RADIUS,
-  BLUE_SPAWNS,
   CONTROL_POINT,
   LEFT_PILLAR,
   MAP_HEIGHT,
   MAP_WIDTH,
   PILLAR_HEIGHT,
   PILLAR_WIDTH,
-  RED_SPAWNS,
   RIGHT_PILLAR,
 } from '../core/constants';
 import type { MidpointHold } from '../core/matchSession';
@@ -18,20 +16,6 @@ const WOOD = 0xc4a574;
 const WOOD_DARK = 0x7a4e28;
 const WOOD_WASH = 0xd8c08a;
 const CREST = 0xf4f0e4;
-
-function drawGrid(): Graphics {
-  const grid = new Graphics();
-  for (let x = 1; x < MAP_WIDTH; x += 1) {
-    grid.moveTo(x, 0);
-    grid.lineTo(x, MAP_HEIGHT);
-  }
-  for (let y = 1; y < MAP_HEIGHT; y += 1) {
-    grid.moveTo(0, y);
-    grid.lineTo(MAP_WIDTH, y);
-  }
-  grid.stroke({ color: 0x6a8a4a, width: 0.02, alpha: 0.28 });
-  return grid;
-}
 
 function drawPillar(cx: number, cy: number): Graphics {
   const pillar = new Graphics();
@@ -99,19 +83,6 @@ function paintControl(g: Graphics, hold: MidpointHold): void {
   g.circle(cx, cy, CONTROL_POINT.radius * 0.82);
   g.stroke({ color, width: 0.03, alpha: 0.5 });
   drawHelmetCrest(g, cx, cy, color);
-}
-
-function drawSpawns(): Graphics {
-  const g = new Graphics();
-  for (const spawn of RED_SPAWNS) {
-    g.circle(spawn.x, spawn.y, 0.42);
-    g.stroke({ color: 0xe24a4a, width: 0.05, alpha: 0.45 });
-  }
-  for (const spawn of BLUE_SPAWNS) {
-    g.circle(spawn.x, spawn.y, 0.42);
-    g.stroke({ color: 0x3d7cf0, width: 0.05, alpha: 0.45 });
-  }
-  return g;
 }
 
 function drawHalfway(): Graphics {
@@ -223,9 +194,7 @@ export function createArenaView(): ArenaView {
   const inner = new Container();
   inner.addChild(clip);
   inner.mask = clip;
-  inner.addChild(drawGrid());
   inner.addChild(drawHalfway());
-  inner.addChild(drawSpawns());
   inner.addChild(drawPillar(LEFT_PILLAR.x, LEFT_PILLAR.y));
   inner.addChild(drawPillar(RIGHT_PILLAR.x, RIGHT_PILLAR.y));
   inner.addChild(control);

@@ -8,6 +8,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '战场 HUD Layout B：角落比分/计时胶囊、右下紧凑技能、左下换英雄；默认隐藏调试；横屏全屏、竖屏转横提示' },
   { title: '站点图标：红蓝对撞金矛 favicon / 触屏图标' },
   { title: '对局顶栏可随时换英雄：比分旁下拉指定 6 人；只换 kit，血量/位置/对局不变；GM · H 仍循环' },
   { title: '井绳四技能落地：双索 / 易位 / 索桩 / 回索；GM · H 循环钩刺 / 磁环 / 链生 / 钉壳 / 闪弧 / 井绳' },

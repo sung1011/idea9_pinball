@@ -14,6 +14,7 @@ import { verifyNail } from './core/verifyNail';
 import { verifyRing } from './core/verifyRing';
 import { verifyWell } from './core/verifyWell';
 import { verifyHeroPick } from './core/verifyHeroPick';
+import { verifyHudLayout } from './core/verifyHudLayout';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
 import { nextHero, type HeroId } from './heroes/heroIds';
@@ -28,15 +29,14 @@ import { createTouchPad } from './input/touchPad';
 import { createAimPreview } from './render/aimPreview';
 import { createArenaView } from './render/arenaView';
 import { createBallView } from './render/ballView';
-import { applyWorldTransform, fitWorldToScreen, type WorldTransform } from './render/worldTransform';
+import { applyWorldTransform, fitWorldToBox, type WorldTransform } from './render/worldTransform';
 import { createHelpCard } from './ui/helpCard';
-import { createHpHud } from './ui/hpHud';
 import { createMatchHud } from './ui/matchHud';
 import { createResultPanel } from './ui/resultPanel';
+import { createRotateHint } from './ui/rotateHint';
 import { createSettingsPanel } from './ui/settingsPanel';
+import { applyStageVars, computeLandscapeStage, readSafeInsets } from './ui/stageLayout';
 import './style.css';
-
-const VIEW_PADDING_PX = 32;
 
 async function boot(): Promise<void> {
   verifyM2();
@@ -50,6 +50,7 @@ async function boot(): Promise<void> {
   verifyArc();
   verifyWell();
   verifyHeroPick();
+  verifyHudLayout();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -59,7 +60,7 @@ async function boot(): Promise<void> {
   const app = new Application();
   await app.init({
     resizeTo: host,
-    background: 0x1a2820,
+    background: 0x071018,
     antialias: true,
     autoDensity: true,
     resolution: Math.min(window.devicePixelRatio || 1, 2),
@@ -84,29 +85,30 @@ async function boot(): Promise<void> {
   world.addChild(aimPreview.root);
   app.stage.addChild(world);
 
-  let transform: WorldTransform = fitWorldToScreen(
-    app.screen.width,
-    app.screen.height,
-    MAP_WIDTH,
-    MAP_HEIGHT,
-    VIEW_PADDING_PX,
-  );
+  const rotateHint = createRotateHint(host);
+
+  const layoutWorld = (): WorldTransform => {
+    const insets = readSafeInsets();
+    const stage = computeLandscapeStage(app.screen.width, app.screen.height, insets);
+    applyStageVars(host, stage);
+    rotateHint.sync();
+    return fitWorldToBox(stage.x, stage.y, stage.width, stage.height, MAP_WIDTH, MAP_HEIGHT);
+  };
+
+  let transform: WorldTransform = layoutWorld();
+  applyWorldTransform(world, transform);
 
   const layout = (): void => {
-    transform = fitWorldToScreen(
-      app.screen.width,
-      app.screen.height,
-      MAP_WIDTH,
-      MAP_HEIGHT,
-      VIEW_PADDING_PX,
-    );
+    transform = layoutWorld();
     applyWorldTransform(world, transform);
   };
 
-  layout();
   app.renderer.on('resize', layout);
+  window.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', layout);
+  window.visualViewport?.addEventListener('resize', layout);
+  window.screen.orientation?.addEventListener('change', layout);
 
-  const hpHud = createHpHud(host);
   const bus = createActionBus();
   const control = createPlayerControl();
   const touchPad = createTouchPad(host, bus);
@@ -134,7 +136,6 @@ async function boot(): Promise<void> {
     hero: player.hero,
     onPickHero: applyPlayerHero,
   });
-  hpHud.sync(balls);
   matchHud.sync(match.snapshot(), balls);
   arena.syncStalls(match.snapshot().stalls);
 
@@ -144,7 +145,6 @@ async function boot(): Promise<void> {
     match.reset();
     control.reset();
     bus.reset();
-    hpHud.resetLog();
     for (const bot of bots) {
       bot.reset();
     }
@@ -181,6 +181,7 @@ async function boot(): Promise<void> {
   syncHeroUi();
   const settings = createSettingsPanel(host, {
     onOpen: () => help.close(),
+    onOpenHelp: () => help.open(),
     onRestart: () => {
       restart();
       settings.close();
@@ -275,23 +276,12 @@ async function boot(): Promise<void> {
       );
     }
     const frameHits = [...step.hits, ...skillHits];
-    const events = match.tick(dt, frameHits);
+    match.tick(dt, frameHits);
     const next = match.snapshot();
     const aimingSlot = control.getAimingSlot();
     const skillCds = control.getSkillCds();
     const windup = control.getWindup();
     const aimHint = control.getAimHint();
-    if (events.length > 0 || frameHits.length > 0) {
-      hpHud.pushHits(frameHits);
-    }
-    hpHud.sync(balls, {
-      aimingSlot,
-      skillCds,
-      windup,
-      aimHint,
-      respawns: next.respawns,
-      charging: next.openingChargeRemain > 0,
-    });
     matchHud.sync(next, balls);
     resultPanel.sync(next);
     arena.syncHold(next.midpoint);

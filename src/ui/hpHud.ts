@@ -36,6 +36,7 @@ function formatHit(hit: CollisionHit): string {
   return `${hit.sourceLabel}→${hit.victimLabel} ${ZONE_LABEL[hit.zone]}×${hit.coeff.toFixed(2)} 伤${dmg} 弹${kb}`;
 }
 
+/** 调试血条 / 碰撞日志。Layout B 默认不挂到战场，血量改画在骑士头顶。 */
 export function createHpHud(host: HTMLElement): HpHud {
   const root = document.createElement('div');
   root.className = 'hpHud';

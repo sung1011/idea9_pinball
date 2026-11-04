@@ -14,13 +14,26 @@ export function fitWorldToScreen(
   worldHeight: number,
   paddingPx: number,
 ): WorldTransform {
-  const availW = Math.max(1, screenWidth - paddingPx * 2);
-  const availH = Math.max(1, screenHeight - paddingPx * 2);
+  return fitWorldToBox(0, 0, screenWidth, screenHeight, worldWidth, worldHeight, paddingPx);
+}
+
+/** 将逻辑世界等比装进指定舞台盒（横构图 letterbox / pillarbox）。 */
+export function fitWorldToBox(
+  boxX: number,
+  boxY: number,
+  boxW: number,
+  boxH: number,
+  worldWidth: number,
+  worldHeight: number,
+  paddingPx = 0,
+): WorldTransform {
+  const availW = Math.max(1, boxW - paddingPx * 2);
+  const availH = Math.max(1, boxH - paddingPx * 2);
   const scale = Math.min(availW / worldWidth, availH / worldHeight);
   return {
     scale,
-    offsetX: (screenWidth - worldWidth * scale) / 2,
-    offsetY: (screenHeight - worldHeight * scale) / 2,
+    offsetX: boxX + (boxW - worldWidth * scale) / 2,
+    offsetY: boxY + (boxH - worldHeight * scale) / 2,
   };
 }
 

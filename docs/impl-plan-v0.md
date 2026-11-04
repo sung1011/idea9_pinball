@@ -1,5 +1,5 @@
 # Idea pinball · 工程落地方案 v0
-更新：2026-11-04（站点图标 E：红蓝对撞金矛；对局顶栏可随时换英雄；井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋 2s 峰值 7.5）
+更新：2026-11-04（战场 HUD Layout B：角落胶囊 + 横屏全屏；站点图标 E：红蓝对撞金矛；对局可随时换英雄；井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋 2s 峰值 7.5）
 
 ## 栈
 - 客户端：TypeScript + PixiJS + Vite
@@ -10,7 +10,7 @@
 - 预览：GitHub Pages 项目站 `https://sung1011.github.io/idea9_pinball/`；`vite.config.ts` 的 `base` 为 `/idea9_pinball/`；推送 `main` 由 `.github/workflows/deploy-pages.yml` 发布；Pages Source 选 GitHub Actions
 
 ## 里程碑
-1. M0 脚手架：Vite+TS+Pixi；20×12 逻辑坐标；调试网格 ✅
+1. M0 脚手架：Vite+TS+Pixi；20×12 逻辑坐标；调试网格已从默认战场拿掉 ✅
 2. M1 物理：半径0.5；摩擦；墙反弹；速度上限8 ✅
 3. M2 碰撞：阈值掉血；朝向乘区；弹开；主动撞窗0.25s ✅
 4. M3 输入：Action；PC鼠键 + 手机虚拟键；瞄准同键二次释放 ✅
@@ -49,16 +49,19 @@
 - `src/heroes/nailKit.ts`：钉壳四技能数值与瞄准扇；对外显示甲垒 / 刺盾 / 顶冲 / 钉锚
 - `src/heroes/arcKit.ts`：闪弧四技能数值与瞄准圆；对外显示侧闪 / 掠刃 / 回印 / 虚影
 - `src/heroes/wellKit.ts`：井绳四技能数值与瞄准圆/桩线；对外显示双索 / 易位 / 索桩 / 回索
-- `src/render`：逻辑→屏幕变换（`worldTransform.ts`）、场地与领地纹章 / 木栏 Stall（`arenaView.ts`）、骑士圆盾羽冠矛尖与冲锋残影（`ballView.ts`）、磁场/困圈/索桩（`fieldOverlay.ts`）
+- `src/render`：逻辑→屏幕变换（`worldTransform.ts` 的 `fitWorldToBox`）、场地与领地纹章 / 木栏 Stall（`arenaView.ts`，默认无调试网格/出生圈）、骑士圆盾羽冠矛尖与冲锋残影（`ballView.ts`）、磁场/困圈/索桩（`fieldOverlay.ts`）
 - `src/debug/debugVelocity.ts`：`Z` 背后×1.35 / `X` 侧面×0.7 / `C` 正面×1.0 / `V` 轻蹭（在场才生效；仅 GM 开）；`R` 只重开一局（正式也可用）
 - `src/debug/debugMatch.ts`：`F`/`G` ±分，`T` 跳 30s，`Y` 当前阶段剩 1s，`H` 红方循环钩刺/磁环/链生/钉壳/闪弧/井绳（仅 GM 开）
 - `src/debug/gmState.ts`：GM 开关，默认开，记本地
 - `src/core/collisionDamage.ts`：相对速度阈值 / 朝向乘区 / 掉血弹开；无敌或同队不结算伤害
-- `src/ui/hpHud.ts`：血量条、瞄准/弱拧强拧/回场/无敌、最近碰撞日志
-- `src/ui/matchHud.ts`：双方分、倒计时、领地归属、回场与击破提示；比分旁英雄下拉（正式功能，不依赖 GM；指定英雄只换 kit）
+- `src/ui/hpHud.ts`：调试血条/碰撞日志（默认不挂到战场；骑士头顶仍画血条）
+- `src/ui/matchHud.ts`：Layout B 角落胶囊（左上红 / 右上蓝 / 顶中计时）、左下英雄下拉、短 toast；指定英雄只换 kit
+- `src/ui/stageLayout.ts`：横构图舞台、安全区、CSS 变量；竖窗 letterbox
+- `src/ui/rotateHint.ts`：触屏竖持转横提示
 - `src/core/verifyHeroPick.ts`：下拉指定 / H 循环同步选中 / 换 kit 保留血量位置
-- `src/ui/helpCard.ts`：右上角 `?` 说明卡（开局 / 怎么动 / 怎么得分 / 怎么赢 / 回场）；点空白或关闭钮收起
-- `src/ui/settingsPanel.ts`：右上角齿轮设置（常规 / 版本 / GM，对齐 idle/story 分页）；点空白关；与 `?` 分开
+- `src/core/verifyHudLayout.ts`：舞台保持 20×12 横构图、竖窗 letterbox、安全区
+- `src/ui/helpCard.ts`：说明卡（开局 / 怎么动 / 怎么得分 / 怎么赢 / 回场）；从设置常规「怎么玩」打开
+- `src/ui/settingsPanel.ts`：右上角小齿轮（常规 / 版本 / GM）；点空白关；常规可开说明卡
 - `src/ui/appVersion.ts`：版本号 + 构建短 SHA + 简短 changelog
 - `src/ui/resultPanel.ts`：局结束结算（胜/负、击破分与领地分、用时、再来一局）
 - `public/`：站点图标（源图 `knightIconSource.jpg`；`favicon.png` 32 / `appleTouchIcon.png` 180 / `icon192.png` / `icon512.png`），Vite 原样拷到 dist；`index.html` 用根路径 link，构建时随 `base` `/idea9_pinball/` 解析
@@ -86,7 +89,7 @@
 - 技能：按下进入瞄准（扇形+箭头预览，**无最长时限**），再按同键或左键释放；右键 / Esc / 取消键 取消，不冲量
 - 释放：朝向=瞄准方向；**前摇从释放后起算**。M5 起红方固定钩刺，不再用四槽相同 stub
 - PC：Aim=鼠标相对红球；Skill1–4=`1`/`2`/`3`/`4`（不绑 `QWE`；`R` 只重开一局）；Cancel=`右键`/`Esc`
-- 手机横屏：点地纠偏；右四键=Skill1–4；点技能不抢 Aim；瞄准中显示取消键；禁默认滚动/缩放
+- 手机横屏：点地纠偏；右下 2×2 四键=Skill1–4；点技能不抢 Aim；瞄准中显示取消键；禁默认滚动/缩放。竖持只出转横提示
 - 玩家控红球；蓝球在 M4 改为简 bot；调试 `Z` 背后×1.35 / `X` 侧面×0.7 / `C` 正面×1.0 / `V` 轻蹭（GM 开时）；`R` 只重开一局（正式也可用）
 
 ## M3.5 点地手感
@@ -106,7 +109,7 @@
 - 回场：HP≤0 立即离场（当帧无 hit 也会扫到并进 5s 回场）；己方半场出生；回场 2s 无敌（可滑、可放技能）。开局无敌并入冲锋 2s，不另叠。无敌或同队只做弹性分离
 - 领地：圆心地图中心、半径 2.5 格；每秒结算；区内活人数严格更多 +2；相等 0；离场当帧不占人
 - 简 bot：无寻路；保底冲靠近 + 急停 + 偶勾；不用方向捅连招；可被撞死并回场
-- 调试：齿轮 → GM（默认开）；`Z` 背后×1.35 / `X` 侧面×0.7 / `C` 正面×1.0 / `V` 轻蹭（不重置一局）；`R` 只重开（正式也可用）；`F`/`G` ±分；`T` 跳 30s；`Y` 当前阶段剩 1s；`H` 红方循环换英雄（顶栏下拉也可随时指定，不依赖 GM；只换 kit）；立即回场；`DEBUG_CLOCK_SCALE` 默认可加速时钟。GM 关则调试键无效，`R` 仍可用
+- 调试：齿轮 → GM（默认开）；`Z` 背后×1.35 / `X` 侧面×0.7 / `C` 正面×1.0 / `V` 轻蹭（不重置一局）；`R` 只重开（正式也可用）；`F`/`G` ±分；`T` 跳 30s；`Y` 当前阶段剩 1s；`H` 红方循环换英雄（左下角下拉也可随时指定，不依赖 GM；只换 kit）；立即回场；`DEBUG_CLOCK_SCALE` 默认可加速时钟。GM 关则调试键无效，`R` 仍可用。默认战场不画调试网格 / FPS / 碰撞日志
 - 本里程碑不做：其余英雄、匹配、联网、满编 3v3 假人 AI。骑士换皮已另做（表现层）
 
 ## 验收
@@ -132,7 +135,7 @@
 - 站领地且人数更多：每秒 +2，圈色随归属变；HUD 文案为「领地」，圈内为纹章头盔
 - 调试：`F` 红加到 100 立即结束并弹出结算（击破分 / 领地分 / 用时）；`G` 把双方刷平后 `T`/`Y` 进加时；加时再平后下次击破定胜负
 - 结算「再来一局」与 `R` 同重开；可关面板继续看场
-- 右上角 `?` 开说明卡；再点 `?`、点空白或关闭钮收起。齿轮开设置（常规 / 版本 / GM），与 `?` 分开
+- 齿轮开设置（常规 / 版本 / GM）；常规「怎么玩」开说明卡，点空白或关闭钮收起
 - `R` 与常规页「重开本局」正式可用；GM 默认开，关则调试键无效
 - 击破→5s 倒计时→回场满血 + 2s 无敌 + 保底可动；0 血无当帧 hit 也会离场
 
@@ -153,11 +156,11 @@
 - 本里程碑不做：联网、满编连招 AI。骑士换皮已另做（表现层，碰撞仍圆）
 
 ## M5 自测
-- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35` + `verifyM4` + `verifyM5` + `verifyRing` + `verifyChain` + `verifyNail` + `verifyArc` + `verifyWell` + `verifyHeroPick`
+- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35` + `verifyM4` + `verifyM5` + `verifyRing` + `verifyChain` + `verifyNail` + `verifyArc` + `verifyWell` + `verifyHeroPick` + `verifyHudLayout`
 - 按 `1` 进瞄可一直持有，再按 `1` 或左键后 0.4s 才出勾；未中 CD 约 4s
 - 蓄势→钩矛→连刺→盾冲可依次打出；HUD 分槽显示钩/刺/冲/蓄 CD
 - 蓝1 磁环会推波/困圈；蓝2 钩刺会保底靠近并偶尔勾，不会打捅×3 连招
-- 顶栏比分旁下拉可随时指定红方 6 英雄（正式功能，不依赖 GM）；只换 kit，血量/位置/对局不变；瞄准/前摇取消。GM `H` 与设置 GM「换英雄」仍循环；下拉选中值跟随 `player.hero`；HUD / `?` / 四键文案跟随 kit
+- 左下角下拉可随时指定红方 6 英雄（正式功能，不依赖 GM）；只换 kit，血量/位置/对局不变；瞄准/前摇取消。GM `H` 与设置 GM「换英雄」仍循环；下拉选中值跟随 `player.hero`；HUD / 说明卡 / 四键文案跟随 kit
 - 磁环：辉环跳秒伤、斥波击退、壁行贴墙不反弹后弹出、囚环内钩矛/盾冲/壁行失败进 2s 短 CD
 - 链生：愈链 HOT 己+友、盾脉碰撞伤×0.45、援勾拉自己或轻拉残血友、扰锋拧朝向并打断短瞄准
 - 钉壳：甲垒碰撞伤×0.4 未破甲回 8、刺盾被动反 12 / 主动反 16、顶冲 3 格+10、钉锚 0.6s 被推≥1 断钉、友军主动撞额外 10

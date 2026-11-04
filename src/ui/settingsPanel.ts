@@ -17,6 +17,7 @@ export type SettingsPanel = {
 
 export type SettingsActions = {
   onOpen?: () => void;
+  onOpenHelp?: () => void;
   onRestart: () => void;
   onCollision: (kind: CollisionTestKind) => void;
   onScore: (team: TeamId, points: number) => void;
@@ -61,7 +62,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
   fab.setAttribute('aria-label', '设置');
   fab.setAttribute('aria-haspopup', 'dialog');
   fab.innerHTML =
-    '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.07 7.07 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.59.22-1.14.53-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64L4.86 11.06c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.4.31.64.22l2.39-.96c.49.4 1.04.72 1.63.94l.36 2.54c.05.24.26.42.49.42h3.8c.24 0 .44-.18.49-.42l.36-2.54c.59-.22 1.14-.53 1.63-.94l2.39.96c.24.1.51 0 .64-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"/></svg>';
+    '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.07 7.07 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.59.22-1.14.53-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64L4.86 11.06c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.4.31.64.22l2.39-.96c.49.4 1.04.72 1.63.94l.36 2.54c.05.24.26.42.49.42h3.8c.24 0 .44-.18.49-.42l.36-2.54c.59-.22 1.14-.53 1.63-.94l2.39.96c.24.1.51 0 .64-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"/></svg>';
 
   const overlay = el('div', 'settingsOverlay');
   overlay.setAttribute('data-touch-control', '');
@@ -134,9 +135,17 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
       close();
     });
     body.appendChild(restart);
+    const helpBtn = el('button', 'settingsWide', '怎么玩');
+    helpBtn.type = 'button';
+    helpBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      close();
+      actions.onOpenHelp?.();
+    });
+    body.appendChild(helpBtn);
     addHint(body, kitSettingsHint(actions.getHero?.() ?? 'hook'));
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。右键 / Esc 取消瞄准。');
-    addHint(body, '顶栏比分旁可随时换英雄（只换技能组）。蓝1 默认磁环。GM 开时按 H 仍循环红方：钩刺 → 磁环 → 链生 → 钉壳 → 闪弧 → 井绳。');
+    addHint(body, '左下角可随时换英雄（只换技能组）。蓝1 默认磁环。GM 开时按 H 仍循环红方：钩刺 → 磁环 → 链生 → 钉壳 → 闪弧 → 井绳。');
   };
 
   const renderVersion = (): void => {
