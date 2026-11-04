@@ -65,6 +65,13 @@ canvas {
   color: #9af6f6;
 }
 
+.matchHudClock.isCharge {
+  color: #ffe08a;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 12px #ffe08acc;
+}
+
 .matchHudMeta {
   margin-top: 4px;
   display: flex;
@@ -115,8 +122,52 @@ canvas {
   line-height: 0.95;
 }
 
+.openingHud.isCharge {
+  padding: 20px 40px 22px;
+  border-radius: 20px;
+  background: #041616d8;
+  border: 2px solid #ffe08acc;
+  box-shadow: 0 0 36px #ffe08a66;
+}
+
 .openingHud.isCharge .openingHudNum {
-  font-size: clamp(40px, 9vmin, 72px);
+  font-size: clamp(72px, 17vmin, 132px);
+  letter-spacing: 0.2em;
+  animation: chargePulse 0.42s ease-in-out infinite alternate;
+  text-shadow:
+    0 0 22px #ffe08acc,
+    0 0 48px #ff9a3a88,
+    0 2px 0 #041616aa;
+}
+
+.openingHudTick {
+  display: none;
+  margin-top: 4px;
+  font-size: clamp(28px, 6vmin, 48px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #ffe08a;
+}
+
+.openingHud.isCharge .openingHudTick {
+  display: block;
+}
+
+.openingHud.isCharge .openingHudHint {
+  color: #ffe08a;
+  font-size: clamp(16px, 3vmin, 22px);
+  letter-spacing: 0.06em;
+}
+
+@keyframes chargePulse {
+  from {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  to {
+    transform: scale(1.08);
+    filter: brightness(1.28);
+  }
 }
 
 .openingHudHint {
@@ -583,6 +634,13 @@ canvas {
   text-shadow: 0 0 10px #ffe08a99;
 }
 
+.hpHudAction.isCharge {
+  color: #ffe08a;
+  opacity: 1;
+  font-weight: 800;
+  text-shadow: 0 0 12px #ffe08acc;
+}
+
 .hpHudFineTune {
   display: inline-block;
   margin-top: 6px;
@@ -601,6 +659,15 @@ canvas {
   background: #ffe08a;
   border-color: #ffe08a;
   box-shadow: 0 0 12px #ffe08acc;
+}
+
+.hpHudFineTune.isCharge {
+  opacity: 1;
+  color: #102020;
+  background: #ffe08a;
+  border-color: #ffb347;
+  box-shadow: 0 0 16px #ffe08add;
+  letter-spacing: 0.16em;
 }
 
 .touchLayer {
@@ -700,5 +767,9 @@ canvas {
 
   .openingHudNum {
     font-size: clamp(56px, 16vmin, 96px);
+  }
+
+  .openingHud.isCharge .openingHudNum {
+    font-size: clamp(52px, 14vmin, 88px);
   }
 }

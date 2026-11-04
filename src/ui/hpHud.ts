@@ -16,6 +16,7 @@ export type HudStatus = {
   skillCds: SkillCds;
   windup?: WindupInfo | null;
   respawns?: Record<number, number>;
+  charging?: boolean;
 };
 
 export type HpHud = {
@@ -86,7 +87,8 @@ export function createHpHud(host: HTMLElement): HpHud {
           const tune = ball.fineTuneRemain > 0 ? ` 强拧${ball.fineTuneRemain.toFixed(2)}s` : '';
           const inv = ball.invincibleRemain > 0 ? ` 无敌${ball.invincibleRemain.toFixed(1)}s` : '';
           const stun = ball.stunRemain > 0 ? ` 硬直${ball.stunRemain.toFixed(2)}s` : '';
-          value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${inv}${ram}${tune}${stun}`;
+          const charge = status?.charging ? ' 冲锋' : '';
+          value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${charge}${inv}${ram}${tune}${stun}`;
         }
         row.classList.toggle('isOut', !ball.inPlay);
 
@@ -98,6 +100,9 @@ export function createHpHud(host: HTMLElement): HpHud {
     const player = balls[0];
     const fine = player?.fineTuneRemain ?? 0;
     const parts: string[] = [];
+    if (status?.charging) {
+      parts.push('冲锋加速中 · 禁技能 · 几乎锁拧 · 全程无敌');
+    }
     if (status && status.aimingSlot > 0) {
       const name = HOOK_SKILL_SHORT[status.aimingSlot - 1] ?? `技能${status.aimingSlot}`;
       parts.push(`瞄准${name} · 再按同键或左键释放 · 右键/Esc/取消键取消`);
@@ -121,8 +126,14 @@ export function createHpHud(host: HTMLElement): HpHud {
     action.textContent = parts.join(' · ');
     action.classList.toggle('isFineTune', fine > 0);
     action.classList.toggle('isAiming', !!status && status.aimingSlot > 0);
+    action.classList.toggle('isCharge', !!status?.charging);
     fineTune.classList.toggle('isOn', fine > 0);
-    fineTune.textContent = fine > 0 ? `强拧 ${fine.toFixed(2)}s` : '弱拧';
+    fineTune.textContent = status?.charging
+      ? '冲锋'
+      : fine > 0
+        ? `强拧 ${fine.toFixed(2)}s`
+        : '弱拧';
+    fineTune.classList.toggle('isCharge', !!status?.charging);
   };
 
   const pushHits = (hits: CollisionHit[]): void => {

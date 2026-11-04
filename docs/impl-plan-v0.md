@@ -1,5 +1,5 @@
 # Idea pinball · 工程落地方案 v0
-更新：2026-11-04（开局 Stall 5s + 冲锋 2s；设置面板：常规 / 版本 / GM）
+更新：2026-11-04（Stall 半场底线；冲锋 2s 峰值 7.5 / 前 0.4s 拉升）
 
 ## 栈
 - 客户端：TypeScript + PixiJS + Vite
@@ -20,13 +20,13 @@
 8. M6 后：Go 同步；其余英雄
 
 ## 目录
-- `src/core`：逻辑常量（`constants.ts`：地图 20×12、球半径 0.5、领地半径 2.5、矮柱、速度上限 8、保底速 2.5、弱/强拧、一局分/时限）
+- `src/core`：逻辑常量（`constants.ts`：地图 20×12、球半径 0.5、领地半径 2.5、矮柱、速度上限 8、保底速 2.5、弱/强拧、冲锋峰值 7.5、一局分/时限）
 - `src/core/ballBody.ts`：圆体状态（队伍 / 在场 / 无敌 / 出生点 / Aim）
 - `src/core/physicsStep.ts`：每帧积分 / 摩擦 / 保底 / 盖帽；离场球不参与
 - `src/core/wallBounce.ts`：圆角矩形墙 + 矮柱胶囊反弹；球-球弹性分离（伤害在 collisionDamage）
 - `src/core/matchSession.ts`：Countdown（Stall 5s）→ Playing（先冲锋 2s）→ Overtime? → Result；击破/助攻/领地/回场；分项计分 + 用时
-- `src/core/stallFences.ts`：开局出生点描边围栏（物理四面封死）
-- `src/core/openingCharge.ts`：冲锋朝领地、极弱拧、保底速 2.8
+- `src/core/stallFences.ts`：开局各队半场底线围栏（红左底 / 蓝右底，开口朝领地，物理四面封死）
+- `src/core/openingCharge.ts`：冲锋朝领地、几乎锁拧、前 0.4s lerp 拉到峰值 7.5（上限仍 8）
 - `src/core/simpleBot.ts`：蓝方简 bot（保底冲靠近 + 急停 + 偶勾；不用捅×3）
 - `src/core/skillCaster.ts`：钩刺施放器（无限瞄准；释放后前摇；四槽独立 CD）
 - `src/core/skillQuery.ts`：扇形选取 / 勾索墙挡
@@ -80,7 +80,7 @@
 
 ## M4 一局约定
 - 本机：1 人控红方 1 球 vs 蓝方 1～2 个简 bot（`BLUE_BOT_COUNT`，默认 2）
-- 状态机：Countdown 5s（Stall 围栏，栏内不可出）→ Playing 240s（先冲锋 2s：朝领地、禁技能、无敌，并入原开局无敌）→ 平分则 Overtime 30s（只计领地）→ 再平则下次击破方胜 → Result
+- 状态机：Countdown 5s（各队半场底线 Stall，栏内不可出）→ Playing 240s（先冲锋 2s：朝领地；前 0.4s lerp 拉到峰值 7.5，上限仍 8；禁技能、几乎锁拧、无敌，并入原开局无敌）→ 平分则 Overtime 30s（只计领地）→ 再平则下次击破方胜 → Result
 - 开局仪式：Esc 或点空白跳过 Stall，直接进 Playing 并清栏（仍走 2s 冲锋）
 - 先到 100 立即结束（须一方严格领先）；到点比总分
 - 击破：HP≤0 离场，敌方击杀队伍 +15；击杀前 3s 内对死者造成过碰撞伤的队友（非击杀者）最近 1 人 +5。红方无队友，助攻由 `verifyM4` 双红预留覆盖
@@ -108,7 +108,7 @@
 
 ## M4 自测
 - `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM4`
-- 开局 Stall 5s 后冲锋 2s 无敌，互撞不掉血；围栏消失后才出栏。Esc / 点空白可跳过 Stall
+- 开局 Stall 5s（红左底 / 蓝右底）后冲锋 2s 无敌，前 0.4s 拉到 7.5，互撞不掉血；围栏消失后才出栏。Esc / 点空白可跳过 Stall
 - 撞死蓝 bot：红 +15，HUD 击破提示，蓝回场倒计时 5s，回场后再无敌 2s
 - 站领地且人数更多：每秒 +2，圈色随归属变；HUD / 圈标签文案为「领地」
 - 调试：`F` 红加到 100 立即结束并弹出结算（击破分 / 领地分 / 用时）；`G` 把双方刷平后 `T`/`Y` 进加时；加时再平后下次击破定胜负

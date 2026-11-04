@@ -110,7 +110,7 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
       }
 
       if (chargeRemain > 0) {
-        applyOpeningCharge(bot, dt);
+        applyOpeningCharge(bot, dt, chargeRemain);
         return caster.tick(bot, dt, roster);
       }
 

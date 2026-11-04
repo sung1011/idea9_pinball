@@ -1,5 +1,10 @@
 import type { MatchSnapshot } from '../core/matchSession';
 import type { BallBody } from '../core/ballBody';
+import {
+  OPENING_CHARGE_RAMP_SEC,
+  OPENING_CHARGE_SEC,
+  OPENING_CHARGE_SPEED,
+} from '../core/constants';
 
 export type MatchHud = {
   sync: (snap: MatchSnapshot, balls: readonly BallBody[]) => void;
@@ -67,9 +72,11 @@ export function createMatchHud(host: HTMLElement): MatchHud {
   opening.className = 'openingHud';
   const openingNum = document.createElement('div');
   openingNum.className = 'openingHudNum';
+  const openingTick = document.createElement('div');
+  openingTick.className = 'openingHudTick';
   const openingHint = document.createElement('div');
   openingHint.className = 'openingHudHint';
-  opening.append(openingNum, openingHint);
+  opening.append(openingNum, openingTick, openingHint);
 
   root.append(score, meta, toast);
   host.append(root, opening);
@@ -78,9 +85,13 @@ export function createMatchHud(host: HTMLElement): MatchHud {
     sync(snap, balls) {
       red.textContent = String(snap.redScore);
       blue.textContent = String(snap.blueScore);
-      clock.textContent = formatClock(snap);
+      const chargingClock = snap.openingChargeRemain > 0 && snap.phase !== 'countdown';
+      clock.textContent = chargingClock
+        ? `冲锋 ${snap.openingChargeRemain.toFixed(1)}s`
+        : formatClock(snap);
       clock.classList.toggle('isOvertime', snap.phase === 'overtime');
       clock.classList.toggle('isResult', snap.phase === 'result');
+      clock.classList.toggle('isCharge', chargingClock);
       hold.textContent = holdText(snap.midpoint);
       hold.dataset.hold = snap.midpoint;
 
@@ -103,12 +114,19 @@ export function createMatchHud(host: HTMLElement): MatchHud {
       opening.classList.toggle('isCharge', charging && !counting);
       if (counting) {
         openingNum.textContent = String(Math.max(1, Math.ceil(snap.timeLeft)));
+        openingTick.textContent = '';
         openingHint.textContent = '栏内待命 · Esc / 点空白跳过';
       } else if (charging) {
         openingNum.textContent = '冲锋';
-        openingHint.textContent = '禁技能 · 无敌';
+        openingTick.textContent = snap.openingChargeRemain.toFixed(1);
+        const elapsed = OPENING_CHARGE_SEC - snap.openingChargeRemain;
+        const ramping = elapsed < OPENING_CHARGE_RAMP_SEC;
+        openingHint.textContent = ramping
+          ? `加速中 → ${OPENING_CHARGE_SPEED} · 禁技能 · 无敌`
+          : `峰值 ${OPENING_CHARGE_SPEED} · 禁技能 · 无敌`;
       } else {
         openingNum.textContent = '';
+        openingTick.textContent = '';
         openingHint.textContent = '';
       }
     },

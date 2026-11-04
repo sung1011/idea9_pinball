@@ -207,17 +207,17 @@ async function boot(): Promise<void> {
         ? control.tick(player, sample, dt, balls, { skills: false, steer: true })
         : control.tick(player, sample, dt, balls);
     if (charging) {
-      applyOpeningCharge(player, dt);
+      applyOpeningCharge(player, dt, snap.openingChargeRemain);
     }
     for (const bot of bots) {
       skillHits.push(...bot.tick(dt, balls, snap.phase, snap.openingChargeRemain));
     }
     const step = stepPhysics(balls, dt, { stalls: snap.stallsOn ? snap.stalls : [] });
     if (charging) {
-      applyOpeningCharge(player, 0);
+      applyOpeningCharge(player, 0, snap.openingChargeRemain);
       for (const ball of balls) {
         if (ball !== player) {
-          applyOpeningCharge(ball, 0);
+          applyOpeningCharge(ball, 0, snap.openingChargeRemain);
         }
       }
     }
@@ -236,7 +236,13 @@ async function boot(): Promise<void> {
     if (events.length > 0 || frameHits.length > 0) {
       hpHud.pushHits(frameHits);
     }
-    hpHud.sync(balls, { aimingSlot, skillCds, windup, respawns: next.respawns });
+    hpHud.sync(balls, {
+      aimingSlot,
+      skillCds,
+      windup,
+      respawns: next.respawns,
+      charging: next.openingChargeRemain > 0,
+    });
     matchHud.sync(next, balls);
     resultPanel.sync(next);
     arena.syncHold(next.midpoint);
@@ -249,7 +255,7 @@ async function boot(): Promise<void> {
     });
     aimPreview.sync(player, aimingSlot, sample, windup);
     for (let i = 0; i < balls.length; i += 1) {
-      views[i].sync(balls[i]);
+      views[i].sync(balls[i], { charging: next.openingChargeRemain > 0 });
     }
   });
 }

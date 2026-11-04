@@ -5,15 +5,21 @@ import {
   CONTROL_POINT,
   FLOOR_SPEED,
   KNOCKOUT_SCORE,
+  MAP_WIDTH,
   MATCH_COUNTDOWN_SEC,
   MATCH_SCORE_LIMIT,
   MAX_HP,
   MIDPOINT_SCORE_PER_SEC,
+  OPENING_CHARGE_RAMP_SEC,
   OPENING_CHARGE_SEC,
   OPENING_CHARGE_SPEED,
+  OPENING_CHARGE_START_SPEED,
   RESPAWN_SEC,
   SPAWN_INVINCIBLE_SEC,
+  SPEED_CAP,
+  STALL_DEPTH,
 } from './constants';
+import { applyOpeningCharge, chargeSpeedAt } from './openingCharge';
 import {
   countTeamInPoint,
   createMatchRoster,
@@ -304,17 +310,35 @@ export function verifyM4(): void {
   assert(pre.snapshot().redScore === 0, 'M4：Countdown 内不计击破分');
 
   assert(MATCH_COUNTDOWN_SEC === 5 && OPENING_CHARGE_SEC === 2, 'M4：Stall 应为 5s、冲锋 2s');
+  assert(OPENING_CHARGE_SPEED === 7.5 && SPEED_CAP === 8, 'M4：冲锋峰值应为 7.5，上限仍 8');
+  assert(OPENING_CHARGE_RAMP_SEC === 0.4, 'M4：冲锋前段拉升应为 0.4s');
+  assert(Math.abs(chargeSpeedAt(OPENING_CHARGE_SEC) - OPENING_CHARGE_START_SPEED) < 1e-6, 'M4：栏开瞬间应为起步速');
+  assert(Math.abs(chargeSpeedAt(OPENING_CHARGE_SEC - OPENING_CHARGE_RAMP_SEC) - OPENING_CHARGE_SPEED) < 1e-6, 'M4：0.4s 后应到峰值');
 
   const ritualRoster = createMatchRoster();
   const ritualRed = ritualRoster[0];
+  const ritualBlue = ritualRoster[1];
   const ritual = createMatchSession(ritualRoster);
   const ritualSnap = ritual.snapshot();
   assert(ritualSnap.phase === 'countdown' && ritualSnap.stallsOn, 'M4：默认开局应在 Stall');
+  assert(
+    ritualRed.spawnX < STALL_DEPTH && ritualBlue.spawnX > MAP_WIDTH - STALL_DEPTH,
+    'M4：出生应在各队半场底线',
+  );
   const ritualStalls = stallsForBalls(ritualRoster);
   const redFence = stallForBall(ritualRed, ritualStalls);
+  const blueFence = stallForBall(ritualBlue, ritualStalls);
   if (!redFence || !stallContains(redFence, ritualRed.x, ritualRed.y)) {
-    throw new Error('M4：红应困在出生点围栏');
+    throw new Error('M4：红应困在左底围栏');
   }
+  if (!blueFence || !stallContains(blueFence, ritualBlue.x, ritualBlue.y)) {
+    throw new Error('M4：蓝应困在右底围栏');
+  }
+  assert(redFence.openToward === 1 && redFence.maxX <= STALL_DEPTH + 1e-6, 'M4：红栏应贴左底且开口朝右');
+  assert(
+    blueFence.openToward === -1 && blueFence.minX >= MAP_WIDTH - STALL_DEPTH - 1e-6,
+    'M4：蓝栏应贴右底且开口朝左',
+  );
   ritualRed.vx = -10;
   ritualRed.vy = 0;
   for (let i = 0; i < 24; i += 1) {
@@ -327,7 +351,10 @@ export function verifyM4(): void {
   assert(skipped.phase === 'playing' && !skipped.stallsOn, 'M4：跳过后应进 Playing 并清栏');
   assert(Math.abs(skipped.openingChargeRemain - OPENING_CHARGE_SEC) < 1e-6, 'M4：跳过后应进入 2s 冲锋');
   assert(Math.abs(ritualRed.invincibleRemain - OPENING_CHARGE_SEC) < 1e-6, 'M4：冲锋无敌应为 2s 而非叠成 4s');
-  assert(Math.hypot(ritualRed.vx, ritualRed.vy) + 1e-6 >= OPENING_CHARGE_SPEED - 0.05, 'M4：冲锋速度应不低于保底');
+  assert(Math.abs(Math.hypot(ritualRed.vx, ritualRed.vy) - OPENING_CHARGE_START_SPEED) < 0.08, 'M4：栏开瞬间应为起步速');
+  applyOpeningCharge(ritualRed, 0, OPENING_CHARGE_SEC - OPENING_CHARGE_RAMP_SEC);
+  assert(Math.abs(Math.hypot(ritualRed.vx, ritualRed.vy) - OPENING_CHARGE_SPEED) < 0.08, 'M4：0.4s 后应拉到峰值 7.5');
+  assert(Math.hypot(ritualRed.vx, ritualRed.vy) <= SPEED_CAP + 1e-6, 'M4：冲锋不得超过上限 8');
 
   for (let i = 0; i < 130; i += 1) {
     stepPhysics(ritualRoster, 1 / 60);

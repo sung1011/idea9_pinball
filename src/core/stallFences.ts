@@ -1,5 +1,5 @@
 import type { BallBody, TeamId } from './ballBody';
-import { BALL_RADIUS, STALL_HALF_H, STALL_HALF_W } from './constants';
+import { BALL_RADIUS, MAP_HEIGHT, MAP_WIDTH, STALL_DEPTH, STALL_Y_PAD } from './constants';
 import { bounceAlongInwardNormal } from './wallBounce';
 
 export type StallFence = {
@@ -12,24 +12,42 @@ export type StallFence = {
   openToward: 1 | -1;
 };
 
-export function stallAround(x: number, y: number, team: TeamId): StallFence {
+export function redBaselineStall(): StallFence {
   return {
-    minX: x - STALL_HALF_W,
-    maxX: x + STALL_HALF_W,
-    minY: y - STALL_HALF_H,
-    maxY: y + STALL_HALF_H,
-    team,
-    openToward: team === 'red' ? 1 : -1,
+    minX: 0,
+    maxX: STALL_DEPTH,
+    minY: STALL_Y_PAD,
+    maxY: MAP_HEIGHT - STALL_Y_PAD,
+    team: 'red',
+    openToward: 1,
   };
 }
 
+export function blueBaselineStall(): StallFence {
+  return {
+    minX: MAP_WIDTH - STALL_DEPTH,
+    maxX: MAP_WIDTH,
+    minY: STALL_Y_PAD,
+    maxY: MAP_HEIGHT - STALL_Y_PAD,
+    team: 'blue',
+    openToward: -1,
+  };
+}
+
+export function stallForTeam(team: TeamId): StallFence {
+  return team === 'red' ? redBaselineStall() : blueBaselineStall();
+}
+
+/** 每队一栏，贴半场底线；同队多球共用。 */
 export function stallsForBalls(balls: readonly BallBody[]): StallFence[] {
+  const seen = new Set<TeamId>();
   const out: StallFence[] = [];
   for (const ball of balls) {
-    if (!ball.team) {
+    if (!ball.team || seen.has(ball.team)) {
       continue;
     }
-    out.push(stallAround(ball.spawnX, ball.spawnY, ball.team));
+    seen.add(ball.team);
+    out.push(stallForTeam(ball.team));
   }
   return out;
 }
@@ -39,8 +57,11 @@ export function stallContains(fence: StallFence, x: number, y: number): boolean 
 }
 
 export function stallForBall(ball: BallBody, stalls: readonly StallFence[]): StallFence | null {
+  if (!ball.team) {
+    return null;
+  }
   for (const fence of stalls) {
-    if (fence.team === ball.team && stallContains(fence, ball.spawnX, ball.spawnY)) {
+    if (fence.team === ball.team) {
       return fence;
     }
   }

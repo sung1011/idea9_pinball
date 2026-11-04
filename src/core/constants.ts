@@ -116,15 +116,20 @@ export const MATCH_OVERTIME_SEC = 30;
 
 /** 开局冲锋（秒）：并入原「开局 2s 无敌」，不另叠一段 */
 export const OPENING_CHARGE_SEC = 2;
-/** 冲锋保底，略高于巡航 2.5 */
-export const OPENING_CHARGE_SPEED = 2.8;
-/** 冲锋极弱拧（度/秒） */
-export const OPENING_CHARGE_STEER_DEG_PER_SEC = 18;
+/** 冲锋峰值速（格/秒）；全局上限仍 8 */
+export const OPENING_CHARGE_SPEED = 7.5;
+/** 栏开后前段 lerp 拉升（秒） */
+export const OPENING_CHARGE_RAMP_SEC = 0.4;
+/** 冲锋起步速，随后拉到峰值 */
+export const OPENING_CHARGE_START_SPEED = 2.5;
+/** 冲锋几乎锁拧（度/秒） */
+export const OPENING_CHARGE_STEER_DEG_PER_SEC = 6;
 export const OPENING_CHARGE_STEER_RAD_PER_SEC = (OPENING_CHARGE_STEER_DEG_PER_SEC * Math.PI) / 180;
 
-/** 开局 stall 围栏：出生点为心的描边矩形半宽 / 半高（格） */
-export const STALL_HALF_W = 1.25;
-export const STALL_HALF_H = 1.25;
+/** 开局 stall：贴各队半场底线，从底线向内的深度（格） */
+export const STALL_DEPTH = 2.4;
+/** stall 上下留白，避开圆角死角 */
+export const STALL_Y_PAD = 0.4;
 
 /** 先到此分立即结束 */
 export const MATCH_SCORE_LIMIT = 100;
@@ -145,11 +150,12 @@ export const MIDPOINT_TICK_SEC = 1;
 /** 调试：仅加速一局时钟（倒计时/回场/领地），物理仍按真实 dt。默认 1 */
 export const DEBUG_CLOCK_SCALE = 1;
 
-export const RED_SPAWNS = [{ x: 4.5, y: 6, facingX: 1, facingY: 0 }] as const;
+/** 半场底线出生：红左底、蓝右底，上下错开避开矮柱 */
+export const RED_SPAWNS = [{ x: 1.2, y: 3.4, facingX: 1, facingY: 0 }] as const;
 
 export const BLUE_SPAWNS = [
-  { x: 15.5, y: 4.2, facingX: -1, facingY: 0 },
-  { x: 15.5, y: 7.8, facingX: -1, facingY: 0 },
+  { x: 18.8, y: 3.4, facingX: -1, facingY: 0 },
+  { x: 18.8, y: 8.6, facingX: -1, facingY: 0 },
 ] as const;
 
 /** 简 bot：决策间隔（急停 / 靠近 / 偶勾） */

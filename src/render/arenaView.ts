@@ -115,7 +115,9 @@ function paintStalls(g: Graphics, stalls: readonly StallFence[]): void {
     const w = fence.maxX - fence.minX;
     const h = fence.maxY - fence.minY;
     g.rect(fence.minX, fence.minY, w, h);
-    g.stroke({ color, width: 0.07, alpha: 0.92 });
+    g.fill({ color, alpha: 0.12 });
+    g.rect(fence.minX, fence.minY, w, h);
+    g.stroke({ color, width: 0.08, alpha: 0.94 });
     if (fence.openToward > 0) {
       g.moveTo(fence.maxX, fence.minY);
       g.lineTo(fence.maxX, fence.maxY);
@@ -123,7 +125,7 @@ function paintStalls(g: Graphics, stalls: readonly StallFence[]): void {
       g.moveTo(fence.minX, fence.minY);
       g.lineTo(fence.minX, fence.maxY);
     }
-    g.stroke({ color: 0xffe08a, width: 0.1, alpha: 0.88 });
+    g.stroke({ color: 0xffe08a, width: 0.12, alpha: 0.92 });
   }
 }
 
@@ -133,7 +135,7 @@ export type ArenaView = {
   syncStalls: (stalls: readonly StallFence[]) => void;
 };
 
-/** 俯视场地：圆角矩形 + 领地圈 + 左右矮柱 + 半场出生点。 */
+/** 俯视场地：圆角矩形 + 领地圈 + 左右矮柱 + 半场底线出生点。 */
 export function createArenaView(): ArenaView {
   const root = new Container();
 
