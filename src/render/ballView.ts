@@ -25,7 +25,7 @@ function unit(x: number, y: number): { x: number; y: number } {
 
 /** 圆盾 + 纹章十字 + 中心铆钉。碰撞半径不变，只改外观。 */
 function drawKnightShield(g: Graphics, ball: BallBody): void {
-  const alpha = ball.invincibleRemain > 0 ? 0.72 : 1;
+  const alpha = ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
   const rim =
     ball.hero === 'ring'
       ? 0xb8fff4
@@ -33,7 +33,9 @@ function drawKnightShield(g: Graphics, ball: BallBody): void {
         ? 0x86efac
         : ball.hero === 'nail'
           ? 0xf4bf6a
-          : SHIELD_RIM;
+          : ball.hero === 'arc'
+            ? 0x7dd3fc
+            : SHIELD_RIM;
   g.circle(0, 0, BALL_RADIUS);
   g.fill({ color: ball.color, alpha });
   g.stroke({ color: rim, width: 0.055, alpha: 0.95 });
@@ -231,6 +233,18 @@ export function createBallView(ball: BallBody): BallView {
     if (next.pinRemain > 0) {
       body.circle(0, 0, BALL_RADIUS + 0.12);
       body.stroke({ color: 0xf59e0b, width: 0.07, alpha: 0.95 });
+    }
+    if (next.grazeRemain > 0) {
+      body.circle(0, 0, BALL_RADIUS + 0.2);
+      body.stroke({ color: 0x7dd3fc, width: 0.05, alpha: 0.9 });
+    }
+    if (next.echoMarkRemain > 0) {
+      body.circle(0, 0, BALL_RADIUS + 0.24);
+      body.stroke({ color: 0xf0abfc, width: 0.06, alpha: 0.92 });
+    }
+    if (next.phaseRemain > 0) {
+      body.circle(0, 0, BALL_RADIUS + 0.16);
+      body.stroke({ color: 0xe0f2fe, width: 0.05, alpha: 0.7 });
     }
 
     hpBar.clear();

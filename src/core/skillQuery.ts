@@ -222,3 +222,29 @@ export function pickNearestAlly(
 ): FanPick | null {
   return nearestOf(allyCandidates(caster, roster, range));
 }
+
+/** 距内最近敌人（标记回响）。无敌不选。 */
+export function pickNearestEnemy(
+  caster: BallBody,
+  roster: readonly BallBody[],
+  range: number,
+): FanPick | null {
+  const out: FanPick[] = [];
+  for (const other of roster) {
+    if (!other.inPlay || other.id === caster.id) {
+      continue;
+    }
+    if (other.team && caster.team && other.team === caster.team) {
+      continue;
+    }
+    if (other.invincibleRemain > 0) {
+      continue;
+    }
+    const dist = Math.hypot(other.x - caster.x, other.y - caster.y);
+    if (dist > range || dist < EPS) {
+      continue;
+    }
+    out.push({ target: other, dist });
+  }
+  return nearestOf(out);
+}

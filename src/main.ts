@@ -9,6 +9,7 @@ import { verifyM35 } from './core/verifyM35';
 import { verifyM4 } from './core/verifyM4';
 import { verifyM5 } from './core/verifyM5';
 import { verifyChain } from './core/verifyChain';
+import { verifyArc } from './core/verifyArc';
 import { verifyNail } from './core/verifyNail';
 import { verifyRing } from './core/verifyRing';
 import { resetTrapZones } from './core/trapZones';
@@ -43,6 +44,7 @@ async function boot(): Promise<void> {
   verifyRing();
   verifyChain();
   verifyNail();
+  verifyArc();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {

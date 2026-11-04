@@ -10,6 +10,8 @@ export type FieldOverlay = {
 
 const AURA = 0x5eead4;
 const TRAP = 0xa78bfa;
+const MARK = 0xf0abfc;
+const GRAZE = 0x7dd3fc;
 
 /** 磁场身周圈 + 困圈落点圈。 */
 export function createFieldOverlay(): FieldOverlay {
@@ -25,6 +27,19 @@ export function createFieldOverlay(): FieldOverlay {
       root.circle(ball.x, ball.y, RING_FIELD.radius);
       root.fill({ color: AURA, alpha: pulse });
       root.stroke({ color: AURA, width: 0.06, alpha: 0.55 });
+    }
+    for (const ball of balls) {
+      if (!ball.inPlay) {
+        continue;
+      }
+      if (ball.echoMarkRemain > 0) {
+        root.circle(ball.x, ball.y, ball.radius + 0.28);
+        root.stroke({ color: MARK, width: 0.06, alpha: 0.8 });
+      }
+      if (ball.grazeRemain > 0) {
+        root.circle(ball.x, ball.y, ball.radius + 0.18);
+        root.stroke({ color: GRAZE, width: 0.045, alpha: 0.7 });
+      }
     }
     for (const zone of listTrapZones()) {
       const pulse = 0.16 + 0.1 * Math.min(1, zone.remain);

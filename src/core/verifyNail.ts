@@ -148,7 +148,7 @@ export function verifyNail(): void {
   assert(NAIL_PIN.breakDist === 1 && NAIL_PIN.allyRamExtra === 10, '钉壳：断钉≥1、友军主动撞额外10');
   assert(HARD_CC_DIMINISH_WINDOW === 1.5, '钉壳：二次硬控窗仍为 1.5s');
   assert(nextHero('hook') === 'ring' && nextHero('ring') === 'chain', '钉壳：H 循环前段钩刺→磁环→链生');
-  assert(nextHero('chain') === 'nail' && nextHero('nail') === 'hook', '钉壳：H 循环应接到钉壳再回到钩刺');
+  assert(nextHero('chain') === 'nail' && nextHero('nail') === 'arc', '钉壳：H 循环应接到钉壳再接到闪弧');
   assert(Math.abs(scaleHardCc(NAIL_PIN.duration, 0, 0.4) - 0.3) < 1e-6, '钉壳：1.5s 内二次硬控时长减半');
 
   const armor = createSkillCaster('nail');

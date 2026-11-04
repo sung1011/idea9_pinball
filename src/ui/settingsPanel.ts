@@ -136,7 +136,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     body.appendChild(restart);
     addHint(body, kitSettingsHint(actions.getHero?.() ?? 'hook'));
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。右键 / Esc 取消瞄准。');
-    addHint(body, '蓝1 默认磁环。GM 开时按 H 循环红方：钩刺 → 磁环 → 链生 → 钉壳。');
+    addHint(body, '蓝1 默认磁环。GM 开时按 H 循环红方：钩刺 → 磁环 → 链生 → 钉壳 → 闪弧。');
   };
 
   const renderVersion = (): void => {
@@ -201,7 +201,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     });
     toggleRow.append(toggleText, toggle);
     body.appendChild(toggleRow);
-    addHint(body, gmOn ? '调试键已开：Z/X/C/V · F/G · T/Y · H 循环钩刺/磁环/链生/钉壳。' : 'GM 关：调试键无效，R 仍可重开。');
+    addHint(body, gmOn ? '调试键已开：Z/X/C/V · F/G · T/Y · H 循环钩刺/磁环/链生/钉壳/闪弧。' : 'GM 关：调试键无效，R 仍可重开。');
 
     addGmGroup('碰撞测', [
       gmBtn('背后 Z', () => actions.onCollision('back')),

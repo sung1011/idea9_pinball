@@ -9,6 +9,7 @@ import {
   MAP_WIDTH,
 } from './constants';
 import type { HeroId } from '../heroes/heroIds';
+import { ARC_MARK, ARC_SIDESTEP } from '../heroes/arcKit';
 import { CHAIN_HEAL, CHAIN_SCRAMBLE, CHAIN_SHIELD, CHAIN_TOW } from '../heroes/chainKit';
 import { HOOK_PULL } from '../heroes/hookKit';
 import { NAIL_PIN, NAIL_RAM } from '../heroes/nailKit';
@@ -233,8 +234,31 @@ function pickNailAction(
   return null;
 }
 
+function pickArcAction(
+  bot: BallBody,
+  enemy: BallBody | null,
+  enemyD: number,
+  cds: SkillCds,
+  jx: number,
+  jy: number,
+): ActionSample | null {
+  if (enemy && enemyD <= ARC_MARK.range && cds[2] <= 0) {
+    return castSample(3, jx, jy);
+  }
+  if (enemy && enemyD < 3 && cds[1] <= 0) {
+    return castSample(2, jx, jy);
+  }
+  if (enemy && enemyD <= ARC_SIDESTEP.dist + 1.2 && cds[0] <= 0) {
+    return castSample(1, jx, jy);
+  }
+  if ((bot.hp < bot.maxHp * 0.55 || enemyD < 1.6) && cds[3] <= 0) {
+    return castSample(4, jx, jy);
+  }
+  return null;
+}
+
 /**
- * 简化 AI：钩刺保底冲靠近 + 急停 + 偶勾；磁环推波 / 困圈 / 磁场 / 近壁粘壁；链生扰锋 / 愈链 / 援勾；钉壳定锚 / 短冲顶 / 叠甲。
+ * 简化 AI：钩刺保底冲靠近 + 急停 + 偶勾；磁环推波 / 困圈 / 磁场 / 近壁粘壁；链生扰锋 / 愈链 / 援勾；钉壳定锚 / 短冲顶 / 叠甲；闪弧标记 / 擦伤 / 侧闪。
  */
 export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): SimpleBot {
   const random = opts.random ?? Math.random;
@@ -310,6 +334,8 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
               ? pickChainAction(bot, ally, enemy, cds, jx, jy)
               : hero === 'nail'
                 ? pickNailAction(bot, enemy, approach.enemyD, cds, jx, jy)
+                : hero === 'arc'
+                  ? pickArcAction(bot, enemy, approach.enemyD, cds, jx, jy)
             : pickHookAction(
                 cds,
                 speed,

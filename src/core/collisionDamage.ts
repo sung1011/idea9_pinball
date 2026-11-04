@@ -1,3 +1,4 @@
+import { applyArcOnCollision } from './arcCombat';
 import type { BallBody } from './ballBody';
 import { applyNailReflect, applyPinRamBonus } from './nailCombat';
 import {
@@ -149,6 +150,8 @@ export function applyCollisionCombat(
   nx: number,
   ny: number,
   relSpeed: number,
+  relVx = a.vx - b.vx,
+  relVy = a.vy - b.vy,
 ): CollisionHit[] {
   if (a.invincibleRemain > 0 || b.invincibleRemain > 0) {
     return [];
@@ -196,6 +199,7 @@ export function applyCollisionCombat(
       hits.push(reflect);
     }
   }
+  hits.push(...applyArcOnCollision(a, b, nx, ny, relSpeed, relVx, relVy));
   return hits;
 }
 

@@ -14,6 +14,7 @@ import {
 } from '../heroes/hookKit';
 import { RING_TRAP } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
+import { createArcCaster } from './arcCaster';
 import { createChainCaster } from './chainCaster';
 import { createNailCaster } from './nailCaster';
 import { createRingCaster } from './ringCaster';
@@ -97,6 +98,9 @@ export function createSkillCaster(hero: HeroId = 'hook'): SkillCaster {
   }
   if (hero === 'nail') {
     return createNailCaster();
+  }
+  if (hero === 'arc') {
+    return createArcCaster();
   }
   return createHookCaster();
 }

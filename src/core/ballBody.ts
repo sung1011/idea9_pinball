@@ -70,6 +70,14 @@ export type BallBody = {
   pinX: number;
   pinY: number;
   pinnedByTeam?: TeamId;
+  /** 擦伤刃窗口剩余秒数 */
+  grazeRemain: number;
+  grazeLocks: Array<{ id: number; remain: number }>;
+  /** 标记回响剩余秒数；>0 时下一次主动撞/擦伤额外伤 */
+  echoMarkRemain: number;
+  echoMarkSourceId: number;
+  /** 虚晃无碰撞剩余秒数 */
+  phaseRemain: number;
 };
 
 export function createBallBody(init: {
@@ -136,6 +144,11 @@ export function createBallBody(init: {
     pinX: 0,
     pinY: 0,
     pinnedByTeam: undefined,
+    grazeRemain: 0,
+    grazeLocks: [],
+    echoMarkRemain: 0,
+    echoMarkSourceId: -1,
+    phaseRemain: 0,
   };
 }
 
@@ -320,6 +333,46 @@ export function tickPin(ball: BallBody, dt: number, breakDist: number): void {
   }
 }
 
+export function applyEchoMark(ball: BallBody, duration: number, sourceId: number): void {
+  ball.echoMarkRemain = Math.max(ball.echoMarkRemain, duration);
+  ball.echoMarkSourceId = sourceId;
+}
+
+export function clearEchoMark(ball: BallBody): void {
+  ball.echoMarkRemain = 0;
+  ball.echoMarkSourceId = -1;
+}
+
+export function tickEchoMark(ball: BallBody, dt: number): void {
+  if (ball.echoMarkRemain <= 0) {
+    clearEchoMark(ball);
+    return;
+  }
+  ball.echoMarkRemain = Math.max(0, ball.echoMarkRemain - Math.max(0, dt));
+  if (ball.echoMarkRemain <= 0) {
+    clearEchoMark(ball);
+  }
+}
+
+export function tickGraze(ball: BallBody, dt: number): void {
+  const step = Math.max(0, dt);
+  if (ball.grazeRemain > 0) {
+    ball.grazeRemain = Math.max(0, ball.grazeRemain - step);
+  }
+  if (ball.grazeLocks.length === 0) {
+    return;
+  }
+  ball.grazeLocks = ball.grazeLocks.filter((lock) => {
+    lock.remain -= step;
+    return lock.remain > 1e-9;
+  });
+}
+
+export function clearGraze(ball: BallBody): void {
+  ball.grazeRemain = 0;
+  ball.grazeLocks.length = 0;
+}
+
 export function clearKitAuras(ball: BallBody): void {
   ball.slideWalls = false;
   ball.fieldRemain = 0;
@@ -331,4 +384,7 @@ export function clearKitAuras(ball: BallBody): void {
   clearArmor(ball);
   clearReflect(ball);
   clearPin(ball);
+  clearEchoMark(ball);
+  clearGraze(ball);
+  ball.phaseRemain = 0;
 }

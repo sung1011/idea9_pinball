@@ -2,7 +2,9 @@ import {
   openFineTune,
   tickActiveRam,
   tickArmor,
+  tickEchoMark,
   tickFineTune,
+  tickGraze,
   tickHeal,
   tickInvincible,
   tickPin,
@@ -91,6 +93,8 @@ export function stepPhysics(
     nx: number;
     ny: number;
     relSpeed: number;
+    relVx: number;
+    relVy: number;
   }> = [];
 
   for (let i = 0; i < COLLISION_ITERS; i += 1) {
@@ -124,6 +128,8 @@ export function stepPhysics(
           nx: contact.nx,
           ny: contact.ny,
           relSpeed: contact.relSpeed,
+          relVx: contact.relVx,
+          relVy: contact.relVy,
         });
       }
     }
@@ -132,7 +138,15 @@ export function stepPhysics(
   const hits: CollisionHit[] = [];
   for (const contact of pending) {
     hits.push(
-      ...applyCollisionCombat(contact.a, contact.b, contact.nx, contact.ny, contact.relSpeed),
+      ...applyCollisionCombat(
+        contact.a,
+        contact.b,
+        contact.nx,
+        contact.ny,
+        contact.relSpeed,
+        contact.relVx,
+        contact.relVy,
+      ),
     );
   }
 
@@ -150,6 +164,8 @@ export function stepPhysics(
     });
     tickReflect(ball, stepDt);
     tickPin(ball, stepDt, NAIL_PIN.breakDist);
+    tickGraze(ball, stepDt);
+    tickEchoMark(ball, stepDt);
     if (collided.has(ball.id)) {
       openFineTune(ball);
     }
