@@ -43,6 +43,7 @@ export function verifySkillTip(): void {
   assert(skillTipCopy('hook', 1).name === '钩矛', '技能提示：钩刺 1 对外名应为钩矛');
   assert(skillTipCopy('hook', 1).effect.includes('贴脸'), '技能提示：钩矛效果应来自设计表');
   assert(skillTipCopy('ring', 4).name === '囚环', '技能提示：磁环 4 对外名应为囚环');
+  assert(skillTipCopy('ring', 4).effect.includes('物理关死出不去'), '技能提示：囚环应写物理关死出不去');
   assert(skillTipCopy('well', 1).name === '双索', '技能提示：井绳 1 对外名应为双索');
 
   const delayedHost = document.createElement('div');

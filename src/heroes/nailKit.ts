@@ -5,7 +5,7 @@ export const NAIL_ARMOR = {
   slot: 1,
   cd: 10,
   windup: 0,
-  duration: 1.5,
+  duration: 3.5,
   mul: 0.4,
   heal: 8,
 } as const;
@@ -14,10 +14,10 @@ export const NAIL_THORN = {
   slot: 2,
   cd: 9,
   windup: 0,
-  passiveWindow: 0.5,
+  passiveWindow: 2.5,
   passiveDamage: 12,
   passivePush: 4,
-  activeWindow: 1,
+  activeWindow: 3,
   activeDamage: 16,
 } as const;
 

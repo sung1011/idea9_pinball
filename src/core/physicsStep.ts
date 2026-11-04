@@ -19,6 +19,7 @@ import { FRICTION, SPEED_CAP } from './constants';
 import { applyFloorSpeed } from './skillStub';
 import { resolveAllStakes } from './ropeStakes';
 import { resolveStallInner, stallForBall, type StallFence } from './stallFences';
+import { resolveTrapCages } from './trapZones';
 import { resolveArenaObstacles, resolveBallBall } from './wallBounce';
 
 export type PhysicsExtras = {
@@ -71,7 +72,7 @@ export type PhysicsStepResult = {
   wallHitIds: number[];
 };
 
-/** 每帧：积分位移 → 墙/柱/球弹性分离 → 达标碰撞掉血弹开 → 摩擦 / 保底 → 速度盖帽。 */
+/** 每帧：积分位移 → 墙/柱/球/困圈夹边 → 达标碰撞掉血弹开 → 摩擦 / 保底 → 速度盖帽。 */
 export function stepPhysics(
   balls: readonly BallBody[],
   dt: number,
@@ -113,6 +114,7 @@ export function stepPhysics(
         wallHits.add(ball.id);
       }
     }
+    resolveTrapCages(live);
     for (let a = 0; a < live.length; a += 1) {
       for (let b = a + 1; b < live.length; b += 1) {
         const contact = resolveBallBall(live[a], live[b]);
@@ -137,6 +139,7 @@ export function stepPhysics(
         });
       }
     }
+    resolveTrapCages(live);
   }
 
   const hits: CollisionHit[] = [];

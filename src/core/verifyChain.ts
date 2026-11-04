@@ -135,9 +135,9 @@ function tickPinned(
 /** 链生四技能：治疗 HOT、护盾减伤、勾友拉人、朝向打乱打断瞄准。 */
 export function verifyChain(): void {
   resetTrapZones();
-  assert(CHAIN_HEAL.cd === 10 && CHAIN_HEAL.dps === 6 && CHAIN_HEAL.duration === 2, '链生：治疗链应为 CD10 / 每秒6 / 2s');
+  assert(CHAIN_HEAL.cd === 10 && CHAIN_HEAL.dps === 6 && CHAIN_HEAL.duration === 4, '链生：治疗链应为 CD10 / 每秒6 / 4s');
   assert(CHAIN_HEAL.windup === 0.3 && CHAIN_HEAL.fanDeg === 40 && CHAIN_HEAL.range === 6, '链生：治疗链应为前摇0.3 / ±40° / 距6');
-  assert(CHAIN_SHIELD.cd === 12 && CHAIN_SHIELD.mul === 0.45 && CHAIN_SHIELD.duration === 1.2, '链生：护盾应为 CD12 / ×0.45 / 1.2s');
+  assert(CHAIN_SHIELD.cd === 12 && CHAIN_SHIELD.mul === 0.45 && CHAIN_SHIELD.duration === 3.2, '链生：护盾应为 CD12 / ×0.45 / 3.2s');
   assert(CHAIN_TOW.cd === 8 && CHAIN_TOW.lowHpRatio === 0.4 && CHAIN_TOW.pullDist === 2, '链生：勾友应为 CD8 / 残血40% / 轻拉2');
   assert(CHAIN_SCRAMBLE.cd === 7 && CHAIN_SCRAMBLE.windup === 0.2 && CHAIN_SCRAMBLE.damage === 4, '链生：打乱应为 CD7 / 前摇0.2 / 伤4');
 
@@ -152,7 +152,7 @@ export function verifyChain(): void {
   tickPinned(heal, healRed, [healRed, healAlly, healBlue], 0.28);
   assert(Math.abs(healRed.hp - 70) < 1e-6 && Math.abs(healAlly.hp - 70) < 1e-6, '链生：前摇未结束不应 HOT');
   tickPinned(heal, healRed, [healRed, healAlly, healBlue], 0.05);
-  assert(healRed.healRemain > 1.9 && healAlly.healRemain > 1.9, '链生：释放后己+友应上 HOT');
+  assert(healRed.healRemain > CHAIN_HEAL.duration - 0.1 && healAlly.healRemain > CHAIN_HEAL.duration - 0.1, '链生：释放后己+友应上 HOT');
   assert(healBlue.healRemain === 0, '链生：治疗链不应 HOT 敌人');
   tickPinned(heal, healRed, [healRed, healAlly, healBlue], 1);
   assert(Math.abs(healRed.hp - 76) < 0.35, '链生：治疗链 1s 己应回约 6');
@@ -160,14 +160,14 @@ export function verifyChain(): void {
   tickPinned(heal, healRed, [healRed, healAlly, healBlue], CHAIN_HEAL.duration);
   const afterHeal = healRed.hp;
   tickPinned(heal, healRed, [healRed, healAlly, healBlue], 0.4);
-  assert(Math.abs(healRed.hp - afterHeal) < 1e-6, '链生：HOT 2s 后应结束');
+  assert(Math.abs(healRed.hp - afterHeal) < 1e-6, '链生：HOT 结束后应停回血');
 
   resetTrapZones();
   const [shieldRed, shieldAlly, shieldFar] = redAllyBlue(8, 6, 10.5, 6, 16, 6);
   const shield = createSkillCaster('chain');
   fire(shield, shieldRed, 2, [shieldRed, shieldAlly, shieldFar]);
   assert(Math.abs(shield.getCds()[1] - CHAIN_SHIELD.cd) < 1e-6, '链生：护盾应即放进 12s CD');
-  assert(shieldAlly.shieldRemain > 1.15 && Math.abs(shieldAlly.shieldMul - CHAIN_SHIELD.mul) < 1e-6, '链生：最近友≤5 应吃盾');
+  assert(shieldAlly.shieldRemain > CHAIN_SHIELD.duration - 0.05 && Math.abs(shieldAlly.shieldMul - CHAIN_SHIELD.mul) < 1e-6, '链生：最近友≤5 应吃盾');
   assert(shieldRed.shieldRemain === 0, '链生：有友在距内时护盾不应只罩自己');
   assert(shieldFar.shieldRemain === 0, '链生：护盾不应罩敌人');
 
@@ -208,7 +208,7 @@ export function verifyChain(): void {
     hero: 'chain',
   });
   fire(lone, loneBall, 2, [loneBall]);
-  assert(loneBall.shieldRemain > 1.15, '链生：无友时护盾应仅罩自己');
+  assert(loneBall.shieldRemain > CHAIN_SHIELD.duration - 0.05, '链生：无友时护盾应仅罩自己');
 
   resetTrapZones();
   const [towRed, towAlly] = redAllyBlue(8, 6, 12, 6, 16, 6);

@@ -76,7 +76,7 @@ const RING_SKILL_TIPS = [
   '身周磁场，敌持续掉血',
   '锥形击退并造成伤害',
   '沿墙滑行后按朝向弹出',
-  '点地困圈，禁敌位移技',
+  '点地困圈，物理关死出不去',
 ] as const;
 
 const CHAIN_SKILL_TIPS = [
@@ -147,7 +147,7 @@ export function kitHudLine(hero: HeroId): string {
 
 export function kitHelpSkills(hero: HeroId): string {
   if (hero === 'ring') {
-    return '技能 1–4：1 辉环（身周磁场） / 2 斥波 / 3 壁行 / 4 囚环（困圈）。';
+    return '技能 1–4：1 辉环（身周磁场） / 2 斥波 / 3 壁行 / 4 囚环（物理关死出不去）。';
   }
   if (hero === 'chain') {
     return '技能 1–4：1 愈链（治疗链） / 2 盾脉 / 3 援勾 / 4 扰锋（朝向打乱）。';

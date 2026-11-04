@@ -7,7 +7,7 @@ export const RING_FIELD = {
   cd: 11,
   windup: 0,
   radius: 2,
-  duration: 3,
+  duration: 5,
   dps: 6,
 } as const;
 
@@ -25,7 +25,7 @@ export const RING_SLIDE = {
   slot: 3,
   cd: 14,
   windup: 0,
-  slideTime: 2,
+  slideTime: 4,
   popSpeed: 8,
 } as const;
 
@@ -35,7 +35,7 @@ export const RING_TRAP = {
   windup: 0.35,
   placeRange: 4,
   radius: 2.5,
-  duration: 1.8,
+  duration: 3.8,
   punishCd: 2,
 } as const;
 

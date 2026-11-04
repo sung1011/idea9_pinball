@@ -8,7 +8,7 @@ export const CHAIN_HEAL = {
   fanDeg: 40,
   range: 6,
   dps: 6,
-  duration: 2,
+  duration: 4,
 } as const;
 
 export const CHAIN_SHIELD = {
@@ -16,7 +16,7 @@ export const CHAIN_SHIELD = {
   cd: 12,
   windup: 0,
   range: 5,
-  duration: 1.2,
+  duration: 3.2,
   mul: 0.45,
 } as const;
 

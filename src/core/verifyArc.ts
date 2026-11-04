@@ -118,11 +118,11 @@ function dropTrapOn(ball: BallBody): void {
 export function verifyArc(): void {
   resetTrapZones();
   assert(ARC_SIDESTEP.cd === 7 && ARC_SIDESTEP.windup === 0.15 && ARC_SIDESTEP.dist === 2, '闪弧：侧移闪应为 CD7 / 前摇0.15 / 横移2');
-  assert(ARC_GRAZE.cd === 9 && ARC_GRAZE.duration === 2 && ARC_GRAZE.damage === 11, '闪弧：擦伤刃应为 CD9 / 窗2s / 伤11');
+  assert(ARC_GRAZE.cd === 9 && ARC_GRAZE.duration === 4 && ARC_GRAZE.damage === 11, '闪弧：擦伤刃应为 CD9 / 窗4s / 伤11');
   assert(ARC_GRAZE.minDeg === 60 && ARC_GRAZE.maxDeg === 120 && ARC_GRAZE.targetCd === 1, '闪弧：擦伤夹角 60–120、同目标 1s');
   assert(ARC_MARK.cd === 11 && ARC_MARK.windup === 0.25 && ARC_MARK.range === 5, '闪弧：标记应为 CD11 / 前摇0.25 / 距5');
-  assert(ARC_MARK.duration === 4 && ARC_MARK.extra === 14, '闪弧：标记应为 4s / 额外14');
-  assert(ARC_PHASE.cd === 14 && ARC_PHASE.duration === 0.4 && ARC_PHASE.minSpeed === 6, '闪弧：虚晃应为 CD14 / 0.4s / 结束速≥6');
+  assert(ARC_MARK.duration === 6 && ARC_MARK.extra === 14, '闪弧：标记应为 6s / 额外14');
+  assert(ARC_PHASE.cd === 14 && ARC_PHASE.duration === 2.4 && ARC_PHASE.minSpeed === 6, '闪弧：虚晃应为 CD14 / 2.4s / 结束速≥6');
   assert(ARC_PHASE.ramWindow === 0.2, '闪弧：虚晃达标后撞窗应为 0.2s');
   assert(nextHero('hook') === 'ring' && nextHero('ring') === 'chain', '闪弧：H 循环前段钩刺→磁环→链生');
   assert(nextHero('chain') === 'nail' && nextHero('nail') === 'arc', '闪弧：H 循环应接到钉壳再接到闪弧');
@@ -161,7 +161,7 @@ export function verifyArc(): void {
   const [grazeRed, grazeBlue] = redBlue(10, 6, 16, 6);
   fire(graze, grazeRed, 2, [grazeRed, grazeBlue]);
   assert(Math.abs(graze.getCds()[1] - ARC_GRAZE.cd) < 1e-6, '闪弧：擦伤刃应即放进 9s CD');
-  assert(grazeRed.grazeRemain > 1.95, '闪弧：擦伤刃应开 2s 窗');
+  assert(grazeRed.grazeRemain > ARC_GRAZE.duration - 0.05, '闪弧：擦伤刃应开持续窗');
 
   const headOn = tryGrazeBlade(grazeRed, grazeBlue, 8, 1, 0, 8, 0);
   assert(!headOn, '闪弧：对撞夹角 0 不应擦伤');
@@ -203,7 +203,7 @@ export function verifyArc(): void {
   advance(mark, markRed, [markRed, markBlue], 0.23);
   assert(markBlue.echoMarkRemain === 0, '闪弧：标记前摇未结束不应上印');
   advance(mark, markRed, [markRed, markBlue], 0.05);
-  assert(markBlue.echoMarkRemain > 3.9, '闪弧：距≤5 应上标记 4s');
+  assert(markBlue.echoMarkRemain > ARC_MARK.duration - 0.1, '闪弧：距≤5 应上标记');
 
   const hpAfterMark = markBlue.hp;
   markRed.activeRamRemain = 0.25;
@@ -240,13 +240,13 @@ export function verifyArc(): void {
   fire(phase, phaseRed, 4, [phaseRed, phaseBlue]);
   assert(Math.abs(phase.getCds()[3] - ARC_PHASE.cd) < 1e-6, '闪弧：虚晃应即放进 14s CD');
   assert(phase.isDisplacing(), '闪弧：虚晃应为位移技');
-  assert(phaseRed.phaseRemain > 0.35, '闪弧：虚晃应开 0.4s 无碰撞');
+  assert(phaseRed.phaseRemain > ARC_PHASE.duration - 0.05, '闪弧：虚晃应开无碰撞窗');
   const hpPhase = phaseBlue.hp;
   advance(phase, phaseRed, [phaseRed, phaseBlue], 0.2);
   assert(phaseBlue.hp === hpPhase, '闪弧：虚晃期间球-球不应碰撞掉血');
-  assert(phaseRed.phaseRemain > 0.1, '闪弧：0.2s 时虚晃应仍在');
-  advance(phase, phaseRed, [phaseRed, phaseBlue], 0.25);
-  assert(phaseRed.phaseRemain === 0, '闪弧：0.4s 后虚晃应结束');
+  assert(phaseRed.phaseRemain > ARC_PHASE.duration - 0.25, '闪弧：0.2s 时虚晃应仍在');
+  advance(phase, phaseRed, [phaseRed, phaseBlue], ARC_PHASE.duration - 0.2 + 0.03);
+  assert(phaseRed.phaseRemain === 0, '闪弧：虚晃结束后应结束');
   assert(phaseRed.activeRamRemain > 0.1 && phaseRed.activeRamRemain <= ARC_PHASE.ramWindow + 1e-6, '闪弧：结束速度≥6 应开 0.2s 撞窗');
 
   resetTrapZones();

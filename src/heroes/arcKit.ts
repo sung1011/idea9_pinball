@@ -22,7 +22,7 @@ export const ARC_GRAZE = {
   slot: 2,
   cd: 9,
   windup: 0,
-  duration: 2,
+  duration: 4,
   damage: 11,
   minDeg: 60,
   maxDeg: 120,
@@ -34,7 +34,7 @@ export const ARC_MARK = {
   cd: 11,
   windup: 0.25,
   range: 5,
-  duration: 4,
+  duration: 6,
   extra: 14,
 } as const;
 
@@ -42,7 +42,7 @@ export const ARC_PHASE = {
   slot: 4,
   cd: 14,
   windup: 0,
-  duration: 0.4,
+  duration: 2.4,
   minSpeed: 6,
   ramWindow: 0.2,
 } as const;

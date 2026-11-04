@@ -246,9 +246,9 @@ export function verifyM5(): void {
   advance(brake, brakeBall, [brakeBall], 0.3);
   const mid = Math.hypot(brakeBall.vx, brakeBall.vy);
   const expectMid = 8 * Math.exp(-FRICTION * HOOK_BRAKE.frictionMul * 0.3);
-  assert(Math.abs(mid - expectMid) < 0.15, 'M5：急停 0.6s 内摩擦应为 ×10');
+  assert(Math.abs(mid - expectMid) < 0.15, 'M5：急停期间摩擦应为 ×10');
   let popped = false;
-  let popLeft = 0.4;
+  let popLeft = HOOK_BRAKE.brakeTime - 0.3 + 0.08;
   while (popLeft > 1e-9 && !popped) {
     const dt = Math.min(1 / 60, popLeft);
     play(brake, brakeBall, [brakeBall], dt);

@@ -136,7 +136,7 @@ export function verifyWell(): void {
   assert(WELL_SWAP.cd === 16 && WELL_SWAP.windup === 0.45 && WELL_SWAP.range === 5, '井绳：换位应为 CD16 / 前摇0.45 / 距5');
   assert(WELL_SWAP.damage === 5 && WELL_SWAP.speedKeep === 0.5, '井绳：换位应为伤5 / 速度50%');
   assert(WELL_STAKE.cd === 12 && WELL_STAKE.windup === 0.3 && WELL_STAKE.range === 6, '井绳：弹索桩应为 CD12 / 前摇0.3 / 距6');
-  assert(WELL_STAKE.duration === 5, '井绳：弹索桩应持续 5s');
+  assert(WELL_STAKE.duration === 7, '井绳：弹索桩应持续 7s');
   assert(WELL_REEL.cd === 9 && WELL_REEL.width === 1 && WELL_REEL.damage === 6, '井绳：收索应为 CD9 / 宽1 / 伤6');
   assert(nextHero('hook') === 'ring' && nextHero('ring') === 'chain', '井绳：H 循环前段钩刺→磁环→链生');
   assert(nextHero('chain') === 'nail' && nextHero('nail') === 'arc', '井绳：H 循环应接到钉壳再接到闪弧');

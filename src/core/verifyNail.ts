@@ -138,10 +138,10 @@ function tickPinned(
 /** 钉壳四技能：叠甲减伤回血、反击刺被动/主动、短冲顶、定锚断钉与额外伤。 */
 export function verifyNail(): void {
   resetTrapZones();
-  assert(NAIL_ARMOR.cd === 10 && NAIL_ARMOR.duration === 1.5 && NAIL_ARMOR.mul === 0.4, '钉壳：叠甲应为 CD10 / 1.5s / ×0.4');
+  assert(NAIL_ARMOR.cd === 10 && NAIL_ARMOR.duration === 3.5 && NAIL_ARMOR.mul === 0.4, '钉壳：叠甲应为 CD10 / 3.5s / ×0.4');
   assert(NAIL_ARMOR.heal === 8, '钉壳：未破甲结束应回 8');
-  assert(NAIL_THORN.cd === 9 && NAIL_THORN.passiveWindow === 0.5 && NAIL_THORN.passiveDamage === 12, '钉壳：反击刺被动应为 0.5s / 12');
-  assert(NAIL_THORN.activeWindow === 1 && NAIL_THORN.activeDamage === 16, '钉壳：反击刺主动应为 1s / 16');
+  assert(NAIL_THORN.cd === 9 && NAIL_THORN.passiveWindow === 2.5 && NAIL_THORN.passiveDamage === 12, '钉壳：反击刺被动应为 2.5s / 12');
+  assert(NAIL_THORN.activeWindow === 3 && NAIL_THORN.activeDamage === 16, '钉壳：反击刺主动应为 3s / 16');
   assert(NAIL_RAM.cd === 8 && NAIL_RAM.dashDist === 3, '钉壳：短冲顶应为 CD8 / 冲 3');
   assert(NAIL_PIN.cd === 13 && NAIL_PIN.windup === 0.3 && NAIL_PIN.fanDeg === 45, '钉壳：定锚应为 CD13 / 前摇0.3 / 45°');
   assert(NAIL_PIN.range === 5 && NAIL_PIN.duration === 0.6 && NAIL_PIN.damage === 6, '钉壳：定锚应为距5 / 0.6s / 伤6');
@@ -156,7 +156,7 @@ export function verifyNail(): void {
   armorRed.hp = 70;
   fire(armor, armorRed, 1, [armorRed]);
   assert(Math.abs(armor.getCds()[0] - NAIL_ARMOR.cd) < 1e-6, '钉壳：叠甲应即放进 10s CD');
-  assert(armorRed.armorRemain > 1.45 && Math.abs(armorRed.armorMul - NAIL_ARMOR.mul) < 1e-6, '钉壳：叠甲应上 1.5s ×0.4');
+  assert(armorRed.armorRemain > NAIL_ARMOR.duration - 0.05 && Math.abs(armorRed.armorMul - NAIL_ARMOR.mul) < 1e-6, '钉壳：叠甲应上 3.5s ×0.4');
   tickPinned(armor, armorRed, [armorRed], NAIL_ARMOR.duration + 0.02);
   assert(Math.abs(armorRed.hp - 78) < 1e-6, '钉壳：未破甲结束应回 8');
   assert(armorRed.armorRemain === 0, '钉壳：叠甲结束后应变层应掉');
@@ -205,7 +205,7 @@ export function verifyNail(): void {
   );
   assert(!!passive, '钉壳：被主动撞应反弹 12');
   assert(thornBlue.vx > thornVx + 1, '钉壳：被动反伤应带小推');
-  assert(thornRed.reflectRemain > 0.4, '钉壳：被动应开 0.5s 窗');
+  assert(thornRed.reflectRemain > NAIL_THORN.passiveWindow - 0.1, '钉壳：被动应开反伤窗');
 
   resetTrapZones();
   const isolated = createBallBody({

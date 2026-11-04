@@ -17,7 +17,7 @@ import { applySkillDamage } from './skillHits';
 import { pickFanEnemies, unitVec } from './skillQuery';
 import type { SkillCaster, SkillCds, WindupInfo } from './skillCaster';
 import { setFacingFrom } from './skillStub';
-import { clearTrapZone, isInEnemyTrap, setTrapZone, tickTrapZone } from './trapZones';
+import { clearTrapZone, isInEnemyTrap, markTrapOccupants, setTrapZone, tickTrapZone } from './trapZones';
 
 const TIME_EPS = 1e-7;
 
@@ -141,7 +141,7 @@ export function createRingCaster(): SkillCaster {
     return hits;
   };
 
-  const placeTrap = (ball: BallBody, markX: number, markY: number): void => {
+  const placeTrap = (ball: BallBody, markX: number, markY: number, roster: readonly BallBody[]): void => {
     setTrapZone({
       ownerId: ball.id,
       ownerTeam: ball.team,
@@ -150,6 +150,7 @@ export function createRingCaster(): SkillCaster {
       radius: RING_TRAP.radius,
       remain: RING_TRAP.duration,
     });
+    markTrapOccupants(roster);
   };
 
   const finishWindup = (
@@ -176,7 +177,7 @@ export function createRingCaster(): SkillCaster {
       startSlide(ball);
       return [];
     }
-    placeTrap(ball, markX, markY);
+    placeTrap(ball, markX, markY, roster);
     return [];
   };
 

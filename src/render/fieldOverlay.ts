@@ -3,6 +3,7 @@ import type { BallBody } from '../core/ballBody';
 import { listStakes } from '../core/ropeStakes';
 import { listTrapZones } from '../core/trapZones';
 import { RING_FIELD } from '../heroes/ringKit';
+import { WELL_STAKE } from '../heroes/wellKit';
 
 export type FieldOverlay = {
   root: Graphics;
@@ -50,7 +51,7 @@ export function createFieldOverlay(): FieldOverlay {
       root.stroke({ color: TRAP, width: 0.07, alpha: 0.7 });
     }
     for (const stake of listStakes()) {
-      const pulse = 0.28 + 0.12 * Math.min(1, stake.remain / 5);
+      const pulse = 0.28 + 0.12 * Math.min(1, stake.remain / WELL_STAKE.duration);
       root.circle(stake.x, stake.y, stake.radius);
       root.fill({ color: STAKE, alpha: pulse });
       root.stroke({ color: STAKE, width: 0.07, alpha: 0.85 });

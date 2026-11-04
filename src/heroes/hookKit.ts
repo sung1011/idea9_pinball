@@ -40,7 +40,7 @@ export const HOOK_BRAKE = {
   slot: 4,
   cd: 12,
   windup: 0,
-  brakeTime: 0.6,
+  brakeTime: 2.6,
   frictionMul: 10,
   popSpeed: 11,
 } as const;

@@ -39,7 +39,7 @@ export const WELL_STAKE = {
   cd: 12,
   windup: 0.3,
   range: 6,
-  duration: 5,
+  duration: 7,
   radius: 0.32,
 } as const;
 
