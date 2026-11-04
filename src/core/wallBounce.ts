@@ -140,14 +140,21 @@ export function resolveArenaObstacles(ball: BallBody): void {
   resolvePillarWall(ball, RIGHT_PILLAR);
 }
 
-/** 等质量弹性分离；无伤害、无朝向乘区。 */
-export function resolveBallBall(a: BallBody, b: BallBody): void {
+export type BallOverlap = {
+  nx: number;
+  ny: number;
+  relSpeed: number;
+  approaching: boolean;
+};
+
+/** 等质量弹性分离；伤害 / 朝向乘区 / 弹开由 collisionDamage 在接触后结算。 */
+export function resolveBallBall(a: BallBody, b: BallBody): BallOverlap | null {
   let dx = b.x - a.x;
   let dy = b.y - a.y;
   let dist = hypot2(dx, dy);
   const minDist = a.radius + b.radius;
   if (dist >= minDist) {
-    return;
+    return null;
   }
 
   let nx: number;
@@ -161,20 +168,24 @@ export function resolveBallBall(a: BallBody, b: BallBody): void {
     ny = dy / dist;
   }
 
+  const relSpeed = hypot2(a.vx - b.vx, a.vy - b.vy);
+  const vnA = a.vx * nx + a.vy * ny;
+  const vnB = b.vx * nx + b.vy * ny;
+  const rel = vnB - vnA;
+  const approaching = rel <= 0;
+
   const overlap = minDist - dist;
   a.x -= nx * overlap * 0.5;
   a.y -= ny * overlap * 0.5;
   b.x += nx * overlap * 0.5;
   b.y += ny * overlap * 0.5;
 
-  const vnA = a.vx * nx + a.vy * ny;
-  const vnB = b.vx * nx + b.vy * ny;
-  const rel = vnB - vnA;
   if (rel > 0) {
-    return;
+    return { nx, ny, relSpeed, approaching };
   }
   a.vx += rel * nx;
   a.vy += rel * ny;
   b.vx -= rel * nx;
   b.vy -= rel * ny;
+  return { nx, ny, relSpeed, approaching };
 }

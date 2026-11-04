@@ -50,3 +50,34 @@ export const REST_SPEED = 0.05;
 
 /** 墙/柱弹性系数；1 = 完全弹性反弹 */
 export const WALL_RESTITUTION = 1;
+
+/** 基础血量 */
+export const MAX_HP = 100;
+
+/** 碰撞掉血：相对速度阈值（格/秒） */
+export const COLLISION_SPEED_THRESHOLD = 4;
+
+/** 主动撞窗口内的相对速度阈值（格/秒） */
+export const ACTIVE_RAM_SPEED_THRESHOLD = 2.5;
+
+/** 碰撞伤害 = SCALE × (相对速度 − 阈值) × 朝向系数，先乘再 cap */
+export const COLLISION_DAMAGE_SCALE = 6;
+export const COLLISION_DAMAGE_CAP = 28;
+
+/** 朝向乘区：相对撞入角相对受击方朝向 */
+export const FACING_FRONT_DEG = 45;
+export const FACING_SIDE_DEG = 135;
+export const FACING_FRONT_COEFF = 1;
+export const FACING_SIDE_COEFF = 0.7;
+export const FACING_REAR_COEFF = 1.35;
+
+/**
+ * 掉血弹开初速 ≈ KNOCKBACK_SCALE × 朝向系数 × min(1, (相对速度−阈值)/SPAN)
+ * 单次感上限约 2.5 格当量
+ */
+export const KNOCKBACK_SCALE = 2;
+export const KNOCKBACK_SPEED_SPAN = 8;
+export const KNOCKBACK_FEEL_CAP = 2.5;
+
+/** 刚放位移 / 调试冲刺后的主动撞窗口（秒） */
+export const ACTIVE_RAM_WINDOW = 0.25;

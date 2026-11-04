@@ -1,4 +1,5 @@
-import type { BallBody } from './ballBody';
+import { tickActiveRam, type BallBody } from './ballBody';
+import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
 import { FRICTION, REST_SPEED, SPEED_CAP } from './constants';
 import { resolveArenaObstacles, resolveBallBall } from './wallBounce';
 
@@ -30,8 +31,12 @@ function applyFrictionAndFacing(ball: BallBody, dt: number): void {
   ball.facingY = ball.vy / speed;
 }
 
-/** 每帧：积分位移 → 墙/柱/球分离反弹 → 摩擦 → 速度盖帽。 */
-export function stepPhysics(balls: BallBody[], dt: number): void {
+function pairKey(a: BallBody, b: BallBody): string {
+  return a.id < b.id ? `${a.id}:${b.id}` : `${b.id}:${a.id}`;
+}
+
+/** 每帧：积分位移 → 墙/柱/球弹性分离 → 达标碰撞掉血弹开 → 摩擦 → 速度盖帽。 */
+export function stepPhysics(balls: BallBody[], dt: number): CollisionHit[] {
   const stepDt = Math.min(Math.max(dt, 0), MAX_DT);
 
   for (const ball of balls) {
@@ -39,19 +44,53 @@ export function stepPhysics(balls: BallBody[], dt: number): void {
     ball.y += ball.vy * stepDt;
   }
 
+  const seen = new Set<string>();
+  const pending: Array<{
+    a: BallBody;
+    b: BallBody;
+    nx: number;
+    ny: number;
+    relSpeed: number;
+  }> = [];
+
   for (let i = 0; i < COLLISION_ITERS; i += 1) {
     for (const ball of balls) {
       resolveArenaObstacles(ball);
     }
     for (let a = 0; a < balls.length; a += 1) {
       for (let b = a + 1; b < balls.length; b += 1) {
-        resolveBallBall(balls[a], balls[b]);
+        const contact = resolveBallBall(balls[a], balls[b]);
+        if (!contact || !contact.approaching) {
+          continue;
+        }
+        const key = pairKey(balls[a], balls[b]);
+        if (seen.has(key)) {
+          continue;
+        }
+        seen.add(key);
+        pending.push({
+          a: balls[a],
+          b: balls[b],
+          nx: contact.nx,
+          ny: contact.ny,
+          relSpeed: contact.relSpeed,
+        });
       }
     }
+  }
+
+  const hits: CollisionHit[] = [];
+  for (const contact of pending) {
+    hits.push(
+      ...applyCollisionCombat(contact.a, contact.b, contact.nx, contact.ny, contact.relSpeed),
+    );
   }
 
   for (const ball of balls) {
     applyFrictionAndFacing(ball, stepDt);
     capSpeed(ball);
+    tickActiveRam(ball, stepDt);
   }
+
+  return hits;
 }

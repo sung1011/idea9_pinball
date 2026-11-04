@@ -23,3 +23,57 @@ canvas {
   pointer-events: none;
   user-select: none;
 }
+
+.hpHud {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  min-width: 280px;
+  color: #e8ffff;
+  font: 13px/1.4 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hpHudRows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hpHudRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hpHudName {
+  width: 2em;
+  font-weight: 700;
+}
+
+.hpHudTrack {
+  position: relative;
+  width: 140px;
+  height: 10px;
+  border-radius: 5px;
+  background: #102020;
+  overflow: hidden;
+}
+
+.hpHudFill {
+  display: block;
+  height: 100%;
+}
+
+.hpHudValue {
+  color: #c8f6f6;
+  font-variant-numeric: tabular-nums;
+}
+
+.hpHudLog {
+  margin-top: 8px;
+  max-width: 420px;
+  color: #9af6f6;
+  opacity: 0.88;
+}
