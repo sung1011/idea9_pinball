@@ -1,6 +1,10 @@
+import type { HeroId } from '../heroes/heroIds';
+import { kitHelpSkills } from '../heroes/kitLabels';
+
 export type HelpCard = {
   close: () => void;
   isOpen: () => boolean;
+  setHero: (hero: HeroId) => void;
 };
 
 export type HelpCardOpts = {
@@ -51,28 +55,37 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
 
   const body = document.createElement('div');
   body.className = 'helpCardBody';
-  addBlock(body, '开局', [
-    '红左底 / 蓝右底木栏 Stall，开口朝领地，大号倒计时 5 秒，栏内不可出。',
-    '倒计时结束围栏消失，冲锋 2 秒：前 0.4 秒拉到峰值 7.5，禁技能、几乎锁拧、全程无敌。',
-    '冲锋结束才点地纠偏、放技能。Esc 或点空白可跳过 Stall，直接开战。',
-  ]);
-  addBlock(body, '怎么动', [
-    '骑士一直保底冲（约 2.5），点地 / 鼠标只纠偏方向，不加油门。金矛尖跟瞄准。',
-    '技能 1–4：1 钩矛 / 2 连刺×3 / 3 盾冲 / 4 蓄势。',
-    '按下进瞄，再按同键或左键释放；右键 / Esc 取消。',
-  ]);
-  addBlock(body, '怎么得分', [
-    '击破对方 +15。',
-    '助攻 +5（击杀前 3 秒内最近 1 名队友）。',
-    '领地：圈内活人数严格更多一方 +2/秒。',
-  ]);
-  addBlock(body, '怎么赢', [
-    '先到 100 分立即结束。',
-    '240 秒到点，分高者胜。',
-    '平分则 30 秒加时，只计领地分。',
-    '再平则看下一次击破。',
-  ]);
-  addBlock(body, '回场', ['击破后 5 秒回场，回场 2 秒无敌。']);
+
+  const fillBody = (hero: HeroId): void => {
+    body.replaceChildren();
+    addBlock(body, '开局', [
+      '红左底 / 蓝右底木栏 Stall，开口朝领地，大号倒计时 5 秒，栏内不可出。',
+      '倒计时结束围栏消失，冲锋 2 秒：前 0.4 秒拉到峰值 7.5，禁技能、几乎锁拧、全程无敌。',
+      '冲锋结束才点地纠偏、放技能。Esc 或点空白可跳过 Stall，直接开战。',
+    ]);
+    addBlock(body, '怎么动', [
+      '骑士一直保底冲（约 2.5），点地 / 鼠标只纠偏方向，不加油门。金矛尖跟瞄准。',
+      kitHelpSkills(hero),
+      '按下进瞄，再按同键或左键释放；右键 / Esc 取消。',
+      ...(hero === 'ring'
+        ? ['囚环内敌方不能放位移技（钩矛 / 盾冲 / 蓄势 / 壁行）；圈内强放进 2 秒短 CD。']
+        : []),
+    ]);
+    addBlock(body, '怎么得分', [
+      '击破对方 +15。',
+      '助攻 +5（击杀前 3 秒内最近 1 名队友）。',
+      '领地：圈内活人数严格更多一方 +2/秒。',
+    ]);
+    addBlock(body, '怎么赢', [
+      '先到 100 分立即结束。',
+      '240 秒到点，分高者胜。',
+      '平分则 30 秒加时，只计领地分。',
+      '再平则看下一次击破。',
+    ]);
+    addBlock(body, '回场', ['击破后 5 秒回场，回场 2 秒无敌。']);
+  };
+
+  fillBody('hook');
 
   card.append(head, body);
   overlay.appendChild(card);
@@ -124,5 +137,8 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
   return {
     close,
     isOpen: () => overlay.classList.contains('isOn'),
+    setHero: (hero) => {
+      fillBody(hero);
+    },
   };
 }

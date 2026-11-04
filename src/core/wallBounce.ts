@@ -17,11 +17,16 @@ function hypot2(x: number, y: number): number {
   return Math.hypot(x, y);
 }
 
-/** 沿指向场地内部的法线反射速度；发生反弹时返回 true。 */
+/** 沿指向场地内部的法线反射速度；发生反弹时返回 true。粘壁只削掉内向分量。 */
 export function bounceAlongInwardNormal(ball: BallBody, nx: number, ny: number): boolean {
   const vn = ball.vx * nx + ball.vy * ny;
   if (vn >= 0) {
     return false;
+  }
+  if (ball.slideWalls) {
+    ball.vx -= vn * nx;
+    ball.vy -= vn * ny;
+    return true;
   }
   const scale = 1 + WALL_RESTITUTION;
   ball.vx -= scale * vn * nx;

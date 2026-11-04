@@ -76,6 +76,11 @@ export function hookSkillCd(slot: SkillSlot): number {
   return HOOK_CDS[slot - 1];
 }
 
+/** 勾飞 / 盾冲 / 蓄势弹出算位移技，吃困圈禁止。 */
+export function hookIsDisplace(slot: SkillSlot): boolean {
+  return slot === 1 || slot === 3 || slot === 4;
+}
+
 /** 瞄准预览：勾/捅用扇形，推过去用冲刺线段，急停只画箭头。 */
 export function hookAimShape(slot: SkillSlot): HookAimShape | null {
   if (slot === 1) {

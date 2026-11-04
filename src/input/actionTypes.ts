@@ -9,4 +9,8 @@ export type ActionSample = {
   skillPress: SkillSlot | 0;
   confirmRelease: boolean;
   cancelAim: boolean;
+  /** 指针世界坐标；困圈点地用，可缺省（则落在自身） */
+  pointerX?: number;
+  pointerY?: number;
+  hasPointer?: boolean;
 };

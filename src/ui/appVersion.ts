@@ -8,6 +8,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '磁环四技能落地：辉环 / 斥波 / 壁行 / 囚环；蓝1 默认磁环；GM · H 换英雄' },
   { title: '骑士冲杀换皮：圆盾羽冠矛尖、木栏 Stall、领地纹章、冲锋残影' },
   { title: 'Stall 改各队半场底线；冲锋 2s 峰值 7.5，前 0.4s 拉升' },
   { title: '开局 Stall 围栏 5s + 冲锋 2s 无敌；Esc / 点空白可跳过' },

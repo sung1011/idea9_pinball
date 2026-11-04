@@ -8,6 +8,10 @@ import { verifyM3 } from './core/verifyM3';
 import { verifyM35 } from './core/verifyM35';
 import { verifyM4 } from './core/verifyM4';
 import { verifyM5 } from './core/verifyM5';
+import { verifyRing } from './core/verifyRing';
+import { resetTrapZones } from './core/trapZones';
+import { nextHero } from './heroes/heroIds';
+import { createFieldOverlay } from './render/fieldOverlay';
 import { bindDebugMatch } from './debug/debugMatch';
 import { bindDebugVelocity } from './debug/debugVelocity';
 import { applyOpeningCharge } from './core/openingCharge';
@@ -34,6 +38,7 @@ async function boot(): Promise<void> {
   verifyM35();
   verifyM4();
   verifyM5();
+  verifyRing();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -62,6 +67,8 @@ async function boot(): Promise<void> {
   for (const view of views) {
     world.addChild(view.root);
   }
+  const fields = createFieldOverlay();
+  world.addChild(fields.root);
   const aimPreview = createAimPreview();
   world.addChild(aimPreview.root);
   app.stage.addChild(world);
@@ -103,7 +110,15 @@ async function boot(): Promise<void> {
     bus,
   });
 
+  let syncHeroUi = (): void => {};
+
+  const swapPlayerHero = (): void => {
+    control.setHero(player, nextHero(player.hero));
+    syncHeroUi();
+  };
+
   const restart = (): void => {
+    resetTrapZones();
     match.reset();
     control.reset();
     bus.reset();
@@ -111,12 +126,14 @@ async function boot(): Promise<void> {
     for (const bot of bots) {
       bot.reset();
     }
+    syncHeroUi();
   };
 
   const resultPanel = createResultPanel(host, restart);
   resultPanel.sync(match.snapshot());
 
   const onPairDebug = (): void => {
+    resetTrapZones();
     control.reset();
     for (const bot of bots) {
       bot.reset();
@@ -131,15 +148,20 @@ async function boot(): Promise<void> {
     onPairDebug,
     isGmOn: () => settingsIsGmOn(),
   });
-  bindDebugMatch(match, { isGmOn: () => settingsIsGmOn() });
+  bindDebugMatch(match, { isGmOn: () => settingsIsGmOn(), onSwapHero: swapPlayerHero });
 
   const help = createHelpCard(host, { onOpen: () => settingsClose() });
+  syncHeroUi = () => {
+    help.setHero(player.hero);
+  };
   const settings = createSettingsPanel(host, {
     onOpen: () => help.close(),
     onRestart: () => {
       restart();
       settings.close();
     },
+    getHero: () => player.hero,
+    onSwapHero: swapPlayerHero,
     onCollision: (kind) => {
       debug.runCollision(kind);
     },
@@ -252,7 +274,9 @@ async function boot(): Promise<void> {
       skillCds,
       windupSlot: windup?.slot ?? 0,
       fineTuneOn: player.fineTuneRemain > 0,
+      hero: player.hero,
     });
+    fields.sync(balls);
     aimPreview.sync(player, aimingSlot, sample, windup);
     for (let i = 0; i < balls.length; i += 1) {
       views[i].sync(balls[i], { charging: next.openingChargeRemain > 0 });

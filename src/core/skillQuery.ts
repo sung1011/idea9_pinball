@@ -105,7 +105,7 @@ export type FanPick = {
   dist: number;
 };
 
-export function pickFanEnemy(
+function fanCandidates(
   caster: BallBody,
   roster: readonly BallBody[],
   aimX: number,
@@ -113,8 +113,8 @@ export function pickFanEnemy(
   halfRad: number,
   range: number,
   needLos: boolean,
-): FanPick | null {
-  let best: FanPick | null = null;
+): FanPick[] {
+  const out: FanPick[] = [];
   for (const other of roster) {
     if (!other.inPlay || other.id === caster.id) {
       continue;
@@ -131,10 +131,37 @@ export function pickFanEnemy(
     if (needLos && segmentBlocked(caster.x, caster.y, other.x, other.y)) {
       continue;
     }
-    const dist = Math.hypot(other.x - caster.x, other.y - caster.y);
-    if (!best || dist < best.dist) {
-      best = { target: other, dist };
+    out.push({ target: other, dist: Math.hypot(other.x - caster.x, other.y - caster.y) });
+  }
+  return out;
+}
+
+export function pickFanEnemy(
+  caster: BallBody,
+  roster: readonly BallBody[],
+  aimX: number,
+  aimY: number,
+  halfRad: number,
+  range: number,
+  needLos: boolean,
+): FanPick | null {
+  let best: FanPick | null = null;
+  for (const item of fanCandidates(caster, roster, aimX, aimY, halfRad, range, needLos)) {
+    if (!best || item.dist < best.dist) {
+      best = item;
     }
   }
   return best;
+}
+
+export function pickFanEnemies(
+  caster: BallBody,
+  roster: readonly BallBody[],
+  aimX: number,
+  aimY: number,
+  halfRad: number,
+  range: number,
+  needLos: boolean,
+): FanPick[] {
+  return fanCandidates(caster, roster, aimX, aimY, halfRad, range, needLos);
 }

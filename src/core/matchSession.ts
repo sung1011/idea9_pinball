@@ -1,4 +1,5 @@
 import { createBallBody, grantInvincible, type BallBody, type TeamId } from './ballBody';
+import type { HeroId } from '../heroes/heroIds';
 import type { CollisionHit } from './collisionDamage';
 import {
   ASSIST_SCORE,
@@ -151,6 +152,7 @@ export function createMatchRoster(botCount = BLUE_BOT_COUNT): BallBody[] {
         color: i === 0 ? 0x3d7cf0 : 0x4f9bff,
         label: n === 1 ? '蓝' : `蓝${i + 1}`,
         team: 'blue',
+        hero: i === 0 ? 'ring' : 'hook',
       }),
     );
   }
@@ -165,6 +167,7 @@ function createRosterBall(init: {
   color: number;
   label: string;
   team: TeamId;
+  hero?: HeroId;
 }): BallBody {
   return createBallBody({
     x: init.x,
@@ -176,6 +179,7 @@ function createRosterBall(init: {
     team: init.team,
     spawnX: init.x,
     spawnY: init.y,
+    hero: init.hero,
   });
 }
 
@@ -195,6 +199,8 @@ function resetBall(ball: BallBody, openingInvincible: number): void {
   ball.allowOverCap = false;
   ball.suppressCombat = false;
   ball.hasAim = false;
+  ball.slideWalls = false;
+  ball.fieldRemain = 0;
   if (ball.team === 'blue') {
     ball.facingX = -1;
     ball.facingY = 0;
@@ -325,6 +331,8 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     ball.allowOverCap = false;
     ball.suppressCombat = false;
     ball.hasAim = false;
+    ball.slideWalls = false;
+    ball.fieldRemain = 0;
     respawns[ball.id] = RESPAWN_SEC;
   };
 
@@ -343,6 +351,8 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     ball.allowOverCap = false;
     ball.suppressCombat = false;
     ball.hasAim = false;
+    ball.slideWalls = false;
+    ball.fieldRemain = 0;
     grantInvincible(ball, SPAWN_INVINCIBLE_SEC);
     if (ball.team === 'blue') {
       ball.facingX = -1;

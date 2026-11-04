@@ -2,11 +2,23 @@ import type { BallBody } from './ballBody';
 import { openActiveRam } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import { HARD_CC_DIMINISH_WINDOW } from './constants';
-import { HOOK_BRAKE, HOOK_PULL, HOOK_SHOVE, HOOK_STAB, hookSkillCd, hookWindup } from '../heroes/hookKit';
+import type { HeroId } from '../heroes/heroIds';
+import {
+  HOOK_BRAKE,
+  HOOK_PULL,
+  HOOK_SHOVE,
+  HOOK_STAB,
+  hookIsDisplace,
+  hookSkillCd,
+  hookWindup,
+} from '../heroes/hookKit';
+import { RING_TRAP } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
+import { createRingCaster } from './ringCaster';
 import { applySkillDamage } from './skillHits';
 import { pickFanEnemy, unitVec } from './skillQuery';
 import { setFacingFrom } from './skillStub';
+import { isInEnemyTrap } from './trapZones';
 import { resolveArenaObstacles } from './wallBounce';
 
 const EPS = 1e-8;
@@ -19,6 +31,8 @@ export type SkillCds = [number, number, number, number];
 export type WindupInfo = {
   slot: SkillSlot;
   remain: number;
+  markX?: number;
+  markY?: number;
 };
 
 type Effect =
@@ -65,7 +79,7 @@ function isDisplacing(effect: Effect | null): boolean {
 }
 
 export type SkillCaster = {
-  handleInput: (ball: BallBody, sample: ActionSample) => void;
+  handleInput: (ball: BallBody, sample: ActionSample, roster?: readonly BallBody[]) => void;
   tick: (ball: BallBody, dt: number, roster: readonly BallBody[]) => CollisionHit[];
   afterPhysics: (
     ball: BallBody,
@@ -79,10 +93,16 @@ export type SkillCaster = {
   getWindup: () => WindupInfo | null;
   isHardBusy: () => boolean;
   isDisplacing: () => boolean;
+  getHero: () => HeroId;
 };
 
+/** 按英雄建施放器；默认钩刺，避免拆坏既有 verify。 */
+export function createSkillCaster(hero: HeroId = 'hook'): SkillCaster {
+  return hero === 'ring' ? createRingCaster() : createHookCaster();
+}
+
 /** 钩刺施放：按下进瞄可无限持有；释放后才走前摇，再出效果。 */
-export function createSkillCaster(): SkillCaster {
+export function createHookCaster(): SkillCaster {
   let aimingSlot: SkillSlot | 0 = 0;
   const cds = emptyCds();
   let effect: Effect | null = null;
@@ -99,6 +119,12 @@ export function createSkillCaster(): SkillCaster {
     cds[slot - 1] = hookSkillCd(slot);
   };
 
+  const punishDisplace = (slot: SkillSlot): void => {
+    cds[slot - 1] = RING_TRAP.punishCd;
+    aimingSlot = 0;
+    effect = null;
+  };
+
   const tryRelease = (ball: BallBody, sample: ActionSample): void => {
     if (aimingSlot === 0 || isHardBusy(effect) || ball.stunRemain > 0) {
       return;
@@ -109,6 +135,10 @@ export function createSkillCaster(): SkillCaster {
     }
     const aim = aimOf(ball, sample);
     if (!setFacingFrom(ball, aim.x, aim.y)) {
+      return;
+    }
+    if (hookIsDisplace(slot) && isInEnemyTrap(ball)) {
+      punishDisplace(slot);
       return;
     }
     startCd(slot);
@@ -125,7 +155,7 @@ export function createSkillCaster(): SkillCaster {
     effect = { kind: 'windup', slot, remain: delay, aimX: ball.facingX, aimY: ball.facingY };
   };
 
-  const handleInput = (ball: BallBody, sample: ActionSample): void => {
+  const handleInput = (ball: BallBody, sample: ActionSample, _roster: readonly BallBody[] = []): void => {
     if (!ball.inPlay || ball.stunRemain > 0) {
       aimingSlot = 0;
       return;
@@ -233,6 +263,10 @@ export function createSkillCaster(): SkillCaster {
   };
 
   const finishWindup = (ball: BallBody, slot: SkillSlot, aimX: number, aimY: number, roster: readonly BallBody[]): CollisionHit[] => {
+    if (hookIsDisplace(slot) && isInEnemyTrap(ball)) {
+      punishDisplace(slot);
+      return [];
+    }
     if (slot === 1) {
       return resolveHook(ball, aimX, aimY, roster);
     }
@@ -444,5 +478,6 @@ export function createSkillCaster(): SkillCaster {
     getWindup: () => (effect?.kind === 'windup' ? { slot: effect.slot, remain: effect.remain } : null),
     isHardBusy: () => isHardBusy(effect),
     isDisplacing: () => isDisplacing(effect),
+    getHero: (): HeroId => 'hook',
   };
 }

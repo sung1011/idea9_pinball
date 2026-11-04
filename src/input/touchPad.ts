@@ -1,5 +1,6 @@
 import type { SkillCds } from '../core/skillCaster';
-import { HOOK_SKILL_SHORT } from '../heroes/hookKit';
+import type { HeroId } from '../heroes/heroIds';
+import { skillShorts } from '../heroes/kitLabels';
 import type { ActionBus } from './actionBus';
 import type { SkillSlot } from './actionTypes';
 
@@ -8,6 +9,7 @@ export type TouchPadStatus = {
   skillCds: SkillCds;
   windupSlot?: number;
   fineTuneOn: boolean;
+  hero?: HeroId;
 };
 
 export type TouchPad = {
@@ -39,7 +41,7 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus): TouchPad {
     btn.className = 'touchSkillBtn';
     btn.dataset.touchControl = 'skill';
     btn.dataset.slot = String(slot);
-    btn.textContent = HOOK_SKILL_SHORT[slot - 1] ?? String(slot);
+    btn.textContent = skillShorts('hook')[slot - 1] ?? String(slot);
     btn.addEventListener('pointerdown', (ev: PointerEvent) => {
       ev.preventDefault();
       ev.stopPropagation();
@@ -69,8 +71,10 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus): TouchPad {
     sync: (status: TouchPadStatus) => {
       root.classList.toggle('isFineTune', status.fineTuneOn);
       cancel.hidden = status.aimingSlot === 0;
+      const shorts = skillShorts(status.hero ?? 'hook');
       for (let i = 0; i < buttons.length; i += 1) {
         const slot = i + 1;
+        buttons[i].textContent = shorts[i] ?? String(slot);
         buttons[i].classList.toggle('isAiming', status.aimingSlot === slot || status.windupSlot === slot);
         buttons[i].classList.toggle('isCd', (status.skillCds[i] ?? 0) > 0);
       }

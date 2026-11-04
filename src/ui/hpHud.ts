@@ -1,7 +1,7 @@
 import type { BallBody } from '../core/ballBody';
 import type { CollisionHit, FacingZone } from '../core/collisionDamage';
 import type { SkillCds, WindupInfo } from '../core/skillCaster';
-import { HOOK_SKILL_SHORT, KIT_DISPLAY_NAME } from '../heroes/hookKit';
+import { kitHudLine, skillShorts } from '../heroes/kitLabels';
 
 const ZONE_LABEL: Record<FacingZone, string> = {
   front: '正面',
@@ -43,7 +43,7 @@ export function createHpHud(host: HTMLElement): HpHud {
   rows.className = 'hpHudRows';
   const action = document.createElement('div');
   action.className = 'hpHudAction';
-  action.textContent = `${KIT_DISPLAY_NAME}：1钩 2刺 3冲 4蓄 · 点地纠偏 · 同键或左键释放`;
+  action.textContent = kitHudLine('hook');
   const fineTune = document.createElement('div');
   fineTune.className = 'hpHudFineTune';
   fineTune.textContent = '弱拧';
@@ -98,17 +98,19 @@ export function createHpHud(host: HTMLElement): HpHud {
     );
 
     const player = balls[0];
+    const hero = player?.hero ?? 'hook';
+    const shorts = skillShorts(hero);
     const fine = player?.fineTuneRemain ?? 0;
     const parts: string[] = [];
     if (status?.charging) {
       parts.push('冲锋加速中 · 禁技能 · 几乎锁拧 · 全程无敌');
     }
     if (status && status.aimingSlot > 0) {
-      const name = HOOK_SKILL_SHORT[status.aimingSlot - 1] ?? `技能${status.aimingSlot}`;
+      const name = shorts[status.aimingSlot - 1] ?? `技能${status.aimingSlot}`;
       parts.push(`瞄准${name} · 再按同键或左键释放 · 右键/Esc/取消键取消`);
     }
     if (status?.windup) {
-      const name = HOOK_SKILL_SHORT[status.windup.slot - 1] ?? `技能${status.windup.slot}`;
+      const name = shorts[status.windup.slot - 1] ?? `技能${status.windup.slot}`;
       parts.push(`前摇 ${name} ${status.windup.remain.toFixed(2)}s`);
     }
     if (fine > 0) {
@@ -116,12 +118,12 @@ export function createHpHud(host: HTMLElement): HpHud {
     }
     if (status) {
       const cds = status.skillCds
-        .map((cd, i) => (cd > 0 ? `${HOOK_SKILL_SHORT[i]}${cd.toFixed(1)}` : `${HOOK_SKILL_SHORT[i]}就绪`))
+        .map((cd, i) => (cd > 0 ? `${shorts[i]}${cd.toFixed(1)}` : `${shorts[i]}就绪`))
         .join(' ');
       parts.push(cds);
     }
     if (parts.length === 0) {
-      parts.push(`${KIT_DISPLAY_NAME}：1钩 2刺 3冲 4蓄 · 点地纠偏 · 同键或左键释放`);
+      parts.push(kitHudLine(hero));
     }
     action.textContent = parts.join(' · ');
     action.classList.toggle('isFineTune', fine > 0);

@@ -1,3 +1,4 @@
+import type { HeroId } from '../heroes/heroIds';
 import { ACTIVE_RAM_WINDOW, BALL_RADIUS, FINE_TUNE_WINDOW, MAX_HP } from './constants';
 
 let nextBallId = 1;
@@ -41,6 +42,12 @@ export type BallBody = {
   allowOverCap: boolean;
   /** 冲刺等技能自己结算命中时，跳过本帧碰撞伤害避免双算 */
   suppressCombat: boolean;
+  /** 英雄 kit；默认钩刺 */
+  hero: HeroId;
+  /** 粘壁：撞墙不反弹，沿切向滑 */
+  slideWalls: boolean;
+  /** 磁场剩余秒数；>0 时身周圈可见 */
+  fieldRemain: number;
 };
 
 export function createBallBody(init: {
@@ -56,6 +63,7 @@ export function createBallBody(init: {
   team?: TeamId;
   spawnX?: number;
   spawnY?: number;
+  hero?: HeroId;
 }): BallBody {
   const id = nextBallId;
   nextBallId += 1;
@@ -87,6 +95,9 @@ export function createBallBody(init: {
     frictionMul: 1,
     allowOverCap: false,
     suppressCombat: false,
+    hero: init.hero ?? 'hook',
+    slideWalls: false,
+    fieldRemain: 0,
   };
 }
 

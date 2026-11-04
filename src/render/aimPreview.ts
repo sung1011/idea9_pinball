@@ -2,9 +2,12 @@ import { Graphics } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
 import type { WindupInfo } from '../core/skillCaster';
 import { hookAimShape } from '../heroes/hookKit';
+import { ringAimShape } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 
 const ARROW_LEN = 2.15;
+const HOOK_COLOR = 0x7ee8ff;
+const RING_COLOR = 0xa78bfa;
 
 function drawCone(
   g: Graphics,
@@ -20,6 +23,19 @@ function drawCone(
   g.arc(0, 0, radius, ang - half, ang + half);
   g.closePath();
   g.fill({ color, alpha });
+}
+
+function drawCircle(
+  g: Graphics,
+  ox: number,
+  oy: number,
+  radius: number,
+  color: number,
+  alpha: number,
+): void {
+  g.circle(ox, oy, radius);
+  g.fill({ color, alpha });
+  g.stroke({ color, width: 0.06, alpha: Math.min(0.85, alpha + 0.3) });
 }
 
 function drawAimArrow(g: Graphics, fx: number, fy: number, color: number, len = ARROW_LEN): void {
@@ -48,7 +64,7 @@ export type AimPreview = {
   ) => void;
 };
 
-/** 技能瞄准时画扇形；矛尖由 ballView 持续指示 targetDir。 */
+/** 技能瞄准时画扇形或落点圆；矛尖由 ballView 持续指示 targetDir。 */
 export function createAimPreview(): AimPreview {
   const root = new Graphics();
 
@@ -71,13 +87,35 @@ export function createAimPreview(): AimPreview {
     const fx = sample.hasAim ? sample.aimX : player.facingX;
     const fy = sample.hasAim ? sample.aimY : player.facingY;
     const slot = (aiming ? aimingSlot : windup?.slot ?? 0) as SkillSlot | 0;
-    if (slot) {
-      const shape = hookAimShape(slot);
-      if (shape) {
-        drawCone(root, fx, fy, shape.halfRad, shape.radius, 0x7ee8ff, casting ? 0.16 : 0.28);
-      }
-      drawAimArrow(root, fx, fy, 0x7ee8ff, slot === 3 ? 2.6 : ARROW_LEN);
+    if (!slot) {
+      return;
     }
+    const ring = player.hero === 'ring';
+    const color = ring ? RING_COLOR : HOOK_COLOR;
+    const alpha = casting ? 0.16 : 0.28;
+    if (ring) {
+      const shape = ringAimShape(
+        slot,
+        player,
+        sample.pointerX,
+        sample.pointerY,
+        sample.hasPointer,
+        windup?.markX,
+        windup?.markY,
+      );
+      if (shape?.kind === 'circle') {
+        drawCircle(root, shape.offsetX, shape.offsetY, shape.radius, color, alpha);
+      } else if (shape?.kind === 'cone') {
+        drawCone(root, fx, fy, shape.halfRad, shape.radius, color, alpha);
+      }
+      drawAimArrow(root, fx, fy, color, slot === 2 ? 2.6 : ARROW_LEN);
+      return;
+    }
+    const shape = hookAimShape(slot);
+    if (shape) {
+      drawCone(root, fx, fy, shape.halfRad, shape.radius, color, alpha);
+    }
+    drawAimArrow(root, fx, fy, color, slot === 3 ? 2.6 : ARROW_LEN);
   };
 
   return { root, sync };

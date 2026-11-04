@@ -5,8 +5,12 @@ import {
   BOT_INTERVAL_JITTER_SEC,
   BOT_INTERVAL_SEC,
   CONTROL_POINT,
+  MAP_HEIGHT,
+  MAP_WIDTH,
 } from './constants';
+import type { HeroId } from '../heroes/heroIds';
 import { HOOK_PULL } from '../heroes/hookKit';
+import { RING_FIELD, RING_TRAP, RING_WAVE } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import type { MatchPhase } from './matchSession';
 import { createSkillCaster, type SkillCaster, type SkillCds } from './skillCaster';
@@ -29,6 +33,7 @@ export type SimpleBot = {
 export type SimpleBotOpts = {
   random?: () => number;
   hookChance?: number;
+  hero?: HeroId;
 };
 
 function nextWait(random: () => number): number {
@@ -51,7 +56,7 @@ function nearestEnemy(bot: BallBody, roster: readonly BallBody[]): BallBody | nu
   return best;
 }
 
-function idleSample(aimX: number, aimY: number): ActionSample {
+function idleSample(aimX: number, aimY: number, pointerX?: number, pointerY?: number): ActionSample {
   return {
     aimX,
     aimY,
@@ -60,10 +65,19 @@ function idleSample(aimX: number, aimY: number): ActionSample {
     skillPress: 0,
     confirmRelease: false,
     cancelAim: false,
+    pointerX,
+    pointerY,
+    hasPointer: pointerX !== undefined && pointerY !== undefined,
   };
 }
 
-function castSample(slot: SkillSlot, aimX: number, aimY: number): ActionSample {
+function castSample(
+  slot: SkillSlot,
+  aimX: number,
+  aimY: number,
+  pointerX?: number,
+  pointerY?: number,
+): ActionSample {
   return {
     aimX,
     aimY,
@@ -72,6 +86,9 @@ function castSample(slot: SkillSlot, aimX: number, aimY: number): ActionSample {
     skillPress: slot,
     confirmRelease: true,
     cancelAim: false,
+    pointerX,
+    pointerY,
+    hasPointer: pointerX !== undefined && pointerY !== undefined,
   };
 }
 
@@ -92,13 +109,68 @@ function pickApproachAim(
   return { x: aimX, y: aimY, enemyD, midD };
 }
 
+function nearWall(bot: BallBody): boolean {
+  return bot.x < 2.2 || bot.x > MAP_WIDTH - 2.2 || bot.y < 2.2 || bot.y > MAP_HEIGHT - 2.2;
+}
+
+function pickHookAction(
+  cds: SkillCds,
+  speed: number,
+  inHookRange: boolean,
+  hookChance: number,
+  random: () => number,
+  jx: number,
+  jy: number,
+): ActionSample | null {
+  if (inHookRange && cds[0] <= 0 && random() < hookChance) {
+    return castSample(1, jx, jy);
+  }
+  if (cds[3] <= 0 && speed > 3) {
+    return castSample(4, jx, jy);
+  }
+  if (cds[2] <= 0) {
+    return castSample(3, jx, jy);
+  }
+  if (cds[3] <= 0) {
+    return castSample(4, jx, jy);
+  }
+  return null;
+}
+
+function pickRingAction(
+  bot: BallBody,
+  enemy: BallBody | null,
+  enemyD: number,
+  cds: SkillCds,
+  jx: number,
+  jy: number,
+): ActionSample | null {
+  const px = enemy?.x ?? bot.x + jx * 2;
+  const py = enemy?.y ?? bot.y + jy * 2;
+  if (enemy && enemyD <= RING_WAVE.range && cds[1] <= 0) {
+    return castSample(2, jx, jy, px, py);
+  }
+  if (enemy && enemyD <= RING_TRAP.placeRange + 1 && cds[3] <= 0) {
+    return castSample(4, jx, jy, px, py);
+  }
+  if (enemy && enemyD <= RING_FIELD.radius + 0.6 && cds[0] <= 0) {
+    return castSample(1, jx, jy, px, py);
+  }
+  if (cds[2] <= 0 && nearWall(bot)) {
+    return castSample(3, jx, jy, px, py);
+  }
+  return null;
+}
+
 /**
- * 简化 AI：保底冲靠近 + 急停 + 偶勾。不打满编连招，不用方向捅。
+ * 简化 AI：钩刺保底冲靠近 + 急停 + 偶勾；磁环推波 / 困圈 / 磁场 / 近壁粘壁。
  */
 export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): SimpleBot {
   const random = opts.random ?? Math.random;
   const hookChance = opts.hookChance ?? 0.35;
-  const caster = createSkillCaster();
+  const hero = opts.hero ?? bot.hero ?? 'hook';
+  bot.hero = hero;
+  const caster = createSkillCaster(hero);
   let wait = nextWait(random) * 0.35;
 
   return {
@@ -146,7 +218,9 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
       }
 
       wait -= dt;
-      let sample = idleSample(aimX, aimY);
+      const pointerX = enemy?.x;
+      const pointerY = enemy?.y;
+      let sample = idleSample(aimX, aimY, pointerX, pointerY);
       const cds = caster.getCds();
       const speed = Math.hypot(bot.vx, bot.vy);
       const canAct = wait <= 0 && !caster.isHardBusy() && bot.stunRemain <= 0;
@@ -157,19 +231,24 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
         const ang = Math.atan2(aimY, aimX) + jitter;
         const jx = Math.cos(ang);
         const jy = Math.sin(ang);
-        const inHookRange = !!enemy && approach.enemyD <= HOOK_PULL.range && approach.enemyD > 0.8;
-        if (inHookRange && cds[0] <= 0 && random() < hookChance) {
-          sample = castSample(1, jx, jy);
-        } else if (cds[3] <= 0 && speed > 3) {
-          sample = castSample(4, jx, jy);
-        } else if (cds[2] <= 0) {
-          sample = castSample(3, jx, jy);
-        } else if (cds[3] <= 0) {
-          sample = castSample(4, jx, jy);
+        const picked =
+          hero === 'ring'
+            ? pickRingAction(bot, enemy, approach.enemyD, cds, jx, jy)
+            : pickHookAction(
+                cds,
+                speed,
+                !!enemy && approach.enemyD <= HOOK_PULL.range && approach.enemyD > 0.8,
+                hookChance,
+                random,
+                jx,
+                jy,
+              );
+        if (picked) {
+          sample = picked;
         }
       }
 
-      caster.handleInput(bot, sample);
+      caster.handleInput(bot, sample, roster);
       return caster.tick(bot, dt, roster);
     },
     afterPhysics(dt, roster, wallHit) {

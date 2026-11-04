@@ -56,6 +56,9 @@ export function createActionBus() {
       skillPress,
       confirmRelease,
       cancelAim,
+      pointerX,
+      pointerY,
+      hasPointer,
     };
     skillPress = 0;
     confirmRelease = false;
