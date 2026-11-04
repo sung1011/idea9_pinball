@@ -1,5 +1,6 @@
 import { Graphics } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
+import { listStakes } from '../core/ropeStakes';
 import { listTrapZones } from '../core/trapZones';
 import { RING_FIELD } from '../heroes/ringKit';
 
@@ -12,6 +13,7 @@ const AURA = 0x5eead4;
 const TRAP = 0xa78bfa;
 const MARK = 0xf0abfc;
 const GRAZE = 0x7dd3fc;
+const STAKE = 0xf59e0b;
 
 /** 磁场身周圈 + 困圈落点圈。 */
 export function createFieldOverlay(): FieldOverlay {
@@ -46,6 +48,12 @@ export function createFieldOverlay(): FieldOverlay {
       root.circle(zone.x, zone.y, zone.radius);
       root.fill({ color: TRAP, alpha: pulse });
       root.stroke({ color: TRAP, width: 0.07, alpha: 0.7 });
+    }
+    for (const stake of listStakes()) {
+      const pulse = 0.28 + 0.12 * Math.min(1, stake.remain / 5);
+      root.circle(stake.x, stake.y, stake.radius);
+      root.fill({ color: STAKE, alpha: pulse });
+      root.stroke({ color: STAKE, width: 0.07, alpha: 0.85 });
     }
   };
 

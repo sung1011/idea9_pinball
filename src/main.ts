@@ -12,6 +12,8 @@ import { verifyChain } from './core/verifyChain';
 import { verifyArc } from './core/verifyArc';
 import { verifyNail } from './core/verifyNail';
 import { verifyRing } from './core/verifyRing';
+import { verifyWell } from './core/verifyWell';
+import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
 import { nextHero } from './heroes/heroIds';
 import { createFieldOverlay } from './render/fieldOverlay';
@@ -45,6 +47,7 @@ async function boot(): Promise<void> {
   verifyChain();
   verifyNail();
   verifyArc();
+  verifyWell();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -125,6 +128,7 @@ async function boot(): Promise<void> {
 
   const restart = (): void => {
     resetTrapZones();
+    resetStakes();
     match.reset();
     control.reset();
     bus.reset();
@@ -140,6 +144,7 @@ async function boot(): Promise<void> {
 
   const onPairDebug = (): void => {
     resetTrapZones();
+    resetStakes();
     control.reset();
     for (const bot of bots) {
       bot.reset();
@@ -261,6 +266,7 @@ async function boot(): Promise<void> {
     const aimingSlot = control.getAimingSlot();
     const skillCds = control.getSkillCds();
     const windup = control.getWindup();
+    const aimHint = control.getAimHint();
     if (events.length > 0 || frameHits.length > 0) {
       hpHud.pushHits(frameHits);
     }
@@ -268,6 +274,7 @@ async function boot(): Promise<void> {
       aimingSlot,
       skillCds,
       windup,
+      aimHint,
       respawns: next.respawns,
       charging: next.openingChargeRemain > 0,
     });
@@ -283,7 +290,7 @@ async function boot(): Promise<void> {
       hero: player.hero,
     });
     fields.sync(balls);
-    aimPreview.sync(player, aimingSlot, sample, windup);
+    aimPreview.sync(player, aimingSlot, sample, windup, aimHint);
     for (let i = 0; i < balls.length; i += 1) {
       views[i].sync(balls[i], { charging: next.openingChargeRemain > 0 });
     }

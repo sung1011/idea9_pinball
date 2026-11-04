@@ -1,6 +1,6 @@
 import type { BallBody } from '../core/ballBody';
 import type { CollisionHit, FacingZone } from '../core/collisionDamage';
-import type { SkillCds, WindupInfo } from '../core/skillCaster';
+import type { AimHint, SkillCds, WindupInfo } from '../core/skillCaster';
 import { kitHudLine, skillShorts } from '../heroes/kitLabels';
 
 const ZONE_LABEL: Record<FacingZone, string> = {
@@ -15,6 +15,7 @@ export type HudStatus = {
   aimingSlot: number;
   skillCds: SkillCds;
   windup?: WindupInfo | null;
+  aimHint?: AimHint | null;
   respawns?: Record<number, number>;
   charging?: boolean;
 };
@@ -115,7 +116,11 @@ export function createHpHud(host: HTMLElement): HpHud {
     }
     if (status && status.aimingSlot > 0) {
       const name = shorts[status.aimingSlot - 1] ?? `技能${status.aimingSlot}`;
-      parts.push(`瞄准${name} · 再按同键或左键释放 · 右键/Esc/取消键取消`);
+      if (status.aimHint?.stage === 2 && status.aimingSlot === 1) {
+        parts.push(`已锁敌 · 再点落点释放${name} · 右键/Esc/取消键取消`);
+      } else {
+        parts.push(`瞄准${name} · 再按同键或左键释放 · 右键/Esc/取消键取消`);
+      }
     }
     if (status?.windup) {
       const name = shorts[status.windup.slot - 1] ?? `技能${status.windup.slot}`;

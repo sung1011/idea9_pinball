@@ -126,7 +126,7 @@ export function verifyArc(): void {
   assert(ARC_PHASE.ramWindow === 0.2, '闪弧：虚晃达标后撞窗应为 0.2s');
   assert(nextHero('hook') === 'ring' && nextHero('ring') === 'chain', '闪弧：H 循环前段钩刺→磁环→链生');
   assert(nextHero('chain') === 'nail' && nextHero('nail') === 'arc', '闪弧：H 循环应接到钉壳再接到闪弧');
-  assert(nextHero('arc') === 'hook', '闪弧：H 循环闪弧后回到钩刺');
+  assert(nextHero('arc') === 'well', '闪弧：H 循环闪弧后接到井绳');
   assert(Math.abs(grazeContactAngleDeg(8, 0, 1, 0)) < 1e-6, '闪弧：对撞夹角应为 0');
   assert(Math.abs(grazeContactAngleDeg(0, 8, 1, 0) - 90) < 1e-6, '闪弧：垂直相对速夹角应为 90');
   assert(isGrazeAngle(60) && isGrazeAngle(90) && isGrazeAngle(120), '闪弧：60/90/120 应算擦肩');

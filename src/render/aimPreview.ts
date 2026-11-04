@@ -1,11 +1,13 @@
 import { Graphics } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
-import type { WindupInfo } from '../core/skillCaster';
+import { getStake } from '../core/ropeStakes';
+import type { AimHint, WindupInfo } from '../core/skillCaster';
 import { arcAimShape } from '../heroes/arcKit';
 import { chainAimShape } from '../heroes/chainKit';
 import { hookAimShape } from '../heroes/hookKit';
 import { nailAimShape } from '../heroes/nailKit';
 import { ringAimShape } from '../heroes/ringKit';
+import { WELL_HOOK, wellAimShape } from '../heroes/wellKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 
 const ARROW_LEN = 2.15;
@@ -14,6 +16,7 @@ const RING_COLOR = 0xa78bfa;
 const CHAIN_COLOR = 0x86efac;
 const NAIL_COLOR = 0xf4bf6a;
 const ARC_COLOR = 0x7dd3fc;
+const WELL_COLOR = 0xf59e0b;
 
 function drawCone(
   g: Graphics,
@@ -67,6 +70,7 @@ export type AimPreview = {
     aimingSlot: number,
     sample: ActionSample,
     windup?: WindupInfo | null,
+    aimHint?: AimHint | null,
   ) => void;
 };
 
@@ -79,6 +83,7 @@ export function createAimPreview(): AimPreview {
     aimingSlot: number,
     sample: ActionSample,
     windup?: WindupInfo | null,
+    aimHint?: AimHint | null,
   ): void => {
     root.clear();
     root.position.set(player.x, player.y);
@@ -100,6 +105,7 @@ export function createAimPreview(): AimPreview {
     const chain = player.hero === 'chain';
     const nail = player.hero === 'nail';
     const arc = player.hero === 'arc';
+    const well = player.hero === 'well';
     const color = ring
       ? RING_COLOR
       : chain
@@ -108,7 +114,9 @@ export function createAimPreview(): AimPreview {
           ? NAIL_COLOR
           : arc
             ? ARC_COLOR
-            : HOOK_COLOR;
+            : well
+              ? WELL_COLOR
+              : HOOK_COLOR;
     const alpha = casting ? 0.16 : 0.28;
     if (ring) {
       const shape = ringAimShape(
@@ -152,6 +160,38 @@ export function createAimPreview(): AimPreview {
         drawCircle(root, shape.offsetX, shape.offsetY, shape.radius, color, alpha);
       }
       drawAimArrow(root, fx, fy, color, slot === 1 ? 2.2 : ARROW_LEN);
+      return;
+    }
+    if (well) {
+      const stage = aimHint?.stage ?? windup?.aimStage ?? 1;
+      const stake = getStake(player.id);
+      const shape = wellAimShape(
+        slot,
+        player,
+        sample.pointerX,
+        sample.pointerY,
+        sample.hasPointer,
+        windup?.markX,
+        windup?.markY,
+        stake,
+        stage,
+      );
+      if (stage === 1 && slot === 1) {
+        drawCircle(root, 0, 0, WELL_HOOK.lockRange, color, alpha);
+      } else if (stage === 2 && slot === 1) {
+        drawCircle(root, 0, 0, WELL_HOOK.landRange, color, alpha * 0.7);
+      }
+      if (shape?.kind === 'circle') {
+        drawCircle(root, shape.offsetX, shape.offsetY, shape.radius, color, alpha);
+      } else if (shape?.kind === 'band') {
+        root.moveTo(shape.x0 - player.x, shape.y0 - player.y);
+        root.lineTo(shape.x1 - player.x, shape.y1 - player.y);
+        root.stroke({ color, width: shape.halfWidth * 2, cap: 'round', alpha: alpha + 0.12 });
+      }
+      if (aimHint?.lockX !== undefined && aimHint.lockY !== undefined) {
+        drawCircle(root, aimHint.lockX - player.x, aimHint.lockY - player.y, 0.28, color, 0.4);
+      }
+      drawAimArrow(root, fx, fy, color, slot === 1 ? 2.4 : ARROW_LEN);
       return;
     }
     const shape = hookAimShape(slot);

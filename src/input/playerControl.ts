@@ -1,6 +1,12 @@
 import { clearKitAuras, type BallBody } from '../core/ballBody';
 import type { CollisionHit } from '../core/collisionDamage';
-import { createSkillCaster, type SkillCaster, type SkillCds, type WindupInfo } from '../core/skillCaster';
+import {
+  createSkillCaster,
+  type AimHint,
+  type SkillCaster,
+  type SkillCds,
+  type WindupInfo,
+} from '../core/skillCaster';
 import { applyFloorSpeed, applySteerToward } from '../core/skillStub';
 import type { HeroId } from '../heroes/heroIds';
 import type { ActionSample, SkillSlot } from './actionTypes';
@@ -28,6 +34,7 @@ export type PlayerControl = {
   getAimingSlot: () => SkillSlot | 0;
   getSkillCds: () => SkillCds;
   getWindup: () => WindupInfo | null;
+  getAimHint: () => AimHint | null;
   getCaster: () => SkillCaster;
   setHero: (ball: BallBody, hero: HeroId) => void;
 };
@@ -73,6 +80,7 @@ export function createPlayerControl(initial: HeroId = 'hook'): PlayerControl {
     getAimingSlot: () => caster.getAimingSlot(),
     getSkillCds: () => caster.getCds(),
     getWindup: () => caster.getWindup(),
+    getAimHint: () => caster.getAimHint?.() ?? null,
     getCaster: () => caster,
     setHero: (ball, hero) => {
       caster.reset();

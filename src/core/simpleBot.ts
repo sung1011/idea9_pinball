@@ -14,6 +14,8 @@ import { CHAIN_HEAL, CHAIN_SCRAMBLE, CHAIN_SHIELD, CHAIN_TOW } from '../heroes/c
 import { HOOK_PULL } from '../heroes/hookKit';
 import { NAIL_PIN, NAIL_RAM } from '../heroes/nailKit';
 import { RING_FIELD, RING_TRAP, RING_WAVE } from '../heroes/ringKit';
+import { WELL_STAKE, WELL_SWAP } from '../heroes/wellKit';
+import { getStake } from './ropeStakes';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import type { MatchPhase } from './matchSession';
 import { createSkillCaster, type SkillCaster, type SkillCds } from './skillCaster';
@@ -234,6 +236,32 @@ function pickNailAction(
   return null;
 }
 
+function pickWellAction(
+  bot: BallBody,
+  enemy: BallBody | null,
+  enemyD: number,
+  cds: SkillCds,
+  jx: number,
+  jy: number,
+): ActionSample | null {
+  const px = enemy?.x ?? bot.x + jx * WELL_STAKE.range;
+  const py = enemy?.y ?? bot.y + jy * WELL_STAKE.range;
+  const stake = getStake(bot.id);
+  if (!stake && cds[2] <= 0) {
+    return castSample(3, jx, jy, px, py);
+  }
+  if (stake && cds[3] <= 0) {
+    return castSample(4, jx, jy, px, py);
+  }
+  if (enemy && enemyD <= WELL_SWAP.range && cds[1] <= 0) {
+    return castSample(2, jx, jy, px, py);
+  }
+  if (enemy && enemyD <= 6 && cds[0] <= 0) {
+    return castSample(1, jx, jy, px, py);
+  }
+  return null;
+}
+
 function pickArcAction(
   bot: BallBody,
   enemy: BallBody | null,
@@ -258,7 +286,7 @@ function pickArcAction(
 }
 
 /**
- * 简化 AI：钩刺保底冲靠近 + 急停 + 偶勾；磁环推波 / 困圈 / 磁场 / 近壁粘壁；链生扰锋 / 愈链 / 援勾；钉壳定锚 / 短冲顶 / 叠甲；闪弧标记 / 擦伤 / 侧闪。
+ * 简化 AI：钩刺保底冲靠近 + 急停 + 偶勾；磁环推波 / 困圈 / 磁场 / 近壁粘壁；链生扰锋 / 愈链 / 援勾；钉壳定锚 / 短冲顶 / 叠甲；闪弧标记 / 擦伤 / 侧闪；井绳桩 / 收索 / 换位。
  */
 export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): SimpleBot {
   const random = opts.random ?? Math.random;
@@ -336,6 +364,8 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
                 ? pickNailAction(bot, enemy, approach.enemyD, cds, jx, jy)
                 : hero === 'arc'
                   ? pickArcAction(bot, enemy, approach.enemyD, cds, jx, jy)
+                  : hero === 'well'
+                    ? pickWellAction(bot, enemy, approach.enemyD, cds, jx, jy)
             : pickHookAction(
                 cds,
                 speed,

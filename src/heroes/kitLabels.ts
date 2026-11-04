@@ -4,6 +4,7 @@ import type { HeroId } from './heroIds';
 import { HOOK_SKILL_SHORT, KIT_DISPLAY_NAME } from './hookKit';
 import { NAIL_KIT_DISPLAY_NAME, NAIL_SKILL_SHORT } from './nailKit';
 import { RING_KIT_DISPLAY_NAME, RING_SKILL_SHORT } from './ringKit';
+import { WELL_KIT_DISPLAY_NAME, WELL_SKILL_SHORT } from './wellKit';
 
 export function kitTitle(hero: HeroId): string {
   if (hero === 'ring') {
@@ -17,6 +18,9 @@ export function kitTitle(hero: HeroId): string {
   }
   if (hero === 'arc') {
     return ARC_KIT_DISPLAY_NAME;
+  }
+  if (hero === 'well') {
+    return WELL_KIT_DISPLAY_NAME;
   }
   return KIT_DISPLAY_NAME;
 }
@@ -33,6 +37,9 @@ export function skillShorts(hero: HeroId): readonly [string, string, string, str
   }
   if (hero === 'arc') {
     return ARC_SKILL_SHORT;
+  }
+  if (hero === 'well') {
+    return WELL_SKILL_SHORT;
   }
   return HOOK_SKILL_SHORT;
 }
@@ -55,6 +62,9 @@ export function kitHelpSkills(hero: HeroId): string {
   if (hero === 'arc') {
     return '技能 1–4：1 侧闪（侧移闪） / 2 掠刃 / 3 回印（标记回响） / 4 虚影（虚晃）。';
   }
+  if (hero === 'well') {
+    return '技能 1–4：1 双索（双钩，先锁敌再点落点） / 2 易位 / 3 索桩 / 4 回索。';
+  }
   return '技能 1–4：1 钩矛 / 2 连刺×3 / 3 盾冲 / 4 蓄势。';
 }
 
@@ -70,6 +80,9 @@ export function kitSettingsHint(hero: HeroId): string {
   }
   if (hero === 'arc') {
     return '技能 1 侧闪 / 2 掠刃 / 3 回印 / 4 虚影。按下进瞄，再按同键或左键释放。';
+  }
+  if (hero === 'well') {
+    return '技能 1 双索（先锁敌，再点落点） / 2 易位 / 3 索桩 / 4 回索。按下进瞄，再按同键或左键释放。';
   }
   return '技能 1 钩矛 / 2 连刺 / 3 盾冲 / 4 蓄势。按下进瞄，再按同键或左键释放。';
 }

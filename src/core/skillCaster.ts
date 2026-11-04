@@ -18,6 +18,7 @@ import { createArcCaster } from './arcCaster';
 import { createChainCaster } from './chainCaster';
 import { createNailCaster } from './nailCaster';
 import { createRingCaster } from './ringCaster';
+import { createWellCaster } from './wellCaster';
 import { applyPinRamBonus } from './nailCombat';
 import { applySkillDamage } from './skillHits';
 import { pickFanEnemy, unitVec } from './skillQuery';
@@ -37,6 +38,16 @@ export type WindupInfo = {
   remain: number;
   markX?: number;
   markY?: number;
+  lockX?: number;
+  lockY?: number;
+  aimStage?: 1 | 2;
+};
+
+export type AimHint = {
+  slot: SkillSlot;
+  stage: 1 | 2;
+  lockX?: number;
+  lockY?: number;
 };
 
 type Effect =
@@ -83,6 +94,7 @@ export type SkillCaster = {
   getAimingSlot: () => SkillSlot | 0;
   getCds: () => SkillCds;
   getWindup: () => WindupInfo | null;
+  getAimHint?: () => AimHint | null;
   isHardBusy: () => boolean;
   isDisplacing: () => boolean;
   getHero: () => HeroId;
@@ -101,6 +113,9 @@ export function createSkillCaster(hero: HeroId = 'hook'): SkillCaster {
   }
   if (hero === 'arc') {
     return createArcCaster();
+  }
+  if (hero === 'well') {
+    return createWellCaster();
   }
   return createHookCaster();
 }

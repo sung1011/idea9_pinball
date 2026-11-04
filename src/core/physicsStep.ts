@@ -17,6 +17,7 @@ import { NAIL_ARMOR, NAIL_PIN } from '../heroes/nailKit';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
 import { FRICTION, SPEED_CAP } from './constants';
 import { applyFloorSpeed } from './skillStub';
+import { resolveAllStakes } from './ropeStakes';
 import { resolveStallInner, stallForBall, type StallFence } from './stallFences';
 import { resolveArenaObstacles, resolveBallBall } from './wallBounce';
 
@@ -100,6 +101,9 @@ export function stepPhysics(
   for (let i = 0; i < COLLISION_ITERS; i += 1) {
     for (const ball of live) {
       let blocked = resolveArenaObstacles(ball);
+      if (resolveAllStakes(ball)) {
+        blocked = true;
+      }
       const fence = extras.stalls && extras.stalls.length > 0 ? stallForBall(ball, extras.stalls) : null;
       if (fence && resolveStallInner(ball, fence)) {
         blocked = true;

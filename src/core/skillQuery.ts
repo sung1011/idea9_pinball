@@ -59,7 +59,7 @@ function pointInArena(x: number, y: number): boolean {
   return Math.hypot(x - cx, y - cy) <= r + EPS;
 }
 
-function distToSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+export function distToSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
   const dx = bx - ax;
   const dy = by - ay;
   const len2 = dx * dx + dy * dy;
@@ -221,6 +221,36 @@ export function pickNearestAlly(
   range: number,
 ): FanPick | null {
   return nearestOf(allyCandidates(caster, roster, range));
+}
+
+/** 线段走廊上的敌人（收索）。宽=2*halfWidth；无敌不选。 */
+export function pickEnemiesOnLine(
+  caster: BallBody,
+  roster: readonly BallBody[],
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  halfWidth: number,
+): FanPick[] {
+  const out: FanPick[] = [];
+  for (const other of roster) {
+    if (!other.inPlay || other.id === caster.id) {
+      continue;
+    }
+    if (other.team && caster.team && other.team === caster.team) {
+      continue;
+    }
+    if (other.invincibleRemain > 0) {
+      continue;
+    }
+    const dist = distToSegment(other.x, other.y, x0, y0, x1, y1);
+    if (dist > halfWidth) {
+      continue;
+    }
+    out.push({ target: other, dist: Math.hypot(other.x - caster.x, other.y - caster.y) });
+  }
+  return out;
 }
 
 /** 距内最近敌人（标记回响）。无敌不选。 */

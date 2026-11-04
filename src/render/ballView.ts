@@ -35,7 +35,9 @@ function drawKnightShield(g: Graphics, ball: BallBody): void {
           ? 0xf4bf6a
           : ball.hero === 'arc'
             ? 0x7dd3fc
-            : SHIELD_RIM;
+            : ball.hero === 'well'
+              ? 0xf59e0b
+              : SHIELD_RIM;
   g.circle(0, 0, BALL_RADIUS);
   g.fill({ color: ball.color, alpha });
   g.stroke({ color: rim, width: 0.055, alpha: 0.95 });
