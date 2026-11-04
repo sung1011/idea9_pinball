@@ -7,9 +7,6 @@ const SKILL_KEYS: Record<string, SkillSlot> = {
   '2': 2,
   '3': 3,
   '4': 4,
-  q: 1,
-  w: 2,
-  e: 3,
 };
 
 function trackPointer(
@@ -26,7 +23,7 @@ function trackPointer(
   bus.setPointerLogical(world.x, world.y);
 }
 
-/** PC：鼠标持续设 targetDir；1–4 / QWE 技能；左键释放；右键 / Esc 取消。R 留给调试重置。触屏点地只纠偏。 */
+/** PC：鼠标持续设 targetDir；技能仅 1–4；左键释放；右键 / Esc 取消。R 只重开一局。触屏点地只纠偏。 */
 export function bindPcInput(opts: {
   bus: ActionBus;
   canvas: HTMLCanvasElement;

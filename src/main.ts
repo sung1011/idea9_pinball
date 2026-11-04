@@ -28,7 +28,7 @@ function mountDebugHint(host: HTMLElement): void {
   const hint = document.createElement('div');
   hint.className = 'debugHint';
   hint.textContent =
-    '钩刺：1勾 2捅 3推 4急停 · 点地纠偏 · 同键/左键释放。R重开  F/G±10分  T跳30s  Y时钟1s  ·  C/Z/X/V 对撞';
+    '钩刺：1勾 2捅 3推 4急停 · 点地纠偏 · 同键/左键释放。R重开  F/G±10分  T跳30s  Y时钟1s  ·  Z背后×1.35  X侧面×0.7  C正面×1.0  V轻蹭';
   host.appendChild(hint);
 }
 

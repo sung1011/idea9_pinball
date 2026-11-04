@@ -46,7 +46,7 @@ function debugPair(balls: BallBody[]): [BallBody, BallBody] | null {
   return a && b ? [a, b] : null;
 }
 
-/** 保留 C/Z/X/V/R 验收对撞。点击 / WASD / 方向键不再给速，避免抢走 Aim 与技能键。 */
+/** 调试：Z 背后×1.35 / X 侧面×0.7 / C 正面×1.0 / V 轻蹭；R 只重开。点击 / WASD / 方向键不再给速。 */
 export function bindDebugVelocity(opts: {
   balls: BallBody[];
   onReset?: () => void;

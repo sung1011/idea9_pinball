@@ -344,9 +344,9 @@ export function verifyM5(): void {
   assert(skillHit !== null && koBlue.hp === 0, 'M5：技能应能击破到 0 血');
   ko.tick(0, skillHit ? [skillHit] : []);
   assert(!koBlue.inPlay, 'M5：技能击破后应离场');
-  assert(Math.abs((ko.snapshot().respawns[koBlue.id] ?? 0) - RESPAWN_SEC) < 1e-6, 'M5：击破后回场倒计时 8s');
+  assert(Math.abs((ko.snapshot().respawns[koBlue.id] ?? 0) - RESPAWN_SEC) < 1e-6, 'M5：击破后回场倒计时 5s');
   ko.tick(RESPAWN_SEC, []);
-  assert(koBlue.inPlay && koBlue.hp === koBlue.maxHp, 'M5：8s 后应回场有血');
+  assert(koBlue.inPlay && koBlue.hp === koBlue.maxHp, 'M5：5s 后应回场有血');
   assert(koBlue.invincibleRemain >= SPAWN_INVINCIBLE_SEC - 1e-6, 'M5：回场应 2s 无敌');
   stepPhysics([koBlue], 1 / 60);
   assert(Math.hypot(koBlue.vx, koBlue.vy) + 1e-6 >= FLOOR_SPEED - 0.1, 'M5：回场后应可动');

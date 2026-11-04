@@ -105,11 +105,11 @@ export function verifyM4(): void {
   let snap = assistMatch.snapshot();
   assert(snap.redScore === KNOCKOUT_SCORE + ASSIST_SCORE, `M4：击破+助攻应为 20，实得 ${snap.redScore}`);
   assert(!blue.inPlay, 'M4：击破后应离场');
-  assert(Math.abs((snap.respawns[blue.id] ?? 0) - RESPAWN_SEC) < 1e-6, 'M4：离场后回场应为 8s');
+  assert(Math.abs((snap.respawns[blue.id] ?? 0) - RESPAWN_SEC) < 1e-6, 'M4：离场后回场应为 5s');
 
   assistMatch.tick(RESPAWN_SEC, []);
   snap = assistMatch.snapshot();
-  assert(blue.inPlay, 'M4：8s 后应回场');
+  assert(blue.inPlay, 'M4：5s 后应回场');
   assert(blue.hp === blue.maxHp, 'M4：回场应满血');
   assert(Math.abs(blue.invincibleRemain - SPAWN_INVINCIBLE_SEC) < 1e-6, 'M4：回场应 2s 无敌');
   assert(Math.hypot(blue.x - blue.spawnX, blue.y - blue.spawnY) < 1e-6, 'M4：应在己方出生点回场');
@@ -124,9 +124,9 @@ export function verifyM4(): void {
   strayBlue.hp = 0;
   stray.tick(0, []);
   assert(!strayBlue.inPlay, 'M4：0 血无当帧 hit 也应离场进回场');
-  assert(Math.abs((stray.snapshot().respawns[strayBlue.id] ?? 0) - RESPAWN_SEC) < 1e-6, 'M4：扫到 0 血后回场仍为 8s');
+  assert(Math.abs((stray.snapshot().respawns[strayBlue.id] ?? 0) - RESPAWN_SEC) < 1e-6, 'M4：扫到 0 血后回场仍为 5s');
   stray.tick(RESPAWN_SEC, []);
-  assert(strayBlue.inPlay && strayBlue.hp === strayBlue.maxHp, 'M4：8s 后回场应有血');
+  assert(strayBlue.inPlay && strayBlue.hp === strayBlue.maxHp, 'M4：5s 后回场应有血');
   assert(strayBlue.invincibleRemain >= SPAWN_INVINCIBLE_SEC - 1e-6, 'M4：回场应 2s 无敌');
   stepPhysics([strayBlue], 1 / 60);
   assert(Math.hypot(strayBlue.vx, strayBlue.vy) + 1e-6 >= FLOOR_SPEED - 0.1, 'M4：回场后应可动');

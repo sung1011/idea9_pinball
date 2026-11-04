@@ -121,7 +121,9 @@ export const KNOCKOUT_SCORE = 15;
 export const ASSIST_SCORE = 5;
 export const ASSIST_WINDOW_SEC = 3;
 
-export const RESPAWN_SEC = 8;
+/** 击破离场后回场等待（秒） */
+export const RESPAWN_SEC = 5;
+/** 回场 / 开局无敌（秒）；碰撞不伤自己也不造成撞伤 */
 export const SPAWN_INVINCIBLE_SEC = 2;
 
 /** 中点每秒结算：人数严格更多一方 */
