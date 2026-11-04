@@ -25,7 +25,7 @@ export function chargeAim(ball: BallBody): { x: number; y: number } {
   return { x: 1, y: 0 };
 }
 
-/** 栏开后前 0.4s 从起步速 lerp 到峰值 7.5。 */
+/** 栏开后前段从起步速 lerp 到峰值 7.5。 */
 export function chargeSpeedAt(remain: number): number {
   const elapsed = OPENING_CHARGE_SEC - Math.max(0, remain);
   if (OPENING_CHARGE_RAMP_SEC <= 0) {

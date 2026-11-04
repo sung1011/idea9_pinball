@@ -525,7 +525,6 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     timeLeft = playSec;
     suddenDeath = false;
     beginCharge();
-    pushEvent({ kind: 'phase', text: '冲锋' });
   };
 
   const skipOpening = (): boolean => {

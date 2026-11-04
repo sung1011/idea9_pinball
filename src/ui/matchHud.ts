@@ -108,11 +108,9 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   opening.className = 'openingHud';
   const openingNum = document.createElement('div');
   openingNum.className = 'openingHudNum';
-  const openingTick = document.createElement('div');
-  openingTick.className = 'openingHudTick';
   const openingHint = document.createElement('div');
   openingHint.className = 'openingHudHint';
-  opening.append(openingNum, openingTick, openingHint);
+  opening.append(openingNum, openingHint);
 
   root.append(cluster, pick, toast);
   host.append(root, opening);
@@ -135,26 +133,22 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
           const left = snap.respawns[ball.id] ?? 0;
           return `${ball.label}回场 ${left.toFixed(1)}s`;
         });
+      const charging = snap.openingChargeRemain > 0;
       const tip = snap.events.find(
-        (event) => event.kind === 'knockout' || event.kind === 'assist' || event.kind === 'phase',
+        (event) =>
+          event.kind === 'knockout' ||
+          event.kind === 'assist' ||
+          (event.kind === 'phase' && !charging),
       );
       toast.textContent = tip?.text ?? (waiting.length > 0 ? waiting.join(' · ') : '');
 
       const counting = snap.phase === 'countdown';
-      const charging = snap.openingChargeRemain > 0;
-      opening.classList.toggle('isOn', counting || charging);
-      opening.classList.toggle('isCharge', charging && !counting);
+      opening.classList.toggle('isOn', counting);
       if (counting) {
         openingNum.textContent = String(Math.max(1, Math.ceil(snap.timeLeft)));
-        openingTick.textContent = '';
         openingHint.textContent = '栏内待命 · Esc / 点空白跳过';
-      } else if (charging) {
-        openingNum.textContent = '冲锋';
-        openingTick.textContent = snap.openingChargeRemain.toFixed(1);
-        openingHint.textContent = '禁技能 · 无敌';
       } else {
         openingNum.textContent = '';
-        openingTick.textContent = '';
         openingHint.textContent = '';
       }
     },

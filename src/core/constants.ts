@@ -114,12 +114,12 @@ export const MATCH_COUNTDOWN_SEC = 5;
 export const MATCH_PLAY_SEC = 240;
 export const MATCH_OVERTIME_SEC = 30;
 
-/** 开局冲锋（秒）：并入原「开局 2s 无敌」，不另叠一段 */
-export const OPENING_CHARGE_SEC = 2;
+/** 开局冲锋（秒）：并入开局无敌，不另叠一段 */
+export const OPENING_CHARGE_SEC = 1;
 /** 冲锋峰值速（格/秒）；全局上限仍 8 */
 export const OPENING_CHARGE_SPEED = 7.5;
-/** 栏开后前段 lerp 拉升（秒） */
-export const OPENING_CHARGE_RAMP_SEC = 0.4;
+/** 栏开后前段 lerp 拉升（秒）；随冲锋窗同比缩短 */
+export const OPENING_CHARGE_RAMP_SEC = 0.2;
 /** 冲锋起步速，随后拉到峰值 */
 export const OPENING_CHARGE_START_SPEED = 2.5;
 /** 冲锋几乎锁拧（度/秒） */

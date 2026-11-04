@@ -309,11 +309,11 @@ export function verifyM4(): void {
   assert(preBlue.inPlay && preBlue.hp === preBlue.maxHp, 'M4：Countdown 内击破不离场');
   assert(pre.snapshot().redScore === 0, 'M4：Countdown 内不计击破分');
 
-  assert(MATCH_COUNTDOWN_SEC === 5 && OPENING_CHARGE_SEC === 2, 'M4：Stall 应为 5s、冲锋 2s');
+  assert(MATCH_COUNTDOWN_SEC === 5 && OPENING_CHARGE_SEC === 1, 'M4：Stall 应为 5s、冲锋 1s');
   assert(OPENING_CHARGE_SPEED === 7.5 && SPEED_CAP === 8, 'M4：冲锋峰值应为 7.5，上限仍 8');
-  assert(OPENING_CHARGE_RAMP_SEC === 0.4, 'M4：冲锋前段拉升应为 0.4s');
+  assert(OPENING_CHARGE_RAMP_SEC === 0.2, 'M4：冲锋前段拉升应为 0.2s');
   assert(Math.abs(chargeSpeedAt(OPENING_CHARGE_SEC) - OPENING_CHARGE_START_SPEED) < 1e-6, 'M4：栏开瞬间应为起步速');
-  assert(Math.abs(chargeSpeedAt(OPENING_CHARGE_SEC - OPENING_CHARGE_RAMP_SEC) - OPENING_CHARGE_SPEED) < 1e-6, 'M4：0.4s 后应到峰值');
+  assert(Math.abs(chargeSpeedAt(OPENING_CHARGE_SEC - OPENING_CHARGE_RAMP_SEC) - OPENING_CHARGE_SPEED) < 1e-6, 'M4：0.2s 后应到峰值');
 
   const ritualRoster = createMatchRoster();
   const ritualRed = ritualRoster[0];
@@ -349,18 +349,22 @@ export function verifyM4(): void {
   assert(ritual.skipOpening(), 'M4：应能跳过 Stall');
   const skipped = ritual.snapshot();
   assert(skipped.phase === 'playing' && !skipped.stallsOn, 'M4：跳过后应进 Playing 并清栏');
-  assert(Math.abs(skipped.openingChargeRemain - OPENING_CHARGE_SEC) < 1e-6, 'M4：跳过后应进入 2s 冲锋');
-  assert(Math.abs(ritualRed.invincibleRemain - OPENING_CHARGE_SEC) < 1e-6, 'M4：冲锋无敌应为 2s 而非叠成 4s');
+  assert(Math.abs(skipped.openingChargeRemain - OPENING_CHARGE_SEC) < 1e-6, 'M4：跳过后应进入 1s 冲锋');
+  assert(Math.abs(ritualRed.invincibleRemain - OPENING_CHARGE_SEC) < 1e-6, 'M4：冲锋无敌应为 1s 而非叠成 4s');
+  assert(
+    skipped.events.every((event) => event.text !== '冲锋'),
+    'M4：进入冲锋不应出说明 toast',
+  );
   assert(Math.abs(Math.hypot(ritualRed.vx, ritualRed.vy) - OPENING_CHARGE_START_SPEED) < 0.08, 'M4：栏开瞬间应为起步速');
   applyOpeningCharge(ritualRed, 0, OPENING_CHARGE_SEC - OPENING_CHARGE_RAMP_SEC);
-  assert(Math.abs(Math.hypot(ritualRed.vx, ritualRed.vy) - OPENING_CHARGE_SPEED) < 0.08, 'M4：0.4s 后应拉到峰值 7.5');
+  assert(Math.abs(Math.hypot(ritualRed.vx, ritualRed.vy) - OPENING_CHARGE_SPEED) < 0.08, 'M4：0.2s 后应拉到峰值 7.5');
   assert(Math.hypot(ritualRed.vx, ritualRed.vy) <= SPEED_CAP + 1e-6, 'M4：冲锋不得超过上限 8');
 
-  for (let i = 0; i < 130; i += 1) {
+  for (let i = 0; i < 70; i += 1) {
     stepPhysics(ritualRoster, 1 / 60);
     ritual.tick(1 / 60, []);
   }
-  assert(ritual.snapshot().openingChargeRemain === 0, 'M4：冲锋 2s 后应结束');
+  assert(ritual.snapshot().openingChargeRemain === 0, 'M4：冲锋 1s 后应结束');
   assert(ritualRed.invincibleRemain < 0.08, 'M4：冲锋结束不应再叠一段开局无敌');
   assert(!ritual.snapshot().skillsLocked, 'M4：冲锋结束后技能应可用');
 }

@@ -54,7 +54,7 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
     body.replaceChildren();
     addBlock(body, '开局', [
       '红左底 / 蓝右底木栏 Stall，开口朝领地，大号倒计时 5 秒，栏内不可出。',
-      '倒计时结束围栏消失，冲锋 2 秒：前 0.4 秒拉到峰值 7.5，禁技能、几乎锁拧、全程无敌。',
+      '倒计时结束围栏消失，冲锋 1 秒：前 0.2 秒拉到峰值 7.5，禁技能、几乎锁拧、全程无敌。',
       '冲锋结束才点地纠偏、放技能。Esc 或点空白可跳过 Stall，直接开战。',
     ]);
     addBlock(body, '怎么动', [

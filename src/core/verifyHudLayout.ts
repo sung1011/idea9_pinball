@@ -104,4 +104,26 @@ export function verifyHudLayout(): void {
   assert(clock.textContent === '03:07', 'HUD：胶囊中间应为倒计时');
   hud.sync(dummySnap({ midpoint: 'red' }), []);
   assert(cluster.dataset.hold === 'red', 'HUD：领地归属应画在合并胶囊上');
+
+  const opening = host.querySelector<HTMLElement>('.openingHud');
+  const openingNum = host.querySelector<HTMLElement>('.openingHudNum');
+  const toast = host.querySelector<HTMLElement>('.matchHudToast');
+  if (!opening || !openingNum || !toast) {
+    throw new Error('HUD：应有 Stall 倒计时层与短 toast');
+  }
+  hud.sync(dummySnap({ phase: 'countdown', timeLeft: 5, stallsOn: true, skillsLocked: true }), []);
+  assert(opening.classList.contains('isOn'), 'HUD：Stall 应显示大号倒计时');
+  assert(openingNum.textContent === '5', 'HUD：Stall 倒计时应显示秒数');
+  hud.sync(
+    dummySnap({
+      phase: 'playing',
+      openingChargeRemain: 1,
+      skillsLocked: true,
+      events: [{ kind: 'phase', text: '冲锋' }],
+    }),
+    [],
+  );
+  assert(!opening.classList.contains('isOn'), 'HUD：冲锋阶段不应出说明板');
+  assert(openingNum.textContent === '', 'HUD：冲锋阶段不应写冲锋字');
+  assert(toast.textContent !== '冲锋', 'HUD：冲锋阶段 toast 不应解释冲锋');
 }
