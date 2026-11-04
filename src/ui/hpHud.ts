@@ -1,7 +1,7 @@
 import type { BallBody } from '../core/ballBody';
 import type { CollisionHit, FacingZone } from '../core/collisionDamage';
 import type { SkillCds, WindupInfo } from '../core/skillCaster';
-import { HOOK_SKILL_SHORT } from '../heroes/hookKit';
+import { HOOK_SKILL_SHORT, KIT_DISPLAY_NAME } from '../heroes/hookKit';
 
 const ZONE_LABEL: Record<FacingZone, string> = {
   front: '正面',
@@ -43,7 +43,7 @@ export function createHpHud(host: HTMLElement): HpHud {
   rows.className = 'hpHudRows';
   const action = document.createElement('div');
   action.className = 'hpHudAction';
-  action.textContent = '钩刺：1勾 2捅 3推 4急停 · 点地纠偏 · 同键或左键释放';
+  action.textContent = `${KIT_DISPLAY_NAME}：1钩 2刺 3冲 4蓄 · 点地纠偏 · 同键或左键释放`;
   const fineTune = document.createElement('div');
   fineTune.className = 'hpHudFineTune';
   fineTune.textContent = '弱拧';
@@ -121,7 +121,7 @@ export function createHpHud(host: HTMLElement): HpHud {
       parts.push(cds);
     }
     if (parts.length === 0) {
-      parts.push('钩刺：1勾 2捅 3推 4急停 · 点地纠偏 · 同键或左键释放');
+      parts.push(`${KIT_DISPLAY_NAME}：1钩 2刺 3冲 4蓄 · 点地纠偏 · 同键或左键释放`);
     }
     action.textContent = parts.join(' · ');
     action.classList.toggle('isFineTune', fine > 0);

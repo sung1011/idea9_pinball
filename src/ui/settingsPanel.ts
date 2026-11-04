@@ -129,7 +129,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
       close();
     });
     body.appendChild(restart);
-    addHint(body, '技能 1 勾 / 2 捅 / 3 推 / 4 急停。按下进瞄，再按同键或左键释放。');
+    addHint(body, '技能 1 钩矛 / 2 连刺 / 3 盾冲 / 4 蓄势。按下进瞄，再按同键或左键释放。');
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。右键 / Esc 取消瞄准。');
   };
 

@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
-import { BALL_RADIUS, SPEED_CAP } from '../core/constants';
+import { BALL_RADIUS } from '../core/constants';
 
 export type BallViewSyncOpts = {
   charging?: boolean;
@@ -11,48 +11,87 @@ export type BallView = {
   sync: (ball: BallBody, opts?: BallViewSyncOpts) => void;
 };
 
-function drawArrow(g: Graphics, fx: number, fy: number, speed: number): void {
-  const len = 0.26 + 0.34 * Math.min(1, speed / SPEED_CAP);
-  const tipX = fx * len;
-  const tipY = fy * len;
-  const tailX = fx * 0.06;
-  const tailY = fy * 0.06;
-  g.moveTo(tailX, tailY);
-  g.lineTo(tipX, tipY);
-  g.stroke({ color: 0xffffff, width: 0.07, cap: 'round' });
+const SPEAR_GOLD = 0xffe08a;
+const SHIELD_RIM = 0xf4f0e4;
+const BOSS_GOLD = 0xd4c48a;
 
+function unit(x: number, y: number): { x: number; y: number } {
+  const len = Math.hypot(x, y);
+  if (len < 1e-6) {
+    return { x: 1, y: 0 };
+  }
+  return { x: x / len, y: y / len };
+}
+
+/** 圆盾 + 纹章十字 + 中心铆钉。碰撞半径不变，只改外观。 */
+function drawKnightShield(g: Graphics, ball: BallBody): void {
+  const alpha = ball.invincibleRemain > 0 ? 0.72 : 1;
+  g.circle(0, 0, BALL_RADIUS);
+  g.fill({ color: ball.color, alpha });
+  g.stroke({ color: SHIELD_RIM, width: 0.055, alpha: 0.95 });
+
+  const arm = 0.3;
+  const thick = 0.086;
+  g.rect(-arm, -thick / 2, arm * 2, thick);
+  g.fill({ color: 0xffffff, alpha: 0.92 });
+  g.rect(-thick / 2, -arm, thick, arm * 2);
+  g.fill({ color: 0xffffff, alpha: 0.92 });
+
+  g.circle(0, 0, 0.078);
+  g.fill({ color: SHIELD_RIM, alpha: 0.96 });
+  g.circle(0, 0, 0.034);
+  g.fill({ color: BOSS_GOLD, alpha: 0.95 });
+}
+
+/** 羽冠：在瞄准/朝向反侧，略偏画面上方。 */
+function drawPlume(g: Graphics, fx: number, fy: number, color: number): void {
+  const rx = -fx;
+  const ry = -fy;
   const px = -fy;
   const py = fx;
-  const head = 0.16;
-  const wing = 0.09;
-  g.moveTo(tipX, tipY);
-  g.lineTo(tipX - fx * head + px * wing, tipY - fy * head + py * wing);
-  g.lineTo(tipX - fx * head - px * wing, tipY - fy * head - py * wing);
+  const bx = rx * 0.42;
+  const by = ry * 0.42;
+  const lift = 0.12;
+  const midX = bx + rx * 0.26 + px * 0.02;
+  const midY = by + ry * 0.26 - lift;
+  const tipX = bx + rx * 0.52;
+  const tipY = by + ry * 0.52 - lift * 1.4;
+
+  g.moveTo(bx + px * 0.06, by + py * 0.06);
+  g.quadraticCurveTo(midX + px * 0.2, midY + py * 0.2, tipX, tipY);
+  g.quadraticCurveTo(midX - px * 0.2, midY - py * 0.2, bx - px * 0.06, by - py * 0.06);
   g.closePath();
-  g.fill({ color: 0xffffff });
+  g.fill({ color, alpha: 0.96 });
+
+  g.circle(bx, by, 0.042);
+  g.fill({ color: SHIELD_RIM, alpha: 0.95 });
 }
 
 /** 矛尖：指示 targetDir（点地 / 鼠标 / bot 目标）。 */
 function drawTargetSpear(g: Graphics, tx: number, ty: number): void {
-  const len = Math.hypot(tx, ty);
-  if (len < 1e-6) {
-    return;
-  }
-  const fx = tx / len;
-  const fy = ty / len;
-  const tipX = fx * 0.92;
-  const tipY = fy * 0.92;
-  g.moveTo(fx * 0.5, fy * 0.5);
-  g.lineTo(tipX, tipY);
-  g.stroke({ color: 0xffe08a, width: 0.06, cap: 'round' });
-
+  const { x: fx, y: fy } = unit(tx, ty);
   const px = -fy;
   const py = fx;
+  const rootX = fx * 0.48;
+  const rootY = fy * 0.48;
+  const guardX = fx * 0.78;
+  const guardY = fy * 0.78;
+  const tipX = fx * 1.12;
+  const tipY = fy * 1.12;
+
+  g.moveTo(rootX, rootY);
+  g.lineTo(guardX, guardY);
+  g.stroke({ color: SPEAR_GOLD, width: 0.055, cap: 'round' });
+
+  g.moveTo(guardX + px * 0.09, guardY + py * 0.09);
+  g.lineTo(guardX - px * 0.09, guardY - py * 0.09);
+  g.stroke({ color: SPEAR_GOLD, width: 0.04, cap: 'round' });
+
   g.moveTo(tipX, tipY);
-  g.lineTo(tipX - fx * 0.14 + px * 0.07, tipY - fy * 0.14 + py * 0.07);
-  g.lineTo(tipX - fx * 0.14 - px * 0.07, tipY - fy * 0.14 - py * 0.07);
+  g.lineTo(tipX - fx * 0.16 + px * 0.07, tipY - fy * 0.16 + py * 0.07);
+  g.lineTo(tipX - fx * 0.16 - px * 0.07, tipY - fy * 0.16 - py * 0.07);
   g.closePath();
-  g.fill({ color: 0xffe08a });
+  g.fill({ color: SPEAR_GOLD });
 }
 
 function drawHpBar(g: Graphics, hp: number, maxHp: number): void {
@@ -73,39 +112,43 @@ function drawHpBar(g: Graphics, hp: number, maxHp: number): void {
 
 const TRAIL_MAX = 10;
 
+/** 冲锋残影：队色拖线 + 淡盾影 + 少量金尘。 */
 function drawChargeFx(
   g: Graphics,
   next: BallBody,
   trail: readonly { x: number; y: number }[],
 ): void {
   const speed = Math.hypot(next.vx, next.vy);
-  const fx = speed > 1e-6 ? next.vx / speed : next.facingX;
-  const fy = speed > 1e-6 ? next.vy / speed : next.facingY;
+  const { x: fx, y: fy } = unit(speed > 1e-6 ? next.vx : next.facingX, speed > 1e-6 ? next.vy : next.facingY);
+  const px = -fy;
+  const py = fx;
 
-  for (let i = 1; i <= 6; i += 1) {
-    const d = 0.26 * i;
-    g.circle(-fx * d, -fy * d, BALL_RADIUS * (0.86 - i * 0.05));
-    g.fill({ color: next.color, alpha: 0.42 * (1 - i / 7) });
+  for (let i = 1; i <= 5; i += 1) {
+    const start = 0.18 + i * 0.16;
+    const end = start + 0.38;
+    const sway = i % 2 === 0 ? 0.07 : -0.07;
+    g.moveTo(-fx * start + px * sway, -fy * start + py * sway);
+    g.lineTo(-fx * end + px * sway * 1.15, -fy * end + py * sway * 1.15);
+    g.stroke({
+      color: next.color,
+      width: 0.11 - i * 0.012,
+      alpha: 0.5 * (1 - i / 6),
+      cap: 'round',
+    });
   }
 
   for (let i = 1; i < trail.length; i += 1) {
-    const alpha = 0.28 * (1 - i / TRAIL_MAX);
-    g.circle(trail[i].x - next.x, trail[i].y - next.y, BALL_RADIUS * (0.88 - i * 0.04));
+    const alpha = 0.22 * (1 - i / TRAIL_MAX);
+    g.circle(trail[i].x - next.x, trail[i].y - next.y, BALL_RADIUS * (0.82 - i * 0.04));
     g.fill({ color: next.color, alpha });
   }
 
-  for (let i = 1; i <= 5; i += 1) {
-    const d = 0.32 * i;
-    const sway = i % 2 === 0 ? 0.14 : -0.14;
-    const ox = -fx * d + -fy * sway;
-    const oy = -fy * d + fx * sway;
-    g.circle(ox, oy, 0.1 + 0.035 * (6 - i));
-    g.fill({ color: 0xe8d090, alpha: 0.4 * (1 - i / 6) });
+  for (let i = 1; i <= 4; i += 1) {
+    const d = 0.34 * i;
+    const sway = i % 2 === 0 ? 0.12 : -0.12;
+    g.circle(-fx * d + px * sway, -fy * d + py * sway, 0.055 + 0.02 * (5 - i));
+    g.fill({ color: SPEAR_GOLD, alpha: 0.32 * (1 - i / 5) });
   }
-
-  g.moveTo(-fx * 0.15, -fy * 0.15);
-  g.lineTo(-fx * 1.35, -fy * 1.35);
-  g.stroke({ color: 0xffe08a, width: 0.16, alpha: 0.5, cap: 'round' });
 }
 
 export function createBallView(ball: BallBody): BallView {
@@ -113,9 +156,8 @@ export function createBallView(ball: BallBody): BallView {
   const fx = new Graphics();
   const body = new Graphics();
   const hpBar = new Graphics();
-  const arrow = new Graphics();
   const spear = new Graphics();
-  root.addChild(fx, body, hpBar, arrow, spear);
+  root.addChild(fx, body, hpBar, spear);
   const trail: Array<{ x: number; y: number }> = [];
 
   const sync = (next: BallBody, opts: BallViewSyncOpts = {}): void => {
@@ -142,9 +184,9 @@ export function createBallView(ball: BallBody): BallView {
     }
 
     body.clear();
-    body.circle(0, 0, BALL_RADIUS);
-    body.fill({ color: next.color, alpha: next.invincibleRemain > 0 ? 0.72 : 1 });
-    body.stroke({ color: 0xffffff, width: 0.045, alpha: 0.9 });
+    drawKnightShield(body, next);
+    const dir = next.hasAim ? unit(next.aimX, next.aimY) : unit(next.facingX, next.facingY);
+    drawPlume(body, dir.x, dir.y, next.color);
     if (next.invincibleRemain > 0) {
       const pulse = 0.45 + 0.45 * (0.5 + 0.5 * Math.sin(next.invincibleRemain * 10));
       body.circle(0, 0, BALL_RADIUS + 0.14);
@@ -152,7 +194,7 @@ export function createBallView(ball: BallBody): BallView {
     }
     if (next.activeRamRemain > 0) {
       body.circle(0, 0, BALL_RADIUS + 0.08);
-      body.stroke({ color: 0xffe08a, width: 0.055, alpha: 0.95 });
+      body.stroke({ color: SPEAR_GOLD, width: 0.055, alpha: 0.95 });
     }
     if (next.fineTuneRemain > 0) {
       body.circle(0, 0, BALL_RADIUS + 0.16);
@@ -162,12 +204,11 @@ export function createBallView(ball: BallBody): BallView {
     hpBar.clear();
     drawHpBar(hpBar, next.hp, next.maxHp);
 
-    const speed = Math.hypot(next.vx, next.vy);
-    arrow.clear();
-    drawArrow(arrow, next.facingX, next.facingY, speed);
     spear.clear();
     if (next.hasAim) {
       drawTargetSpear(spear, next.aimX, next.aimY);
+    } else {
+      drawTargetSpear(spear, next.facingX, next.facingY);
     }
   };
 

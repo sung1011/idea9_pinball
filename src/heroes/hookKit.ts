@@ -45,8 +45,12 @@ export const HOOK_BRAKE = {
   popSpeed: 11,
 } as const;
 
-export const HOOK_SKILL_NAMES = ['勾过来', '方向捅', '推过去', '急停蓄弹'] as const;
-export const HOOK_SKILL_SHORT = ['勾', '捅', '推', '急停'] as const;
+/** 对内仍是钩刺四槽：勾过来 / 方向捅 / 推过去 / 急停蓄弹 */
+export const HOOK_SKILL_INTERNAL = ['勾过来', '方向捅', '推过去', '急停蓄弹'] as const;
+/** 骑士冲杀对外显示名 */
+export const HOOK_SKILL_NAMES = ['钩矛', '连刺', '盾冲', '蓄势'] as const;
+export const HOOK_SKILL_SHORT = ['钩', '刺', '冲', '蓄'] as const;
+export const KIT_DISPLAY_NAME = '骑士冲杀';
 
 export const HOOK_CDS = [HOOK_PULL.cd, HOOK_STAB.cd, HOOK_SHOVE.cd, HOOK_BRAKE.cd] as const;
 

@@ -52,13 +52,13 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
   const body = document.createElement('div');
   body.className = 'helpCardBody';
   addBlock(body, '开局', [
-    '红左底 / 蓝右底 Stall 围栏，开口朝领地，大号倒计时 5 秒，栏内不可出。',
+    '红左底 / 蓝右底木栏 Stall，开口朝领地，大号倒计时 5 秒，栏内不可出。',
     '倒计时结束围栏消失，冲锋 2 秒：前 0.4 秒拉到峰值 7.5，禁技能、几乎锁拧、全程无敌。',
     '冲锋结束才点地纠偏、放技能。Esc 或点空白可跳过 Stall，直接开战。',
   ]);
   addBlock(body, '怎么动', [
-    '球一直保底冲（约 2.5），点地 / 鼠标只纠偏方向，不加油门。',
-    '技能 1–4：1 勾过来 / 2 方向捅×3 / 3 推过去 / 4 急停蓄弹。',
+    '骑士一直保底冲（约 2.5），点地 / 鼠标只纠偏方向，不加油门。金矛尖跟瞄准。',
+    '技能 1–4：1 钩矛 / 2 连刺×3 / 3 盾冲 / 4 蓄势。',
     '按下进瞄，再按同键或左键释放；右键 / Esc 取消。',
   ]);
   addBlock(body, '怎么得分', [
