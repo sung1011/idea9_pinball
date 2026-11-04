@@ -10,10 +10,16 @@ import { HOOK_PULL } from '../heroes/hookKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import type { MatchPhase } from './matchSession';
 import { createSkillCaster, type SkillCaster, type SkillCds } from './skillCaster';
+import { applyOpeningCharge } from './openingCharge';
 import { applyFloorSpeed, applySteerToward } from './skillStub';
 
 export type SimpleBot = {
-  tick: (dt: number, roster: readonly BallBody[], phase: MatchPhase) => CollisionHit[];
+  tick: (
+    dt: number,
+    roster: readonly BallBody[],
+    phase: MatchPhase,
+    chargeRemain?: number,
+  ) => CollisionHit[];
   afterPhysics: (dt: number, roster: readonly BallBody[], wallHit: boolean) => CollisionHit[];
   reset: () => void;
   getCds: () => SkillCds;
@@ -96,11 +102,16 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
   let wait = nextWait(random) * 0.35;
 
   return {
-    tick(dt, roster, phase) {
+    tick(dt, roster, phase, chargeRemain = 0) {
       if (!bot.inPlay || phase === 'result') {
         bot.hasAim = false;
         caster.tick(bot, dt, roster);
         return [];
+      }
+
+      if (chargeRemain > 0) {
+        applyOpeningCharge(bot, dt);
+        return caster.tick(bot, dt, roster);
       }
 
       const enemy = nearestEnemy(bot, roster);

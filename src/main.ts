@@ -10,7 +10,8 @@ import { verifyM4 } from './core/verifyM4';
 import { verifyM5 } from './core/verifyM5';
 import { bindDebugMatch } from './debug/debugMatch';
 import { bindDebugVelocity } from './debug/debugVelocity';
-import { createActionBus } from './input/actionBus';
+import { applyOpeningCharge } from './core/openingCharge';
+import { createActionBus, isAimUiTarget } from './input/actionBus';
 import { bindPcInput } from './input/pcInput';
 import { createPlayerControl } from './input/playerControl';
 import { createTouchPad } from './input/touchPad';
@@ -91,6 +92,7 @@ async function boot(): Promise<void> {
   const matchHud = createMatchHud(host);
   hpHud.sync(balls);
   matchHud.sync(match.snapshot(), balls);
+  arena.syncStalls(match.snapshot().stalls);
 
   const bus = createActionBus();
   const control = createPlayerControl();
@@ -157,15 +159,68 @@ async function boot(): Promise<void> {
   settingsIsGmOn = () => settings.isGmOn();
   settingsClose = settings.close;
 
+  const trySkipOpening = (): void => {
+    if (settings.isOpen() || help.isOpen()) {
+      return;
+    }
+    match.skipOpening();
+  };
+
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Escape') {
+      return;
+    }
+    if (settings.isOpen() || help.isOpen()) {
+      return;
+    }
+    if (match.snapshot().phase !== 'countdown') {
+      return;
+    }
+    ev.preventDefault();
+    trySkipOpening();
+  });
+  window.addEventListener('pointerdown', (ev) => {
+    if (isAimUiTarget(ev.target)) {
+      return;
+    }
+    if (settings.isOpen() || help.isOpen()) {
+      return;
+    }
+    if (ev.target !== app.canvas && ev.target !== host) {
+      return;
+    }
+    if (match.snapshot().phase !== 'countdown') {
+      return;
+    }
+    trySkipOpening();
+  });
+
   app.ticker.add((ticker) => {
     const dt = ticker.deltaMS / 1000;
     const snap = match.snapshot();
     const sample = bus.sample(player.x, player.y);
-    const skillHits = control.tick(player, sample, dt, balls);
-    for (const bot of bots) {
-      skillHits.push(...bot.tick(dt, balls, snap.phase));
+    const charging = snap.openingChargeRemain > 0;
+    const stalled = snap.phase === 'countdown';
+    const skillHits = charging
+      ? control.tick(player, sample, dt, balls, { skills: false, steer: false })
+      : stalled
+        ? control.tick(player, sample, dt, balls, { skills: false, steer: true })
+        : control.tick(player, sample, dt, balls);
+    if (charging) {
+      applyOpeningCharge(player, dt);
     }
-    const step = stepPhysics(balls, dt);
+    for (const bot of bots) {
+      skillHits.push(...bot.tick(dt, balls, snap.phase, snap.openingChargeRemain));
+    }
+    const step = stepPhysics(balls, dt, { stalls: snap.stallsOn ? snap.stalls : [] });
+    if (charging) {
+      applyOpeningCharge(player, 0);
+      for (const ball of balls) {
+        if (ball !== player) {
+          applyOpeningCharge(ball, 0);
+        }
+      }
+    }
     skillHits.push(...control.afterPhysics(player, dt, balls, step.wallHitIds.includes(player.id)));
     for (let i = 0; i < bots.length; i += 1) {
       skillHits.push(
@@ -185,6 +240,7 @@ async function boot(): Promise<void> {
     matchHud.sync(next, balls);
     resultPanel.sync(next);
     arena.syncHold(next.midpoint);
+    arena.syncStalls(next.stalls);
     touchPad.sync({
       aimingSlot,
       skillCds,

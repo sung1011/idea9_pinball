@@ -5,9 +5,12 @@ import {
   CONTROL_POINT,
   FLOOR_SPEED,
   KNOCKOUT_SCORE,
+  MATCH_COUNTDOWN_SEC,
   MATCH_SCORE_LIMIT,
   MAX_HP,
   MIDPOINT_SCORE_PER_SEC,
+  OPENING_CHARGE_SEC,
+  OPENING_CHARGE_SPEED,
   RESPAWN_SEC,
   SPAWN_INVINCIBLE_SEC,
 } from './constants';
@@ -20,6 +23,7 @@ import {
   midpointHold,
 } from './matchSession';
 import { stepPhysics } from './physicsStep';
+import { stallContains, stallForBall, stallsForBalls } from './stallFences';
 
 function hit(
   victim: ReturnType<typeof createBallBody>,
@@ -284,9 +288,12 @@ export function verifyM4(): void {
   const cdBlue = createBallBody({ x: 16, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
   const counted = createMatchSession([cdRed, cdBlue], { countdownSec: 0.5, playSec: 10 });
   assert(counted.snapshot().phase === 'countdown', 'M4：开局应为 Countdown');
+  assert(counted.snapshot().stallsOn && counted.snapshot().skillsLocked, 'M4：Stall 倒计时应锁栏并禁技能');
   counted.tick(0.6, []);
   assert(counted.snapshot().phase === 'playing', 'M4：倒计时后应为 Playing');
   assert(cdRed.invincibleRemain > 0, 'M4：开局应无敌');
+  assert(counted.snapshot().openingChargeRemain > 0, 'M4：倒计时后应进入冲锋');
+  assert(!counted.snapshot().stallsOn, 'M4：冲锋时围栏应消失');
 
   const preRed = createBallBody({ x: 4, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
   const preBlue = createBallBody({ x: 16, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
@@ -295,4 +302,38 @@ export function verifyM4(): void {
   pre.tick(0, [hit(preBlue, preRed)]);
   assert(preBlue.inPlay && preBlue.hp === preBlue.maxHp, 'M4：Countdown 内击破不离场');
   assert(pre.snapshot().redScore === 0, 'M4：Countdown 内不计击破分');
+
+  assert(MATCH_COUNTDOWN_SEC === 5 && OPENING_CHARGE_SEC === 2, 'M4：Stall 应为 5s、冲锋 2s');
+
+  const ritualRoster = createMatchRoster();
+  const ritualRed = ritualRoster[0];
+  const ritual = createMatchSession(ritualRoster);
+  const ritualSnap = ritual.snapshot();
+  assert(ritualSnap.phase === 'countdown' && ritualSnap.stallsOn, 'M4：默认开局应在 Stall');
+  const ritualStalls = stallsForBalls(ritualRoster);
+  const redFence = stallForBall(ritualRed, ritualStalls);
+  if (!redFence || !stallContains(redFence, ritualRed.x, ritualRed.y)) {
+    throw new Error('M4：红应困在出生点围栏');
+  }
+  ritualRed.vx = -10;
+  ritualRed.vy = 0;
+  for (let i = 0; i < 24; i += 1) {
+    stepPhysics(ritualRoster, 1 / 60, { stalls: ritualSnap.stalls });
+  }
+  assert(ritualRed.x >= redFence.minX + ritualRed.radius - 0.02, 'M4：栏内不可出');
+
+  assert(ritual.skipOpening(), 'M4：应能跳过 Stall');
+  const skipped = ritual.snapshot();
+  assert(skipped.phase === 'playing' && !skipped.stallsOn, 'M4：跳过后应进 Playing 并清栏');
+  assert(Math.abs(skipped.openingChargeRemain - OPENING_CHARGE_SEC) < 1e-6, 'M4：跳过后应进入 2s 冲锋');
+  assert(Math.abs(ritualRed.invincibleRemain - OPENING_CHARGE_SEC) < 1e-6, 'M4：冲锋无敌应为 2s 而非叠成 4s');
+  assert(Math.hypot(ritualRed.vx, ritualRed.vy) + 1e-6 >= OPENING_CHARGE_SPEED - 0.05, 'M4：冲锋速度应不低于保底');
+
+  for (let i = 0; i < 130; i += 1) {
+    stepPhysics(ritualRoster, 1 / 60);
+    ritual.tick(1 / 60, []);
+  }
+  assert(ritual.snapshot().openingChargeRemain === 0, 'M4：冲锋 2s 后应结束');
+  assert(ritualRed.invincibleRemain < 0.08, 'M4：冲锋结束不应再叠一段开局无敌');
+  assert(!ritual.snapshot().skillsLocked, 'M4：冲锋结束后技能应可用');
 }

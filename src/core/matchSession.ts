@@ -14,10 +14,13 @@ import {
   MATCH_SCORE_LIMIT,
   MIDPOINT_SCORE_PER_SEC,
   MIDPOINT_TICK_SEC,
+  OPENING_CHARGE_SEC,
   RED_SPAWNS,
   RESPAWN_SEC,
   SPAWN_INVINCIBLE_SEC,
 } from './constants';
+import { snapChargeFacing } from './openingCharge';
+import { stallsForBalls, type StallFence } from './stallFences';
 
 export type MatchPhase = 'countdown' | 'playing' | 'overtime' | 'result';
 export type MidpointHold = 'red' | 'blue' | 'none';
@@ -54,6 +57,10 @@ export type MatchSnapshot = {
   winner: MatchWinner;
   events: MatchEvent[];
   respawns: Record<number, number>;
+  stallsOn: boolean;
+  stalls: StallFence[];
+  openingChargeRemain: number;
+  skillsLocked: boolean;
 };
 
 type DamageMark = {
@@ -222,8 +229,11 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   const respawns: Record<number, number> = {};
   const marks: DamageMark[] = [];
   const recent: MatchEvent[] = [];
+  const openingStalls = stallsForBalls(balls);
+  let openingChargeRemain = 0;
 
-  const openingInvincible = (countdownSec > 0 ? countdownSec : 0) + SPAWN_INVINCIBLE_SEC;
+  const openingInvincible =
+    countdownSec > 0 ? countdownSec : SPAWN_INVINCIBLE_SEC;
 
   const pushEvent = (event: MatchEvent): void => {
     recent.unshift(event);
@@ -492,16 +502,31 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     }
   };
 
+  const beginCharge = (): void => {
+    openingChargeRemain = OPENING_CHARGE_SEC;
+    for (const ball of balls) {
+      if (!ball.inPlay) {
+        continue;
+      }
+      ball.invincibleRemain = OPENING_CHARGE_SEC;
+      snapChargeFacing(ball);
+    }
+  };
+
   const enterPlaying = (): void => {
     phase = 'playing';
     timeLeft = playSec;
     suddenDeath = false;
-    for (const ball of balls) {
-      if (ball.inPlay) {
-        grantInvincible(ball, SPAWN_INVINCIBLE_SEC);
-      }
+    beginCharge();
+    pushEvent({ kind: 'phase', text: '冲锋' });
+  };
+
+  const skipOpening = (): boolean => {
+    if (phase !== 'countdown') {
+      return false;
     }
-    pushEvent({ kind: 'phase', text: '开战' });
+    enterPlaying();
+    return true;
   };
 
   const enterOvertime = (): void => {
@@ -563,6 +588,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     blueHoldScore = 0;
     elapsedSec = 0;
     finishReason = '';
+    openingChargeRemain = 0;
     hold = 'none';
     winner = null;
     now = 0;
@@ -594,8 +620,12 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
       tickRespawns(clockDt);
       tickMidpoint(clockDt);
       tickPhase(clockDt);
+      if (phase === 'playing' && openingChargeRemain > 0) {
+        openingChargeRemain = Math.max(0, openingChargeRemain - clockDt);
+      }
       return recent.slice(0, Math.max(0, recent.length - before));
     },
+    skipOpening,
     reset(): void {
       applyReset();
     },
@@ -616,6 +646,10 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
         winner,
         events: [...recent],
         respawns: { ...respawns },
+        stallsOn: phase === 'countdown',
+        stalls: phase === 'countdown' ? openingStalls.map((fence) => ({ ...fence })) : [],
+        openingChargeRemain,
+        skillsLocked: phase === 'countdown' || openingChargeRemain > 0,
       };
     },
     debugAddScore(team: TeamId, points: number): void {

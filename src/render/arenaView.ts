@@ -12,6 +12,7 @@ import {
   RIGHT_PILLAR,
 } from '../core/constants';
 import type { MidpointHold } from '../core/matchSession';
+import type { StallFence } from '../core/stallFences';
 
 function drawGrid(): Graphics {
   const grid = new Graphics();
@@ -107,9 +108,29 @@ function drawControlPoint(): { group: Container; syncHold: (hold: MidpointHold) 
   };
 }
 
+function paintStalls(g: Graphics, stalls: readonly StallFence[]): void {
+  g.clear();
+  for (const fence of stalls) {
+    const color = fence.team === 'red' ? 0xe24a4a : 0x3d7cf0;
+    const w = fence.maxX - fence.minX;
+    const h = fence.maxY - fence.minY;
+    g.rect(fence.minX, fence.minY, w, h);
+    g.stroke({ color, width: 0.07, alpha: 0.92 });
+    if (fence.openToward > 0) {
+      g.moveTo(fence.maxX, fence.minY);
+      g.lineTo(fence.maxX, fence.maxY);
+    } else {
+      g.moveTo(fence.minX, fence.minY);
+      g.lineTo(fence.minX, fence.maxY);
+    }
+    g.stroke({ color: 0xffe08a, width: 0.1, alpha: 0.88 });
+  }
+}
+
 export type ArenaView = {
   root: Container;
   syncHold: (hold: MidpointHold) => void;
+  syncStalls: (stalls: readonly StallFence[]) => void;
 };
 
 /** 俯视场地：圆角矩形 + 领地圈 + 左右矮柱 + 半场出生点。 */
@@ -136,7 +157,13 @@ export function createArenaView(): ArenaView {
   inner.addChild(drawPillar(LEFT_PILLAR.x, LEFT_PILLAR.y));
   inner.addChild(drawPillar(RIGHT_PILLAR.x, RIGHT_PILLAR.y));
   inner.addChild(control.group);
+  const stallGfx = new Graphics();
+  inner.addChild(stallGfx);
   root.addChild(inner);
 
-  return { root, syncHold: control.syncHold };
+  return {
+    root,
+    syncHold: control.syncHold,
+    syncStalls: (stalls) => paintStalls(stallGfx, stalls),
+  };
 }

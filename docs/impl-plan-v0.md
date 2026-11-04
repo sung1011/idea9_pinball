@@ -1,5 +1,5 @@
 # Idea pinball · 工程落地方案 v0
-更新：2026-11-04（设置面板：常规 / 版本 / GM；R 正式可重开）
+更新：2026-11-04（开局 Stall 5s + 冲锋 2s；设置面板：常规 / 版本 / GM）
 
 ## 栈
 - 客户端：TypeScript + PixiJS + Vite
@@ -24,7 +24,9 @@
 - `src/core/ballBody.ts`：圆体状态（队伍 / 在场 / 无敌 / 出生点 / Aim）
 - `src/core/physicsStep.ts`：每帧积分 / 摩擦 / 保底 / 盖帽；离场球不参与
 - `src/core/wallBounce.ts`：圆角矩形墙 + 矮柱胶囊反弹；球-球弹性分离（伤害在 collisionDamage）
-- `src/core/matchSession.ts`：Countdown → Playing → Overtime? → Result；击破/助攻/领地/回场；分项计分 + 用时
+- `src/core/matchSession.ts`：Countdown（Stall 5s）→ Playing（先冲锋 2s）→ Overtime? → Result；击破/助攻/领地/回场；分项计分 + 用时
+- `src/core/stallFences.ts`：开局出生点描边围栏（物理四面封死）
+- `src/core/openingCharge.ts`：冲锋朝领地、极弱拧、保底速 2.8
 - `src/core/simpleBot.ts`：蓝方简 bot（保底冲靠近 + 急停 + 偶勾；不用捅×3）
 - `src/core/skillCaster.ts`：钩刺施放器（无限瞄准；释放后前摇；四槽独立 CD）
 - `src/core/skillQuery.ts`：扇形选取 / 勾索墙挡
@@ -37,7 +39,7 @@
 - `src/core/collisionDamage.ts`：相对速度阈值 / 朝向乘区 / 掉血弹开；无敌或同队不结算伤害
 - `src/ui/hpHud.ts`：血量条、瞄准/弱拧强拧/回场/无敌、最近碰撞日志
 - `src/ui/matchHud.ts`：双方分、倒计时、领地归属、回场与击破提示
-- `src/ui/helpCard.ts`：右上角 `?` 说明卡（怎么动 / 怎么得分 / 怎么赢 / 回场）；点空白或关闭钮收起
+- `src/ui/helpCard.ts`：右上角 `?` 说明卡（开局 / 怎么动 / 怎么得分 / 怎么赢 / 回场）；点空白或关闭钮收起
 - `src/ui/settingsPanel.ts`：右上角齿轮设置（常规 / 版本 / GM，对齐 idle/story 分页）；点空白关；与 `?` 分开
 - `src/ui/appVersion.ts`：版本号 + 构建短 SHA + 简短 changelog
 - `src/ui/resultPanel.ts`：局结束结算（胜/负、击破分与领地分、用时、再来一局）
@@ -78,10 +80,11 @@
 
 ## M4 一局约定
 - 本机：1 人控红方 1 球 vs 蓝方 1～2 个简 bot（`BLUE_BOT_COUNT`，默认 2）
-- 状态机：Countdown 3s → Playing 240s → 平分则 Overtime 30s（只计领地）→ 再平则下次击破方胜 → Result
+- 状态机：Countdown 5s（Stall 围栏，栏内不可出）→ Playing 240s（先冲锋 2s：朝领地、禁技能、无敌，并入原开局无敌）→ 平分则 Overtime 30s（只计领地）→ 再平则下次击破方胜 → Result
+- 开局仪式：Esc 或点空白跳过 Stall，直接进 Playing 并清栏（仍走 2s 冲锋）
 - 先到 100 立即结束（须一方严格领先）；到点比总分
 - 击破：HP≤0 离场，敌方击杀队伍 +15；击杀前 3s 内对死者造成过碰撞伤的队友（非击杀者）最近 1 人 +5。红方无队友，助攻由 `verifyM4` 双红预留覆盖
-- 回场：HP≤0 立即离场（当帧无 hit 也会扫到并进 5s 回场）；己方半场出生；回场 / 开局 2s 无敌（可滑、可放技能）。无敌或同队只做弹性分离
+- 回场：HP≤0 立即离场（当帧无 hit 也会扫到并进 5s 回场）；己方半场出生；回场 2s 无敌（可滑、可放技能）。开局无敌并入冲锋 2s，不另叠。无敌或同队只做弹性分离
 - 领地：圆心地图中心、半径 2.5 格；每秒结算；区内活人数严格更多 +2；相等 0；离场当帧不占人
 - 简 bot：无寻路；保底冲靠近 + 急停 + 偶勾；不用方向捅连招；可被撞死并回场
 - 调试：齿轮 → GM（默认开）；`Z` 背后×1.35 / `X` 侧面×0.7 / `C` 正面×1.0 / `V` 轻蹭（不重置一局）；`R` 只重开（正式也可用）；`F`/`G` ±分；`T` 跳 30s；`Y` 当前阶段剩 1s；立即回场；`DEBUG_CLOCK_SCALE` 默认可加速时钟。GM 关则调试键无效，`R` 仍可用
@@ -100,12 +103,12 @@
 - PC：按 `1` 进瞄（无超时）→ 再按 `1` 或左键释放 → 释放后才走该槽前摇；右键 / Esc 取消不生效
 - 保底巡航约 2.5；鼠标持续拧向（弱 45°/s）；撞墙或轻蹭后 0.3s HUD 亮「强拧」120°/s
 - 触屏：点地纠偏，右四键同「按下进瞄 / 再按释放」；点技能不抢 Aim；取消键取消
-- M4：单机完整一局（开局无敌 → 击破得分+回场倒计时 → 领地刷分 → 先到100 / 加时 / 再平下次击破）
+- M4：单机完整一局（Stall 5s → 冲锋 2s 无敌 → 击破得分+回场倒计时 → 领地刷分 → 先到100 / 加时 / 再平下次击破）
 - M5：钩刺急停→勾→捅→推可打出
 
 ## M4 自测
 - `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM4`
-- 开局 Countdown 后 2s 无敌，互撞不掉血
+- 开局 Stall 5s 后冲锋 2s 无敌，互撞不掉血；围栏消失后才出栏。Esc / 点空白可跳过 Stall
 - 撞死蓝 bot：红 +15，HUD 击破提示，蓝回场倒计时 5s，回场后再无敌 2s
 - 站领地且人数更多：每秒 +2，圈色随归属变；HUD / 圈标签文案为「领地」
 - 调试：`F` 红加到 100 立即结束并弹出结算（击破分 / 领地分 / 用时）；`G` 把双方刷平后 `T`/`Y` 进加时；加时再平后下次击破定胜负

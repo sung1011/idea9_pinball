@@ -9,7 +9,12 @@ import {
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
 import { FRICTION, SPEED_CAP } from './constants';
 import { applyFloorSpeed } from './skillStub';
+import { resolveStallInner, stallForBall, type StallFence } from './stallFences';
 import { resolveArenaObstacles, resolveBallBall } from './wallBounce';
+
+export type PhysicsExtras = {
+  stalls?: readonly StallFence[];
+};
 
 const MAX_DT = 1 / 20;
 const COLLISION_ITERS = 3;
@@ -58,7 +63,11 @@ export type PhysicsStepResult = {
 };
 
 /** 每帧：积分位移 → 墙/柱/球弹性分离 → 达标碰撞掉血弹开 → 摩擦 / 保底 → 速度盖帽。 */
-export function stepPhysics(balls: readonly BallBody[], dt: number): PhysicsStepResult {
+export function stepPhysics(
+  balls: readonly BallBody[],
+  dt: number,
+  extras: PhysicsExtras = {},
+): PhysicsStepResult {
   const stepDt = Math.min(Math.max(dt, 0), MAX_DT);
   const live = balls.filter((ball) => ball.inPlay);
 
@@ -80,7 +89,12 @@ export function stepPhysics(balls: readonly BallBody[], dt: number): PhysicsStep
 
   for (let i = 0; i < COLLISION_ITERS; i += 1) {
     for (const ball of live) {
-      if (resolveArenaObstacles(ball)) {
+      let blocked = resolveArenaObstacles(ball);
+      const fence = extras.stalls && extras.stalls.length > 0 ? stallForBall(ball, extras.stalls) : null;
+      if (fence && resolveStallInner(ball, fence)) {
+        blocked = true;
+      }
+      if (blocked) {
         collided.add(ball.id);
         wallHits.add(ball.id);
       }

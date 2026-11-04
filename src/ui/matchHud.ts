@@ -63,8 +63,16 @@ export function createMatchHud(host: HTMLElement): MatchHud {
   const toast = document.createElement('div');
   toast.className = 'matchHudToast';
 
+  const opening = document.createElement('div');
+  opening.className = 'openingHud';
+  const openingNum = document.createElement('div');
+  openingNum.className = 'openingHudNum';
+  const openingHint = document.createElement('div');
+  openingHint.className = 'openingHudHint';
+  opening.append(openingNum, openingHint);
+
   root.append(score, meta, toast);
-  host.appendChild(root);
+  host.append(root, opening);
 
   return {
     sync(snap, balls) {
@@ -88,6 +96,21 @@ export function createMatchHud(host: HTMLElement): MatchHud {
         (event) => event.kind === 'knockout' || event.kind === 'assist' || event.kind === 'phase',
       );
       toast.textContent = tip?.text ?? '';
+
+      const counting = snap.phase === 'countdown';
+      const charging = snap.openingChargeRemain > 0;
+      opening.classList.toggle('isOn', counting || charging);
+      opening.classList.toggle('isCharge', charging && !counting);
+      if (counting) {
+        openingNum.textContent = String(Math.max(1, Math.ceil(snap.timeLeft)));
+        openingHint.textContent = '栏内待命 · Esc / 点空白跳过';
+      } else if (charging) {
+        openingNum.textContent = '冲锋';
+        openingHint.textContent = '禁技能 · 无敌';
+      } else {
+        openingNum.textContent = '';
+        openingHint.textContent = '';
+      }
     },
   };
 }

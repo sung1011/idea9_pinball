@@ -109,10 +109,22 @@ export const FINE_TUNE_WINDOW = 0.3;
 /** 本机蓝方简 bot 数量；1～2，默认 2 */
 export const BLUE_BOT_COUNT = 2;
 
-/** 一局：倒计时 / 正赛 / 加时（秒） */
-export const MATCH_COUNTDOWN_SEC = 3;
+/** 一局：Stall 倒计时 / 正赛 / 加时（秒） */
+export const MATCH_COUNTDOWN_SEC = 5;
 export const MATCH_PLAY_SEC = 240;
 export const MATCH_OVERTIME_SEC = 30;
+
+/** 开局冲锋（秒）：并入原「开局 2s 无敌」，不另叠一段 */
+export const OPENING_CHARGE_SEC = 2;
+/** 冲锋保底，略高于巡航 2.5 */
+export const OPENING_CHARGE_SPEED = 2.8;
+/** 冲锋极弱拧（度/秒） */
+export const OPENING_CHARGE_STEER_DEG_PER_SEC = 18;
+export const OPENING_CHARGE_STEER_RAD_PER_SEC = (OPENING_CHARGE_STEER_DEG_PER_SEC * Math.PI) / 180;
+
+/** 开局 stall 围栏：出生点为心的描边矩形半宽 / 半高（格） */
+export const STALL_HALF_W = 1.25;
+export const STALL_HALF_H = 1.25;
 
 /** 先到此分立即结束 */
 export const MATCH_SCORE_LIMIT = 100;
@@ -123,7 +135,7 @@ export const ASSIST_WINDOW_SEC = 3;
 
 /** 击破离场后回场等待（秒） */
 export const RESPAWN_SEC = 5;
-/** 回场 / 开局无敌（秒）；碰撞不伤自己也不造成撞伤 */
+/** 回场无敌（秒）；开局无敌并入冲锋段，不另叠 */
 export const SPAWN_INVINCIBLE_SEC = 2;
 
 /** 领地每秒结算：人数严格更多一方 */

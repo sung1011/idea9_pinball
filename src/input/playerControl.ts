@@ -4,8 +4,19 @@ import { createSkillCaster, type SkillCaster, type SkillCds, type WindupInfo } f
 import { applyFloorSpeed, applySteerToward } from '../core/skillStub';
 import type { ActionSample, SkillSlot } from './actionTypes';
 
+export type PlayerTickOpts = {
+  skills?: boolean;
+  steer?: boolean;
+};
+
 export type PlayerControl = {
-  tick: (player: BallBody, sample: ActionSample, dt: number, roster?: readonly BallBody[]) => CollisionHit[];
+  tick: (
+    player: BallBody,
+    sample: ActionSample,
+    dt: number,
+    roster?: readonly BallBody[],
+    opts?: PlayerTickOpts,
+  ) => CollisionHit[];
   afterPhysics: (
     player: BallBody,
     dt: number,
@@ -24,14 +35,18 @@ export function createPlayerControl(): PlayerControl {
   const caster = createSkillCaster();
 
   return {
-    tick: (player, sample, dt, roster = []) => {
-      caster.handleInput(player, sample);
+    tick: (player, sample, dt, roster = [], opts = {}) => {
+      const skillsOn = opts.skills !== false;
+      const steerOn = opts.steer !== false;
+      if (skillsOn) {
+        caster.handleInput(player, sample);
+      }
       const hits = caster.tick(player, dt, roster);
       if (!player.inPlay) {
         player.hasAim = false;
         return hits;
       }
-      if (sample.hasAim) {
+      if (steerOn && sample.hasAim) {
         player.aimX = sample.aimX;
         player.aimY = sample.aimY;
         player.hasAim = true;

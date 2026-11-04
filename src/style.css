@@ -89,6 +89,43 @@ canvas {
   font-size: 13px;
 }
 
+.openingHud {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 8;
+  pointer-events: none;
+  text-align: center;
+  color: #ffe08a;
+  font: 700 16px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  text-shadow: 0 0 18px #041616cc, 0 2px 0 #041616aa;
+  user-select: none;
+}
+
+.openingHud.isOn {
+  display: block;
+}
+
+.openingHudNum {
+  font-size: clamp(72px, 18vmin, 140px);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 0.95;
+}
+
+.openingHud.isCharge .openingHudNum {
+  font-size: clamp(40px, 9vmin, 72px);
+}
+
+.openingHudHint {
+  margin-top: 10px;
+  color: #e8ffffcc;
+  font-size: clamp(13px, 2.4vmin, 18px);
+  font-weight: 600;
+}
+
 .helpFab,
 .settingsFab {
   position: absolute;
@@ -659,5 +696,9 @@ canvas {
 
   .matchHudClock {
     font-size: 16px;
+  }
+
+  .openingHudNum {
+    font-size: clamp(56px, 16vmin, 96px);
   }
 }

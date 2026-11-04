@@ -18,7 +18,7 @@ function hypot2(x: number, y: number): number {
 }
 
 /** 沿指向场地内部的法线反射速度；发生反弹时返回 true。 */
-function bounceAlongInwardNormal(ball: BallBody, nx: number, ny: number): boolean {
+export function bounceAlongInwardNormal(ball: BallBody, nx: number, ny: number): boolean {
   const vn = ball.vx * nx + ball.vy * ny;
   if (vn >= 0) {
     return false;

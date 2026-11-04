@@ -1,5 +1,6 @@
 export type HelpCard = {
   close: () => void;
+  isOpen: () => boolean;
 };
 
 export type HelpCardOpts = {
@@ -50,6 +51,11 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
 
   const body = document.createElement('div');
   body.className = 'helpCardBody';
+  addBlock(body, '开局', [
+    '红 / 蓝先困在出生点 Stall 围栏，大号倒计时 5 秒，栏内不可出。',
+    '倒计时结束围栏消失，冲锋 2 秒：朝领地方向冲、禁技能、全程无敌。',
+    '冲锋结束才点地纠偏、放技能。Esc 或点空白可跳过 Stall，直接开战。',
+  ]);
   addBlock(body, '怎么动', [
     '球一直保底冲（约 2.5），点地 / 鼠标只纠偏方向，不加油门。',
     '技能 1–4：1 勾过来 / 2 方向捅×3 / 3 推过去 / 4 急停蓄弹。',
@@ -102,6 +108,21 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
       close();
     }
   });
+  window.addEventListener(
+    'keydown',
+    (ev) => {
+      if (ev.key !== 'Escape' || !overlay.classList.contains('isOn')) {
+        return;
+      }
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      close();
+    },
+    true,
+  );
 
-  return { close };
+  return {
+    close,
+    isOpen: () => overlay.classList.contains('isOn'),
+  };
 }
