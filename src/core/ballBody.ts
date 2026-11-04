@@ -31,6 +31,16 @@ export type BallBody = {
   invincibleRemain: number;
   spawnX: number;
   spawnY: number;
+  /** 硬直剩余秒数；>0 时不能进瞄/放技能，朝向冻结 */
+  stunRemain: number;
+  /** 最近一次硬控时间戳（技能施放器时钟）；用于 1.5s 衰减 */
+  lastHardCcAt: number;
+  /** 本帧摩擦倍率；急停×10，位移技飞行中为 0 */
+  frictionMul: number;
+  /** 技能超速（10/11/12）期间不盖帽，掉回上限后自动关 */
+  allowOverCap: boolean;
+  /** 冲刺等技能自己结算命中时，跳过本帧碰撞伤害避免双算 */
+  suppressCombat: boolean;
 };
 
 export function createBallBody(init: {
@@ -72,6 +82,11 @@ export function createBallBody(init: {
     invincibleRemain: 0,
     spawnX: init.spawnX ?? init.x,
     spawnY: init.spawnY ?? init.y,
+    stunRemain: 0,
+    lastHardCcAt: -1e9,
+    frictionMul: 1,
+    allowOverCap: false,
+    suppressCombat: false,
   };
 }
 
@@ -109,4 +124,12 @@ export function tickInvincible(ball: BallBody, dt: number): void {
 
 export function grantInvincible(ball: BallBody, sec: number): void {
   ball.invincibleRemain = Math.max(ball.invincibleRemain, sec);
+}
+
+export function tickStun(ball: BallBody, dt: number): void {
+  if (ball.stunRemain <= 0) {
+    ball.stunRemain = 0;
+    return;
+  }
+  ball.stunRemain = Math.max(0, ball.stunRemain - dt);
 }

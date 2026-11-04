@@ -1,5 +1,7 @@
 import type { BallBody } from '../core/ballBody';
 import type { CollisionHit, FacingZone } from '../core/collisionDamage';
+import type { SkillCds, WindupInfo } from '../core/skillCaster';
+import { HOOK_SKILL_SHORT } from '../heroes/hookKit';
 
 const ZONE_LABEL: Record<FacingZone, string> = {
   front: '正面',
@@ -11,7 +13,8 @@ const MAX_HIT_LINES = 4;
 
 export type HudStatus = {
   aimingSlot: number;
-  skillCd: number;
+  skillCds: SkillCds;
+  windup?: WindupInfo | null;
   respawns?: Record<number, number>;
 };
 
@@ -39,7 +42,7 @@ export function createHpHud(host: HTMLElement): HpHud {
   rows.className = 'hpHudRows';
   const action = document.createElement('div');
   action.className = 'hpHudAction';
-  action.textContent = '点地纠偏、无左摇杆 · 1–4 / QWE 同键瞄放';
+  action.textContent = '钩刺：1勾 2捅 3推 4急停 · 点地纠偏 · 同键或左键释放';
   const fineTune = document.createElement('div');
   fineTune.className = 'hpHudFineTune';
   fineTune.textContent = '弱拧';
@@ -82,7 +85,8 @@ export function createHpHud(host: HTMLElement): HpHud {
           const ram = ball.activeRamRemain > 0 ? ` 撞窗${ball.activeRamRemain.toFixed(2)}s` : '';
           const tune = ball.fineTuneRemain > 0 ? ` 强拧${ball.fineTuneRemain.toFixed(2)}s` : '';
           const inv = ball.invincibleRemain > 0 ? ` 无敌${ball.invincibleRemain.toFixed(1)}s` : '';
-          value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${inv}${ram}${tune}`;
+          const stun = ball.stunRemain > 0 ? ` 硬直${ball.stunRemain.toFixed(2)}s` : '';
+          value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${inv}${ram}${tune}${stun}`;
         }
         row.classList.toggle('isOut', !ball.inPlay);
 
@@ -95,15 +99,24 @@ export function createHpHud(host: HTMLElement): HpHud {
     const fine = player?.fineTuneRemain ?? 0;
     const parts: string[] = [];
     if (status && status.aimingSlot > 0) {
-      parts.push(`瞄准技能${status.aimingSlot} · 再按同键或左键释放 · 右键/Esc/取消键取消`);
+      const name = HOOK_SKILL_SHORT[status.aimingSlot - 1] ?? `技能${status.aimingSlot}`;
+      parts.push(`瞄准${name} · 再按同键或左键释放 · 右键/Esc/取消键取消`);
+    }
+    if (status?.windup) {
+      const name = HOOK_SKILL_SHORT[status.windup.slot - 1] ?? `技能${status.windup.slot}`;
+      parts.push(`前摇 ${name} ${status.windup.remain.toFixed(2)}s`);
     }
     if (fine > 0) {
       parts.push(`强拧 ${fine.toFixed(2)}s`);
-    } else if (status && status.skillCd > 0 && (!status.aimingSlot || status.aimingSlot === 0)) {
-      parts.push(`技能CD ${status.skillCd.toFixed(2)}s`);
+    }
+    if (status) {
+      const cds = status.skillCds
+        .map((cd, i) => (cd > 0 ? `${HOOK_SKILL_SHORT[i]}${cd.toFixed(1)}` : `${HOOK_SKILL_SHORT[i]}就绪`))
+        .join(' ');
+      parts.push(cds);
     }
     if (parts.length === 0) {
-      parts.push('点地纠偏、无左摇杆 · 1–4 / QWE 同键瞄放');
+      parts.push('钩刺：1勾 2捅 3推 4急停 · 点地纠偏 · 同键或左键释放');
     }
     action.textContent = parts.join(' · ');
     action.classList.toggle('isFineTune', fine > 0);

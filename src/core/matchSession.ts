@@ -176,6 +176,12 @@ function resetBall(ball: BallBody, openingInvincible: number): void {
   ball.activeRamRemain = 0;
   ball.fineTuneRemain = 0;
   ball.invincibleRemain = openingInvincible;
+  ball.stunRemain = 0;
+  ball.lastHardCcAt = -1e9;
+  ball.frictionMul = 1;
+  ball.allowOverCap = false;
+  ball.suppressCombat = false;
+  ball.hasAim = false;
   if (ball.team === 'blue') {
     ball.facingX = -1;
     ball.facingY = 0;
@@ -272,6 +278,11 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     ball.vy = 0;
     ball.activeRamRemain = 0;
     ball.fineTuneRemain = 0;
+    ball.stunRemain = 0;
+    ball.frictionMul = 1;
+    ball.allowOverCap = false;
+    ball.suppressCombat = false;
+    ball.hasAim = false;
     respawns[ball.id] = RESPAWN_SEC;
   };
 
@@ -285,6 +296,11 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     ball.inPlay = true;
     ball.activeRamRemain = 0;
     ball.fineTuneRemain = 0;
+    ball.stunRemain = 0;
+    ball.frictionMul = 1;
+    ball.allowOverCap = false;
+    ball.suppressCombat = false;
+    ball.hasAim = false;
     grantInvincible(ball, SPAWN_INVINCIBLE_SEC);
     if (ball.team === 'blue') {
       ball.facingX = -1;
@@ -293,6 +309,73 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
       ball.facingX = 1;
       ball.facingY = 0;
     }
+  };
+
+  const latestMarkSource = (victimId: number): BallBody | null => {
+    let best: DamageMark | null = null;
+    for (const mark of marks) {
+      if (mark.victimId !== victimId) {
+        continue;
+      }
+      if (!best || mark.at > best.at) {
+        best = mark;
+      }
+    }
+    return best ? (balls.find((ball) => ball.id === best.sourceId) ?? null) : null;
+  };
+
+  const resolveKnockout = (victim: BallBody, source: BallBody | null, seen: Set<number>): void => {
+    if (!victim.inPlay || victim.hp > 0 || seen.has(victim.id)) {
+      return;
+    }
+    seen.add(victim.id);
+    parkOut(victim);
+    if (!source) {
+      pushEvent({ kind: 'knockout', text: `${victim.label}被击破` });
+      return;
+    }
+    const killerTeam = teamOf(source);
+    const victimTeam = teamOf(victim);
+    if (!killerTeam || !victimTeam || killerTeam === victimTeam) {
+      pushEvent({ kind: 'knockout', text: `${source.label}击破${victim.label}` });
+      return;
+    }
+
+    if (suddenDeath) {
+      pushEvent({
+        kind: 'knockout',
+        text: `${source.label}击破${victim.label} · 加时定胜负`,
+        team: killerTeam,
+      });
+      finish(killerTeam, '下次击破');
+      return;
+    }
+
+    if (phase === 'playing') {
+      addScore(killerTeam, KNOCKOUT_SCORE, {
+        kind: 'knockout',
+        team: killerTeam,
+        points: KNOCKOUT_SCORE,
+        text: `${source.label}击破${victim.label} +${KNOCKOUT_SCORE}`,
+      });
+      const assist = findAssistSource(marks, victim.id, source.id, killerTeam, now, balls);
+      if (assist && assist.team === killerTeam) {
+        addScore(killerTeam, ASSIST_SCORE, {
+          kind: 'assist',
+          team: killerTeam,
+          points: ASSIST_SCORE,
+          text: `${assist.label}助攻 +${ASSIST_SCORE}`,
+        });
+      }
+      tryFinishByScore();
+      return;
+    }
+
+    pushEvent({
+      kind: 'knockout',
+      team: killerTeam,
+      text: `${source.label}击破${victim.label}（加时不计击破分）`,
+    });
   };
 
   const processKnockouts = (hits: readonly CollisionHit[]): void => {
@@ -319,53 +402,16 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     for (const hit of hits) {
       const victim = balls.find((ball) => ball.id === hit.victimId);
       const source = balls.find((ball) => ball.id === hit.sourceId);
-      if (!victim || !source || !victim.inPlay || victim.hp > 0 || seen.has(victim.id)) {
+      if (!victim) {
         continue;
       }
-      seen.add(victim.id);
-      parkOut(victim);
-      const killerTeam = teamOf(source);
-      const victimTeam = teamOf(victim);
-      if (!killerTeam || !victimTeam || killerTeam === victimTeam) {
-        pushEvent({ kind: 'knockout', text: `${source.label}击破${victim.label}` });
+      resolveKnockout(victim, source ?? null, seen);
+    }
+    for (const ball of balls) {
+      if (!ball.inPlay || ball.hp > 0) {
         continue;
       }
-
-      if (suddenDeath) {
-        pushEvent({
-          kind: 'knockout',
-          text: `${source.label}击破${victim.label} · 加时定胜负`,
-          team: killerTeam,
-        });
-        finish(killerTeam, '下次击破');
-        continue;
-      }
-
-      if (phase === 'playing') {
-        addScore(killerTeam, KNOCKOUT_SCORE, {
-          kind: 'knockout',
-          team: killerTeam,
-          points: KNOCKOUT_SCORE,
-          text: `${source.label}击破${victim.label} +${KNOCKOUT_SCORE}`,
-        });
-        const assist = findAssistSource(marks, victim.id, source.id, killerTeam, now, balls);
-        if (assist && assist.team === killerTeam) {
-          addScore(killerTeam, ASSIST_SCORE, {
-            kind: 'assist',
-            team: killerTeam,
-            points: ASSIST_SCORE,
-            text: `${assist.label}助攻 +${ASSIST_SCORE}`,
-          });
-        }
-        tryFinishByScore();
-        continue;
-      }
-
-      pushEvent({
-        kind: 'knockout',
-        team: killerTeam,
-        text: `${source.label}击破${victim.label}（加时不计击破分）`,
-      });
+      resolveKnockout(ball, latestMarkSource(ball.id), seen);
     }
   };
 

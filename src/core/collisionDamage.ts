@@ -147,6 +147,9 @@ export function applyCollisionCombat(
   if (a.invincibleRemain > 0 || b.invincibleRemain > 0) {
     return [];
   }
+  if (a.suppressCombat || b.suppressCombat) {
+    return [];
+  }
   if (a.team && b.team && a.team === b.team) {
     return [];
   }

@@ -97,8 +97,11 @@ export const ACTIVE_RAM_WINDOW = 0.25;
 /** 技能释放 stub 冲量（格/秒）；受 SPEED_CAP 盖帽 */
 export const SKILL_IMPULSE = 3;
 
-/** 技能短 CD，防连点（秒） */
+/** 技能短 CD，防连点（秒）；M5 钩刺已按槽位 CD，此值仅留给 stub 工具 */
 export const SKILL_STUB_CD = 0.4;
+
+/** 同一目标 1.5s 内再吃硬控，时长与附加伤害减半 */
+export const HARD_CC_DIMINISH_WINDOW = 1.5;
 
 /** 任意碰撞（含轻蹭）后的强拧窗口（秒） */
 export const FINE_TUNE_WINDOW = 0.3;
@@ -135,7 +138,7 @@ export const BLUE_SPAWNS = [
   { x: 15.5, y: 7.8, facingX: -1, facingY: 0 },
 ] as const;
 
-/** 简 bot：周期给 stub 冲量 */
+/** 简 bot：决策间隔（急停 / 靠近 / 偶勾） */
 export const BOT_INTERVAL_SEC = 1.5;
 export const BOT_INTERVAL_JITTER_SEC = 0.7;
 export const BOT_AIM_JITTER_RAD = 0.5;

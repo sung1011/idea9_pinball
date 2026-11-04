@@ -1,9 +1,12 @@
+import type { SkillCds } from '../core/skillCaster';
+import { HOOK_SKILL_SHORT } from '../heroes/hookKit';
 import type { ActionBus } from './actionBus';
 import type { SkillSlot } from './actionTypes';
 
 export type TouchPadStatus = {
   aimingSlot: number;
-  skillCd: number;
+  skillCds: SkillCds;
+  windupSlot?: number;
   fineTuneOn: boolean;
 };
 
@@ -36,7 +39,7 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus): TouchPad {
     btn.className = 'touchSkillBtn';
     btn.dataset.touchControl = 'skill';
     btn.dataset.slot = String(slot);
-    btn.textContent = String(slot);
+    btn.textContent = HOOK_SKILL_SHORT[slot - 1] ?? String(slot);
     btn.addEventListener('pointerdown', (ev: PointerEvent) => {
       ev.preventDefault();
       ev.stopPropagation();
@@ -68,8 +71,8 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus): TouchPad {
       cancel.hidden = status.aimingSlot === 0;
       for (let i = 0; i < buttons.length; i += 1) {
         const slot = i + 1;
-        buttons[i].classList.toggle('isAiming', status.aimingSlot === slot);
-        buttons[i].classList.toggle('isCd', status.skillCd > 0);
+        buttons[i].classList.toggle('isAiming', status.aimingSlot === slot || status.windupSlot === slot);
+        buttons[i].classList.toggle('isCd', (status.skillCds[i] ?? 0) > 0);
       }
     },
   };

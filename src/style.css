@@ -244,7 +244,7 @@ canvas {
   border: 3px solid #7ee8ffaa;
   background: #0f3f3fcc;
   color: #e8ffff;
-  font: 700 22px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  font: 700 16px/1.1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   box-shadow: 0 0 10px #04161666;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;

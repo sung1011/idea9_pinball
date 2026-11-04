@@ -7,6 +7,7 @@ import { verifyM2 } from './core/verifyM2';
 import { verifyM3 } from './core/verifyM3';
 import { verifyM35 } from './core/verifyM35';
 import { verifyM4 } from './core/verifyM4';
+import { verifyM5 } from './core/verifyM5';
 import { bindDebugMatch } from './debug/debugMatch';
 import { bindDebugVelocity } from './debug/debugVelocity';
 import { createActionBus } from './input/actionBus';
@@ -27,7 +28,7 @@ function mountDebugHint(host: HTMLElement): void {
   const hint = document.createElement('div');
   hint.className = 'debugHint';
   hint.textContent =
-    '点地纠偏、无左摇杆 · 1–4/QWE 瞄放 · R重开  F/G±10分  T跳30s  Y时钟1s  ·  C/Z/X/V 对撞';
+    '钩刺：1勾 2捅 3推 4急停 · 点地纠偏 · 同键/左键释放。R重开  F/G±10分  T跳30s  Y时钟1s  ·  C/Z/X/V 对撞';
   host.appendChild(hint);
 }
 
@@ -36,6 +37,7 @@ async function boot(): Promise<void> {
   verifyM3();
   verifyM35();
   verifyM4();
+  verifyM5();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -118,6 +120,12 @@ async function boot(): Promise<void> {
   bindDebugVelocity({
     balls,
     onReset: restart,
+    onPairDebug: () => {
+      control.reset();
+      for (const bot of bots) {
+        bot.reset();
+      }
+    },
   });
   bindDebugMatch(match);
 
@@ -125,27 +133,36 @@ async function boot(): Promise<void> {
     const dt = ticker.deltaMS / 1000;
     const snap = match.snapshot();
     const sample = bus.sample(player.x, player.y);
-    control.tick(player, sample, dt);
+    const skillHits = control.tick(player, sample, dt, balls);
     for (const bot of bots) {
-      bot.tick(dt, balls, snap.phase);
+      skillHits.push(...bot.tick(dt, balls, snap.phase));
     }
     const step = stepPhysics(balls, dt);
-    const events = match.tick(dt, step.hits);
+    skillHits.push(...control.afterPhysics(player, dt, balls, step.wallHitIds.includes(player.id)));
+    for (let i = 0; i < bots.length; i += 1) {
+      skillHits.push(
+        ...bots[i].afterPhysics(dt, balls, step.wallHitIds.includes(balls[i + 1].id)),
+      );
+    }
+    const frameHits = [...step.hits, ...skillHits];
+    const events = match.tick(dt, frameHits);
     const next = match.snapshot();
     const aimingSlot = control.getAimingSlot();
-    const skillCd = control.getSkillCd();
-    if (events.length > 0 || step.hits.length > 0) {
-      hpHud.pushHits(step.hits);
+    const skillCds = control.getSkillCds();
+    const windup = control.getWindup();
+    if (events.length > 0 || frameHits.length > 0) {
+      hpHud.pushHits(frameHits);
     }
-    hpHud.sync(balls, { aimingSlot, skillCd, respawns: next.respawns });
+    hpHud.sync(balls, { aimingSlot, skillCds, windup, respawns: next.respawns });
     matchHud.sync(next, balls);
     arena.syncHold(next.midpoint);
     touchPad.sync({
       aimingSlot,
-      skillCd,
+      skillCds,
+      windupSlot: windup?.slot ?? 0,
       fineTuneOn: player.fineTuneRemain > 0,
     });
-    aimPreview.sync(player, aimingSlot, sample);
+    aimPreview.sync(player, aimingSlot, sample, windup);
     for (let i = 0; i < balls.length; i += 1) {
       views[i].sync(balls[i]);
     }

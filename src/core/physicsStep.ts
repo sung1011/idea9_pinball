@@ -3,6 +3,7 @@ import {
   tickActiveRam,
   tickFineTune,
   tickInvincible,
+  tickStun,
   type BallBody,
 } from './ballBody';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
@@ -16,6 +17,10 @@ const COLLISION_ITERS = 3;
 function capSpeed(ball: BallBody): void {
   const speed = Math.hypot(ball.vx, ball.vy);
   if (speed <= SPEED_CAP) {
+    ball.allowOverCap = false;
+    return;
+  }
+  if (ball.allowOverCap) {
     return;
   }
   const s = SPEED_CAP / speed;
@@ -24,12 +29,18 @@ function capSpeed(ball: BallBody): void {
 }
 
 function applyFrictionAndFacing(ball: BallBody, dt: number): void {
-  const damp = Math.exp(-FRICTION * dt);
+  const mul = Number.isFinite(ball.frictionMul) ? Math.max(0, ball.frictionMul) : 1;
+  const damp = Math.exp(-FRICTION * mul * dt);
   ball.vx *= damp;
   ball.vy *= damp;
-  applyFloorSpeed(ball);
+  if (mul === 1) {
+    applyFloorSpeed(ball);
+  }
   const speed = Math.hypot(ball.vx, ball.vy);
   if (speed <= 1e-8) {
+    return;
+  }
+  if (ball.stunRemain > 0) {
     return;
   }
   ball.facingX = ball.vx / speed;
@@ -43,10 +54,11 @@ function pairKey(a: BallBody, b: BallBody): string {
 export type PhysicsStepResult = {
   hits: CollisionHit[];
   collidedIds: number[];
+  wallHitIds: number[];
 };
 
-/** 每帧：积分位移 → 墙/柱/球弹性分离 → 达标碰撞掉血弹开 → 摩擦 → 速度盖帽。 */
-export function stepPhysics(balls: BallBody[], dt: number): PhysicsStepResult {
+/** 每帧：积分位移 → 墙/柱/球弹性分离 → 达标碰撞掉血弹开 → 摩擦 / 保底 → 速度盖帽。 */
+export function stepPhysics(balls: readonly BallBody[], dt: number): PhysicsStepResult {
   const stepDt = Math.min(Math.max(dt, 0), MAX_DT);
   const live = balls.filter((ball) => ball.inPlay);
 
@@ -57,6 +69,7 @@ export function stepPhysics(balls: BallBody[], dt: number): PhysicsStepResult {
 
   const seen = new Set<string>();
   const collided = new Set<number>();
+  const wallHits = new Set<number>();
   const pending: Array<{
     a: BallBody;
     b: BallBody;
@@ -69,6 +82,7 @@ export function stepPhysics(balls: BallBody[], dt: number): PhysicsStepResult {
     for (const ball of live) {
       if (resolveArenaObstacles(ball)) {
         collided.add(ball.id);
+        wallHits.add(ball.id);
       }
     }
     for (let a = 0; a < live.length; a += 1) {
@@ -108,10 +122,11 @@ export function stepPhysics(balls: BallBody[], dt: number): PhysicsStepResult {
     tickActiveRam(ball, stepDt);
     tickFineTune(ball, stepDt);
     tickInvincible(ball, stepDt);
+    tickStun(ball, stepDt);
     if (collided.has(ball.id)) {
       openFineTune(ball);
     }
   }
 
-  return { hits, collidedIds: [...collided] };
+  return { hits, collidedIds: [...collided], wallHitIds: [...wallHits] };
 }

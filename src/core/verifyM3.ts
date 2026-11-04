@@ -92,11 +92,17 @@ export function verifyM3(): void {
 
   control.tick(player, sample({ skillPress: 2 }), 0);
   control.tick(player, sample({ skillPress: 2 }), 0);
-  if (Math.abs(Math.hypot(player.vx, player.vy) - SKILL_IMPULSE) > 1e-5) {
-    throw new Error('M3：同键二次应释放 stub');
+  if (control.getAimingSlot() !== 0) {
+    throw new Error('M3：同键二次应释放（清瞄）');
   }
-  if (player.activeRamRemain <= 0) {
-    throw new Error('M3：同键释放应开主动撞窗');
+  if (Math.hypot(player.vx, player.vy) > 1e-6) {
+    throw new Error('M3：释放后应先走前摇，不应立刻冲量');
+  }
+  if (Math.abs((control.getSkillCds()[1] ?? 0) - 6) > 1e-6) {
+    throw new Error('M3：方向捅释放后应进 6s CD');
+  }
+  if (control.getWindup()?.slot !== 2) {
+    throw new Error('M3：释放后应进入前摇');
   }
 
   const clicker = createBallBody({
@@ -110,13 +116,30 @@ export function verifyM3(): void {
   clickCtl.tick(clicker, sample({ skillPress: 3, aimX: 0, aimY: 1 }), 0);
   clickCtl.tick(clicker, sample({ confirmRelease: true, aimX: 0, aimY: 1 }), 0);
   if (Math.abs(clicker.facingY - 1) > 1e-6 || Math.abs(clicker.vx) > 1e-6) {
-    throw new Error('M3：左键释放应沿瞄准方向');
+    throw new Error('M3：左键释放应锁定瞄准方向且仍处前摇');
+  }
+  if (clickCtl.getWindup()?.slot !== 3) {
+    throw new Error('M3：点地确认应释放当前瞄准技能');
   }
 
-  const after = Math.hypot(player.vx, player.vy);
-  control.tick(player, sample({ skillPress: 1 }), 0.1);
-  if (control.getAimingSlot() !== 0 || Math.abs(Math.hypot(player.vx, player.vy) - after) > 1e-6) {
-    throw new Error('M3：短 CD 内不应再进瞄或连放');
+  control.tick(player, sample({ skillPress: 2 }), 0.1);
+  if (control.getAimingSlot() !== 0) {
+    throw new Error('M3：同槽 CD 内不应再进瞄');
+  }
+
+  const other = createBallBody({
+    x: 8,
+    y: 6,
+    color: 0xe24a4a,
+    facingX: 1,
+    facingY: 0,
+  });
+  const otherCtl = createPlayerControl();
+  otherCtl.tick(other, sample({ skillPress: 4 }), 0);
+  otherCtl.tick(other, sample({ skillPress: 4 }), 0);
+  otherCtl.tick(other, sample({ skillPress: 1 }), 0);
+  if (otherCtl.getAimingSlot() !== 1) {
+    throw new Error('M3：急停不占硬前摇，其他槽就绪仍应能进瞄');
   }
 
   const scrapeA = createBallBody({

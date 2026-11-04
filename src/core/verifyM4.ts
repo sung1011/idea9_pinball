@@ -3,6 +3,7 @@ import type { CollisionHit } from './collisionDamage';
 import {
   ASSIST_SCORE,
   CONTROL_POINT,
+  FLOOR_SPEED,
   KNOCKOUT_SCORE,
   MATCH_SCORE_LIMIT,
   MAX_HP,
@@ -112,6 +113,23 @@ export function verifyM4(): void {
   assert(blue.hp === blue.maxHp, 'M4：回场应满血');
   assert(Math.abs(blue.invincibleRemain - SPAWN_INVINCIBLE_SEC) < 1e-6, 'M4：回场应 2s 无敌');
   assert(Math.hypot(blue.x - blue.spawnX, blue.y - blue.spawnY) < 1e-6, 'M4：应在己方出生点回场');
+  stepPhysics([blue], 1 / 60);
+  assert(Math.hypot(blue.vx, blue.vy) + 1e-6 >= FLOOR_SPEED - 0.1, 'M4：回场后应能保底移动');
+
+  const strayRed = createBallBody({ x: 5, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
+  const strayBlue = createBallBody({ x: 15, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
+  const stray = createMatchSession([strayRed, strayBlue], { countdownSec: 0, playSec: 30 });
+  strayRed.invincibleRemain = 0;
+  strayBlue.invincibleRemain = 0;
+  strayBlue.hp = 0;
+  stray.tick(0, []);
+  assert(!strayBlue.inPlay, 'M4：0 血无当帧 hit 也应离场进回场');
+  assert(Math.abs((stray.snapshot().respawns[strayBlue.id] ?? 0) - RESPAWN_SEC) < 1e-6, 'M4：扫到 0 血后回场仍为 8s');
+  stray.tick(RESPAWN_SEC, []);
+  assert(strayBlue.inPlay && strayBlue.hp === strayBlue.maxHp, 'M4：8s 后回场应有血');
+  assert(strayBlue.invincibleRemain >= SPAWN_INVINCIBLE_SEC - 1e-6, 'M4：回场应 2s 无敌');
+  stepPhysics([strayBlue], 1 / 60);
+  assert(Math.hypot(strayBlue.vx, strayBlue.vy) + 1e-6 >= FLOOR_SPEED - 0.1, 'M4：回场后应可动');
 
   const soloRed = createBallBody({ x: 6, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
   const soloBlue = createBallBody({ x: 14, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });

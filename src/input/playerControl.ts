@@ -1,77 +1,61 @@
 import type { BallBody } from '../core/ballBody';
-import { SKILL_STUB_CD } from '../core/constants';
-import { applyFloorSpeed, applySteerToward, applySkillRelease } from '../core/skillStub';
+import type { CollisionHit } from '../core/collisionDamage';
+import { createSkillCaster, type SkillCaster, type SkillCds, type WindupInfo } from '../core/skillCaster';
+import { applyFloorSpeed, applySteerToward } from '../core/skillStub';
 import type { ActionSample, SkillSlot } from './actionTypes';
 
 export type PlayerControl = {
-  tick: (player: BallBody, sample: ActionSample, dt: number) => void;
+  tick: (player: BallBody, sample: ActionSample, dt: number, roster?: readonly BallBody[]) => CollisionHit[];
+  afterPhysics: (
+    player: BallBody,
+    dt: number,
+    roster: readonly BallBody[],
+    wallHit: boolean,
+  ) => CollisionHit[];
   reset: () => void;
   getAimingSlot: () => SkillSlot | 0;
-  getSkillCd: () => number;
+  getSkillCds: () => SkillCds;
+  getWindup: () => WindupInfo | null;
+  getCaster: () => SkillCaster;
 };
 
-function releaseAim(player: BallBody, sample: ActionSample): boolean {
-  const aimX = sample.hasAim ? sample.aimX : player.facingX;
-  const aimY = sample.hasAim ? sample.aimY : player.facingY;
-  return applySkillRelease(player, aimX, aimY);
-}
-
-/** 红球瞄准态：同键或左键释放 stub；Cancel 清态；无最长瞄准时限。 */
+/** 红球钩刺：同键或左键释放；点地只纠偏；前摇从释放后起算。 */
 export function createPlayerControl(): PlayerControl {
-  let aimingSlot: SkillSlot | 0 = 0;
-  let skillCd = 0;
-
-  const tryRelease = (player: BallBody, sample: ActionSample): void => {
-    if (skillCd > 0 || aimingSlot === 0) {
-      return;
-    }
-    if (!releaseAim(player, sample)) {
-      return;
-    }
-    skillCd = SKILL_STUB_CD;
-    aimingSlot = 0;
-  };
+  const caster = createSkillCaster();
 
   return {
-    tick: (player: BallBody, sample: ActionSample, dt: number) => {
-      skillCd = Math.max(0, skillCd - Math.max(0, dt));
+    tick: (player, sample, dt, roster = []) => {
+      caster.handleInput(player, sample);
+      const hits = caster.tick(player, dt, roster);
       if (!player.inPlay) {
-        aimingSlot = 0;
-        return;
+        player.hasAim = false;
+        return hits;
       }
-
-      if (sample.cancelAim) {
-        aimingSlot = 0;
-      } else {
-        if (sample.skillPress) {
-          if (aimingSlot === sample.skillPress) {
-            tryRelease(player, sample);
-          } else if (skillCd <= 0) {
-            aimingSlot = sample.skillPress;
-          }
-        }
-        if (sample.confirmRelease && aimingSlot !== 0) {
-          tryRelease(player, sample);
-        }
-      }
-
       if (sample.hasAim) {
         player.aimX = sample.aimX;
         player.aimY = sample.aimY;
         player.hasAim = true;
-        if (dt > 0) {
+        if (
+          dt > 0 &&
+          player.stunRemain <= 0 &&
+          !caster.isDisplacing() &&
+          player.frictionMul === 1
+        ) {
           applyFloorSpeed(player);
           applySteerToward(player, sample.aimX, sample.aimY, dt);
         }
       } else {
         player.hasAim = false;
       }
+      return hits;
     },
+    afterPhysics: (player, dt, roster, wallHit) => caster.afterPhysics(player, dt, roster, wallHit),
     reset: () => {
-      aimingSlot = 0;
-      skillCd = 0;
+      caster.reset();
     },
-    getAimingSlot: () => aimingSlot,
-    getSkillCd: () => skillCd,
+    getAimingSlot: () => caster.getAimingSlot(),
+    getSkillCds: () => caster.getCds(),
+    getWindup: () => caster.getWindup(),
+    getCaster: () => caster,
   };
 }
