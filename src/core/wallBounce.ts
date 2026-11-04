@@ -189,17 +189,45 @@ export function resolveBallBall(a: BallBody, b: BallBody): BallOverlap | null {
   const approaching = rel <= 0;
 
   const overlap = minDist - dist;
-  a.x -= nx * overlap * 0.5;
-  a.y -= ny * overlap * 0.5;
-  b.x += nx * overlap * 0.5;
-  b.y += ny * overlap * 0.5;
+  const aLocked = a.pinLocked && a.pinRemain > 0;
+  const bLocked = b.pinLocked && b.pinRemain > 0;
+  if (aLocked && !bLocked) {
+    b.x += nx * overlap;
+    b.y += ny * overlap;
+  } else if (bLocked && !aLocked) {
+    a.x -= nx * overlap;
+    a.y -= ny * overlap;
+  } else {
+    a.x -= nx * overlap * 0.5;
+    a.y -= ny * overlap * 0.5;
+    b.x += nx * overlap * 0.5;
+    b.y += ny * overlap * 0.5;
+  }
 
   if (rel > 0) {
     return { nx, ny, relSpeed, approaching, relVx, relVy };
   }
-  a.vx += rel * nx;
-  a.vy += rel * ny;
-  b.vx -= rel * nx;
-  b.vy -= rel * ny;
+  if (aLocked && !bLocked) {
+    const vn = b.vx * nx + b.vy * ny;
+    if (vn < 0) {
+      b.vx -= 2 * vn * nx;
+      b.vy -= 2 * vn * ny;
+    }
+    a.vx = 0;
+    a.vy = 0;
+  } else if (bLocked && !aLocked) {
+    const vn = a.vx * nx + a.vy * ny;
+    if (vn > 0) {
+      a.vx -= 2 * vn * nx;
+      a.vy -= 2 * vn * ny;
+    }
+    b.vx = 0;
+    b.vy = 0;
+  } else {
+    a.vx += rel * nx;
+    a.vy += rel * ny;
+    b.vx -= rel * nx;
+    b.vy -= rel * ny;
+  }
   return { nx, ny, relSpeed, approaching, relVx, relVy };
 }

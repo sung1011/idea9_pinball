@@ -83,6 +83,11 @@ export function stepPhysics(
   const live = balls.filter((ball) => ball.inPlay);
 
   for (const ball of live) {
+    if (ball.pinLocked && ball.pinRemain > 0) {
+      ball.vx = 0;
+      ball.vy = 0;
+      continue;
+    }
     ball.x += ball.vx * stepDt;
     ball.y += ball.vy * stepDt;
   }

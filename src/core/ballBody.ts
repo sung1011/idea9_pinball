@@ -67,11 +67,13 @@ export type BallBody = {
   reflectDamage: number;
   reflectOnce: boolean;
   reflectArmed: boolean;
-  /** 定锚剩余秒数；>0 时速度可被碰撞推动，位移≥1 断钉 */
+  /** 定锚剩余秒数；>0 时跳过保底拉回。未锁定位时仍可被推，位移≥1 断钉 */
   pinRemain: number;
   pinX: number;
   pinY: number;
   pinnedByTeam?: TeamId;
+  /** 硬根：速度归零并钉在 pinX/pinY，不能自行离开，仍可碰撞 */
+  pinLocked: boolean;
   /** 擦伤刃窗口剩余秒数 */
   grazeRemain: number;
   grazeLocks: Array<{ id: number; remain: number }>;
@@ -147,6 +149,7 @@ export function createBallBody(init: {
     pinX: 0,
     pinY: 0,
     pinnedByTeam: undefined,
+    pinLocked: false,
     grazeRemain: 0,
     grazeLocks: [],
     echoMarkRemain: 0,
@@ -324,29 +327,44 @@ export function tickReflect(ball: BallBody, dt: number): void {
   }
 }
 
-export function applyPin(ball: BallBody, duration: number, team: TeamId | undefined): void {
+export function applyPin(
+  ball: BallBody,
+  duration: number,
+  team: TeamId | undefined,
+  locked = false,
+): void {
   ball.pinRemain = Math.max(ball.pinRemain, duration);
   ball.pinX = ball.x;
   ball.pinY = ball.y;
   ball.pinnedByTeam = team;
+  if (locked) {
+    ball.pinLocked = true;
+  }
 }
 
 export function clearPin(ball: BallBody): void {
   ball.pinRemain = 0;
   ball.pinnedByTeam = undefined;
+  ball.pinLocked = false;
 }
 
 export function tickPin(ball: BallBody, dt: number, breakDist: number): void {
   if (ball.pinRemain <= 0) {
-    ball.pinRemain = 0;
-    ball.pinnedByTeam = undefined;
-    return;
-  }
-  const moved = Math.hypot(ball.x - ball.pinX, ball.y - ball.pinY);
-  if (moved + 1e-9 >= breakDist) {
-    ball.stunRemain = 0;
     clearPin(ball);
     return;
+  }
+  if (ball.pinLocked) {
+    ball.x = ball.pinX;
+    ball.y = ball.pinY;
+    ball.vx = 0;
+    ball.vy = 0;
+  } else {
+    const moved = Math.hypot(ball.x - ball.pinX, ball.y - ball.pinY);
+    if (moved + 1e-9 >= breakDist) {
+      ball.stunRemain = 0;
+      clearPin(ball);
+      return;
+    }
   }
   ball.pinRemain = Math.max(0, ball.pinRemain - Math.max(0, dt));
   if (ball.pinRemain <= 0) {

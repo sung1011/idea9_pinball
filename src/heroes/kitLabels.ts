@@ -104,7 +104,7 @@ const WELL_SKILL_TIPS = [
   '先锁敌再点落点飞出',
   '与敌人交换位置',
   '投桩当墙，己方撞桩开窗',
-  '沿线拉敌并降速一档',
+  '线上敌定身 2 秒不能动',
 ] as const;
 
 export function skillTips(hero: HeroId): readonly [string, string, string, string] {

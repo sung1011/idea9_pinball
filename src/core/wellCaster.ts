@@ -1,4 +1,4 @@
-import { consumeAimBreak, skillsBlocked, type BallBody } from './ballBody';
+import { applyPin, consumeAimBreak, skillsBlocked, type BallBody } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import type { HeroId } from '../heroes/heroIds';
 import { RING_TRAP } from '../heroes/ringKit';
@@ -7,7 +7,6 @@ import {
   WELL_REEL,
   WELL_STAKE,
   WELL_SWAP,
-  dropSpeedOneTier,
   lightPullToward,
   wellIsDisplace,
   wellPoint,
@@ -15,6 +14,7 @@ import {
   wellWindup,
 } from '../heroes/wellKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
+import { applyHardCc } from './hardCc';
 import type { AimHint, SkillCaster, SkillCds, WindupInfo } from './skillCaster';
 import { applySkillDamage } from './skillHits';
 import { pickEnemiesOnLine, pickNearestEnemy, unitVec } from './skillQuery';
@@ -67,6 +67,7 @@ export function createWellCaster(): SkillCaster {
   let effect: Effect | null = null;
   let hookLock: HookLock | null = null;
   let ownerId = -1;
+  let now = 0;
 
   const bindOwner = (ball: BallBody): void => {
     ownerId = ball.id;
@@ -209,8 +210,6 @@ export function createWellCaster(): SkillCaster {
       return [];
     }
     const hits: CollisionHit[] = [];
-    const midX = (ball.x + stake.x) / 2;
-    const midY = (ball.y + stake.y) / 2;
     const picked = pickEnemiesOnLine(
       ball,
       roster,
@@ -225,9 +224,10 @@ export function createWellCaster(): SkillCaster {
       if (dmg) {
         hits.push(dmg);
       }
-      lightPullToward(item.target, midX, midY, WELL_REEL.pullDist);
-      dropSpeedOneTier(item.target);
-      resolveArenaObstacles(item.target);
+      const scaled = applyHardCc(item.target, WELL_REEL.duration, now);
+      item.target.vx = 0;
+      item.target.vy = 0;
+      applyPin(item.target, scaled, undefined, true);
     }
     return hits;
   };
@@ -373,6 +373,7 @@ export function createWellCaster(): SkillCaster {
 
   const tick = (ball: BallBody, dt: number, roster: readonly BallBody[]): CollisionHit[] => {
     const step = Math.max(0, dt);
+    now += step;
     bindOwner(ball);
     if (consumeAimBreak(ball)) {
       aimingSlot = 0;
@@ -435,6 +436,7 @@ export function createWellCaster(): SkillCaster {
       cds[3] = 0;
       effect = null;
       clearLock();
+      now = 0;
       if (ownerId >= 0) {
         clearStake(ownerId);
       }

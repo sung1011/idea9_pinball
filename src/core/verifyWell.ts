@@ -127,7 +127,7 @@ function dropTrapOn(ball: BallBody): void {
   });
 }
 
-/** 井绳四技能：双钩两段瞄、换位、桩反弹/撞窗、收索拉线降速，以及困圈禁位移。 */
+/** 井绳四技能：双钩两段瞄、换位、桩反弹/撞窗、收索沿线定身 2s，以及困圈禁位移。 */
 export function verifyWell(): void {
   resetTrapZones();
   resetStakes();
@@ -138,6 +138,7 @@ export function verifyWell(): void {
   assert(WELL_STAKE.cd === 12 && WELL_STAKE.windup === 0.3 && WELL_STAKE.range === 6, '井绳：弹索桩应为 CD12 / 前摇0.3 / 距6');
   assert(WELL_STAKE.duration === 7, '井绳：弹索桩应持续 7s');
   assert(WELL_REEL.cd === 9 && WELL_REEL.width === 1 && WELL_REEL.damage === 6, '井绳：收索应为 CD9 / 宽1 / 伤6');
+  assert(WELL_REEL.duration === 2, '井绳：收索硬根应为 2s（超出旧硬控 0.6s 上限）');
   assert(nextHero('hook') === 'ring' && nextHero('ring') === 'chain', '井绳：H 循环前段钩刺→磁环→链生');
   assert(nextHero('chain') === 'nail' && nextHero('nail') === 'arc', '井绳：H 循环应接到钉壳再接到闪弧');
   assert(nextHero('arc') === 'well' && nextHero('well') === 'hook', '井绳：H 循环闪弧→井绳→钩刺');
@@ -270,12 +271,39 @@ export function verifyWell(): void {
   placeStake(reelRed, 14, 6);
   reelBlue.vx = 8;
   reelBlue.vy = 0;
+  const reelX = reelBlue.x;
+  const reelY = reelBlue.y;
   fire(reel, reelRed, 4, [reelRed, reelBlue]);
   assert(Math.abs(reel.getCds()[3] - WELL_REEL.cd) < 1e-6, '井绳：收索应进 9s CD');
   assert(Math.abs(reelBlue.hp - (MAX_HP - WELL_REEL.damage)) < 1e-6, '井绳：收索应打 6 伤');
-  assert(Math.abs(reelBlue.x - 11) < 0.08, '井绳：线上敌应轻拉向桩–己中点');
-  assert(Math.abs(reelBlue.vx - 5) < 1e-6, '井绳：收索应将 8 速降一档到 5');
-  assert(reelBlue.stunRemain === 0, '井绳：收索是软控，不应上硬直');
+  assert(Math.abs(reelBlue.x - reelX) < 1e-6 && Math.abs(reelBlue.y - reelY) < 1e-6, '井绳：收索不应再轻拉位移');
+  assert(Math.abs(reelBlue.vx) < 1e-6 && Math.abs(reelBlue.vy) < 1e-6, '井绳：收索应将速度归零');
+  assert(reelBlue.stunRemain > 1.95 && reelBlue.pinRemain > 1.95, '井绳：收索应上 2s 硬根');
+  assert(reelBlue.pinLocked, '井绳：收索应锁定位（不能自行离开）');
+  const rooted = createSkillCaster('hook');
+  rooted.handleInput(reelBlue, sample({ skillPress: 1, aimX: -1, aimY: 0 }), [reelRed, reelBlue]);
+  assert(rooted.getAimingSlot() === 0, '井绳：定身期间不能进瞄/放技能');
+  reelBlue.vx = 8;
+  play(reel, reelRed, [reelRed, reelBlue], 1 / 60);
+  assert(Math.abs(reelBlue.x - reelX) < 1e-6 && Math.abs(reelBlue.y - reelY) < 1e-6, '井绳：定身 2s 内不能离开钉点');
+  assert(Math.abs(reelBlue.vx) < 1e-6 && Math.abs(reelBlue.vy) < 1e-6, '井绳：定身应持续把速度打回 0');
+  const rammer = createBallBody({
+    x: 9.05,
+    y: 6,
+    color: 0x3d7cf0,
+    label: '撞',
+    team: 'blue',
+    facingX: 1,
+    vx: 8,
+    hero: 'hook',
+  });
+  play(reel, reelRed, [reelRed, reelBlue, rammer], 1 / 60);
+  assert(Math.abs(reelBlue.x - reelX) < 1e-6 && Math.abs(reelBlue.y - reelY) < 1e-6, '井绳：定身仍可碰撞但自己不离开');
+  assert(rammer.vx < 8, '井绳：定身目标仍可被撞到并弹开对方');
+  advance(reel, reelRed, [reelRed, reelBlue], 1.85);
+  assert(reelBlue.stunRemain > 0 && reelBlue.pinRemain > 0, '井绳：2s 硬根在约 1.9s 时仍应在');
+  advance(reel, reelRed, [reelRed, reelBlue], 0.25);
+  assert(reelBlue.stunRemain === 0 && reelBlue.pinRemain === 0 && !reelBlue.pinLocked, '井绳：2s 后应解开定身');
 
   resetTrapZones();
   resetStakes();

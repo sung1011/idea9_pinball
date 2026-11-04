@@ -49,7 +49,7 @@ export const WELL_REEL = {
   windup: 0,
   width: 1,
   damage: 6,
-  pullDist: 2,
+  duration: 2,
 } as const;
 
 /** 对内仍是井绳四槽：双钩 / 换位 / 弹索桩 / 收索 */
@@ -61,7 +61,7 @@ export const WELL_KIT_DISPLAY_NAME = '骑士井绳';
 
 export const WELL_CDS = [WELL_HOOK.cd, WELL_SWAP.cd, WELL_STAKE.cd, WELL_REEL.cd] as const;
 
-/** 超速 / 上限 / 中速 / 保底 / 爬行；收索降一档沿此表下跳。 */
+/** 超速 / 上限 / 中速 / 保底 / 爬行。 */
 export const SPEED_TIER_STEPS = [12, SPEED_CAP, 5, FLOOR_SPEED, CRAWL_SPEED] as const;
 
 export type WellAimShape =
