@@ -42,9 +42,16 @@ function formatClock(snap: MatchSnapshot): string {
   return snap.phase === 'overtime' ? `加时 ${clock}` : clock;
 }
 
-function makeScorePill(team: 'red' | 'blue'): { root: HTMLDivElement; value: HTMLSpanElement } {
-  const root = document.createElement('div');
-  root.className = `matchHudPill matchHud${team === 'red' ? 'Red' : 'Blue'}`;
+function makeSep(): HTMLSpanElement {
+  const sep = document.createElement('span');
+  sep.className = 'matchHudSep';
+  sep.setAttribute('aria-hidden', 'true');
+  return sep;
+}
+
+function makeScoreSide(team: 'red' | 'blue'): { root: HTMLSpanElement; value: HTMLSpanElement } {
+  const root = document.createElement('span');
+  root.className = `matchHudSide matchHud${team === 'red' ? 'Red' : 'Blue'}`;
   const mark = document.createElement('span');
   mark.className = 'matchHudMark';
   mark.innerHTML = HELMET_SVG;
@@ -63,11 +70,13 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   const root = document.createElement('div');
   root.className = 'matchHud';
 
-  const red = makeScorePill('red');
-  const blue = makeScorePill('blue');
-
+  const cluster = document.createElement('div');
+  cluster.className = 'matchHudCluster';
+  const red = makeScoreSide('red');
   const clock = document.createElement('div');
   clock.className = 'matchHudClock';
+  const blue = makeScoreSide('blue');
+  cluster.append(red.root, makeSep(), clock, makeSep(), blue.root);
 
   const pick = document.createElement('select');
   pick.className = 'matchHudHero';
@@ -105,7 +114,7 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   openingHint.className = 'openingHudHint';
   opening.append(openingNum, openingTick, openingHint);
 
-  root.append(red.root, clock, blue.root, pick, toast);
+  root.append(cluster, pick, toast);
   host.append(root, opening);
 
   return {
@@ -118,7 +127,7 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
       clock.textContent = formatClock(snap);
       clock.classList.toggle('isOvertime', snap.phase === 'overtime');
       clock.classList.toggle('isResult', snap.phase === 'result');
-      clock.dataset.hold = snap.midpoint;
+      cluster.dataset.hold = snap.midpoint;
 
       const waiting = balls
         .filter((ball) => !ball.inPlay)

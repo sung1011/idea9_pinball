@@ -1,5 +1,5 @@
 # Idea pinball · 工程落地方案 v0
-更新：2026-11-04（囚环物理关死出不去；持续技能时长 +2s，钉锚硬控 0.6s 不动；长按技能键看对外名+一行效果；战场 HUD Layout B：角落胶囊 + 横屏全屏；站点图标 E：红蓝对撞金矛；对局可随时换英雄；井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋 2s 峰值 7.5）
+更新：2026-11-04（Layout B 顶中合并比分计时胶囊；囚环物理关死出不去；持续技能时长 +2s，钉锚硬控 0.6s 不动；长按技能键看对外名+一行效果；战场 HUD Layout B：横屏全屏；站点图标 E：红蓝对撞金矛；对局可随时换英雄；井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋 2s 峰值 7.5）
 
 ## 栈
 - 客户端：TypeScript + PixiJS + Vite
@@ -56,12 +56,12 @@
 - `src/debug/gmState.ts`：GM 开关，默认开，记本地
 - `src/core/collisionDamage.ts`：相对速度阈值 / 朝向乘区 / 掉血弹开；无敌或同队不结算伤害
 - `src/ui/hpHud.ts`：调试血条/碰撞日志（默认不挂到战场；骑士头顶仍画血条）
-- `src/ui/matchHud.ts`：Layout B 角落胶囊（左上红 / 右上蓝 / 顶中计时）、左下英雄下拉、短 toast；指定英雄只换 kit
+- `src/ui/matchHud.ts`：Layout B 顶中一颗胶囊（红分 | 计时 | 蓝分，带小队标）、左下英雄下拉、短 toast；指定英雄只换 kit
 - `src/ui/skillTip.ts`：技能键长按约 0.4s 浮层（骑士对外名 + 一行效果），锚在键上方
 - `src/ui/stageLayout.ts`：横构图舞台、安全区、CSS 变量；竖窗 letterbox
 - `src/ui/rotateHint.ts`：触屏竖持转横提示
 - `src/core/verifyHeroPick.ts`：下拉指定 / H 循环同步选中 / 换 kit 保留血量位置
-- `src/core/verifyHudLayout.ts`：舞台保持 20×12 横构图、竖窗 letterbox、安全区
+- `src/core/verifyHudLayout.ts`：舞台保持 20×12 横构图、竖窗 letterbox、安全区；顶中红|计时|蓝一颗胶囊，无角落独立比分
 - `src/core/verifySkillTip.ts`：长按阈值、对外名+一行效果、按下立刻进总线、CD 中仍可出提示
 - `src/ui/helpCard.ts`：说明卡（开局 / 怎么动 / 怎么得分 / 怎么赢 / 回场）；从设置常规「怎么玩」打开
 - `src/ui/settingsPanel.ts`：右上角小齿轮（常规 / 版本 / GM）；点空白关；常规可开说明卡

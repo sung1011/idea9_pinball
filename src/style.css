@@ -40,14 +40,16 @@ canvas {
   z-index: 7;
 }
 
-.matchHudPill,
-.matchHudClock {
+.matchHudCluster {
   position: absolute;
+  top: calc(var(--stage-top) + var(--hud-pad));
+  left: var(--stage-center-x);
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-height: 28px;
-  padding: 3px 10px;
+  padding: 3px 12px;
   border-radius: 999px;
   background: #0b1014cc;
   border: 1px solid #ffffff22;
@@ -56,16 +58,17 @@ canvas {
   backdrop-filter: blur(6px);
 }
 
+.matchHudSide {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .matchHudRed {
-  top: calc(var(--stage-top) + var(--hud-pad));
-  left: calc(var(--stage-left) + var(--hud-pad));
   color: #f68a8a;
 }
 
 .matchHudBlue {
-  top: calc(var(--stage-top) + var(--hud-pad));
-  left: calc(var(--stage-right) - var(--hud-pad) - 36px);
-  transform: translateX(-100%);
   color: #8ab4f6;
 }
 
@@ -77,24 +80,30 @@ canvas {
 .matchHudMark {
   display: grid;
   place-items: center;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 
 .matchHudMarkSvg {
   display: block;
-  width: 14px;
+  width: 12px;
+  height: 12px;
+}
+
+.matchHudSep {
+  width: 1px;
   height: 14px;
+  background: #ffffff28;
+  flex-shrink: 0;
 }
 
 .matchHudClock {
-  top: calc(var(--stage-top) + var(--hud-pad));
-  left: var(--stage-center-x);
-  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #e8ffff;
   font-size: 13px;
   min-width: 4.6em;
-  justify-content: center;
 }
 
 .matchHudClock.isOvertime {
@@ -105,11 +114,11 @@ canvas {
   color: #9af6f6;
 }
 
-.matchHudClock[data-hold='red'] {
+.matchHudCluster[data-hold='red'] {
   box-shadow: inset 0 0 0 1px #f68a8a66;
 }
 
-.matchHudClock[data-hold='blue'] {
+.matchHudCluster[data-hold='blue'] {
   box-shadow: inset 0 0 0 1px #8ab4f666;
 }
 
@@ -892,8 +901,7 @@ canvas {
     height: 26px;
   }
 
-  .matchHudPill,
-  .matchHudClock,
+  .matchHudCluster,
   .matchHudHero {
     min-height: 24px;
     font-size: 12px;

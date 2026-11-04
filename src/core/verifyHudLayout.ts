@@ -1,4 +1,6 @@
+import { createMatchHud } from '../ui/matchHud';
 import { computeLandscapeStage, isPortraitViewport, shouldShowRotateHint, wantsRotateHint } from '../ui/stageLayout';
+import type { MatchSnapshot } from './matchSession';
 
 function assert(cond: boolean, message: string): void {
   if (!cond) {
@@ -6,7 +8,32 @@ function assert(cond: boolean, message: string): void {
   }
 }
 
-/** Layout B：横构图舞台、竖窗 letterbox、触屏竖持才转横提示。 */
+function dummySnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
+  return {
+    phase: 'playing',
+    timeLeft: 187,
+    suddenDeath: false,
+    redScore: 15,
+    blueScore: 30,
+    redBreakScore: 15,
+    blueBreakScore: 30,
+    redHoldScore: 0,
+    blueHoldScore: 0,
+    elapsedSec: 53,
+    finishReason: '',
+    midpoint: 'none',
+    winner: null,
+    events: [],
+    respawns: {},
+    stallsOn: false,
+    stalls: [],
+    openingChargeRemain: 0,
+    skillsLocked: false,
+    ...partial,
+  };
+}
+
+/** Layout B：横构图舞台、竖窗 letterbox、触屏竖持才转横提示；顶中红|计时|蓝一颗胶囊。 */
 export function verifyHudLayout(): void {
   const none = { top: 0, right: 0, bottom: 0, left: 0 };
   const landscape = computeLandscapeStage(1600, 900, none);
@@ -54,4 +81,27 @@ export function verifyHudLayout(): void {
     }),
     'HUD：手机横持不应出转横提示',
   );
+
+  const host = document.createElement('div');
+  const hud = createMatchHud(host);
+  const cluster = host.querySelector<HTMLElement>('.matchHudCluster');
+  const red = host.querySelector<HTMLElement>('.matchHudRed .matchHudScoreVal');
+  const blue = host.querySelector<HTMLElement>('.matchHudBlue .matchHudScoreVal');
+  const clock = host.querySelector<HTMLElement>('.matchHudClock');
+  const hero = host.querySelector<HTMLSelectElement>('select.matchHudHero');
+  if (!cluster || !red || !blue || !clock || !hero) {
+    throw new Error('HUD：应有顶中比分计时胶囊与英雄下拉');
+  }
+  assert(!host.querySelector('.matchHudPill'), 'HUD：不应再有角落独立比分胶囊');
+  assert(cluster.contains(red) && cluster.contains(clock) && cluster.contains(blue), 'HUD：红分/计时/蓝分应同在一颗胶囊');
+  const sides = [...cluster.querySelectorAll('.matchHudSide')];
+  assert(sides[0]?.classList.contains('matchHudRed') && sides[1]?.classList.contains('matchHudBlue'), 'HUD：胶囊顺序应为红 | 计时 | 蓝');
+  assert(cluster.querySelectorAll('.matchHudMark').length === 2, 'HUD：红蓝两侧应有小队标');
+  assert(cluster.contains(hero) === false, 'HUD：英雄下拉应留在边缘，不进顶中胶囊');
+
+  hud.sync(dummySnap(), []);
+  assert(red.textContent === '15' && blue.textContent === '30', 'HUD：胶囊应同步双方分数');
+  assert(clock.textContent === '03:07', 'HUD：胶囊中间应为倒计时');
+  hud.sync(dummySnap({ midpoint: 'red' }), []);
+  assert(cluster.dataset.hold === 'red', 'HUD：领地归属应画在合并胶囊上');
 }
