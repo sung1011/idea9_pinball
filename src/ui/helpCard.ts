@@ -61,7 +61,7 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
       '骑士一直保底冲（约 2.5），点地 / 鼠标只纠偏方向，不加油门。金矛尖跟瞄准。',
       '左下角可随时换英雄，只换技能组，血量 / 位置 / 对局不变。',
       kitHelpSkills(hero),
-      '按下进瞄，再按同键或左键释放；右键 / Esc 取消。',
+      '按下进瞄，再按同键或左键释放；右键 / Esc 取消。长按技能键约 0.4 秒可看对外名和一行效果。',
       ...(hero === 'ring'
         ? ['囚环内敌方不能放位移技（钩矛 / 盾冲 / 蓄势 / 壁行 / 援勾 / 顶冲 / 侧闪 / 虚影 / 双索 / 易位）；圈内强放进 2 秒短 CD。']
         : hero === 'chain'

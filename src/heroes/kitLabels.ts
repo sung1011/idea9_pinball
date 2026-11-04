@@ -1,10 +1,11 @@
-import { ARC_KIT_DISPLAY_NAME, ARC_SKILL_SHORT } from './arcKit';
-import { CHAIN_KIT_DISPLAY_NAME, CHAIN_SKILL_SHORT } from './chainKit';
+import type { SkillSlot } from '../input/actionTypes';
+import { ARC_KIT_DISPLAY_NAME, ARC_SKILL_NAMES, ARC_SKILL_SHORT } from './arcKit';
+import { CHAIN_KIT_DISPLAY_NAME, CHAIN_SKILL_NAMES, CHAIN_SKILL_SHORT } from './chainKit';
 import type { HeroId } from './heroIds';
-import { HOOK_SKILL_SHORT, KIT_DISPLAY_NAME } from './hookKit';
-import { NAIL_KIT_DISPLAY_NAME, NAIL_SKILL_SHORT } from './nailKit';
-import { RING_KIT_DISPLAY_NAME, RING_SKILL_SHORT } from './ringKit';
-import { WELL_KIT_DISPLAY_NAME, WELL_SKILL_SHORT } from './wellKit';
+import { HOOK_SKILL_NAMES, HOOK_SKILL_SHORT, KIT_DISPLAY_NAME } from './hookKit';
+import { NAIL_KIT_DISPLAY_NAME, NAIL_SKILL_NAMES, NAIL_SKILL_SHORT } from './nailKit';
+import { RING_KIT_DISPLAY_NAME, RING_SKILL_NAMES, RING_SKILL_SHORT } from './ringKit';
+import { WELL_KIT_DISPLAY_NAME, WELL_SKILL_NAMES, WELL_SKILL_SHORT } from './wellKit';
 
 export function kitTitle(hero: HeroId): string {
   if (hero === 'ring') {
@@ -42,6 +43,101 @@ export function skillShorts(hero: HeroId): readonly [string, string, string, str
     return WELL_SKILL_SHORT;
   }
   return HOOK_SKILL_SHORT;
+}
+
+export function skillNames(hero: HeroId): readonly [string, string, string, string] {
+  if (hero === 'ring') {
+    return RING_SKILL_NAMES;
+  }
+  if (hero === 'chain') {
+    return CHAIN_SKILL_NAMES;
+  }
+  if (hero === 'nail') {
+    return NAIL_SKILL_NAMES;
+  }
+  if (hero === 'arc') {
+    return ARC_SKILL_NAMES;
+  }
+  if (hero === 'well') {
+    return WELL_SKILL_NAMES;
+  }
+  return HOOK_SKILL_NAMES;
+}
+
+/** 设计表「效果」压成一行，给技能键长按浮层。 */
+const HOOK_SKILL_TIPS = [
+  '勾中后自己飞向目标贴脸',
+  '朝向连捅三次，第三下硬直',
+  '冲刺碰敌强推并开撞窗',
+  '急停蓄力后按朝向弹出',
+] as const;
+
+const RING_SKILL_TIPS = [
+  '身周磁场，敌持续掉血',
+  '锥形击退并造成伤害',
+  '沿墙滑行后按朝向弹出',
+  '点地困圈，禁敌位移技',
+] as const;
+
+const CHAIN_SKILL_TIPS = [
+  '己与友军持续回血',
+  '最近友减碰撞伤害',
+  '拉自己向友或轻拉残血友',
+  '拧敌朝向并打断瞄准',
+] as const;
+
+const NAIL_SKILL_TIPS = [
+  '短时减碰撞伤，未破则回血',
+  '被撞反击并小推',
+  '短冲命中开主动撞窗',
+  '钉住敌人短暂不能动',
+] as const;
+
+const ARC_SKILL_TIPS = [
+  '向左或右横移闪身',
+  '擦肩造成额外伤害',
+  '标记后下次撞击加伤',
+  '短暂无碰撞，结束可开撞窗',
+] as const;
+
+const WELL_SKILL_TIPS = [
+  '先锁敌再点落点飞出',
+  '与敌人交换位置',
+  '投桩当墙，己方撞桩开窗',
+  '沿线拉敌并降速一档',
+] as const;
+
+export function skillTips(hero: HeroId): readonly [string, string, string, string] {
+  if (hero === 'ring') {
+    return RING_SKILL_TIPS;
+  }
+  if (hero === 'chain') {
+    return CHAIN_SKILL_TIPS;
+  }
+  if (hero === 'nail') {
+    return NAIL_SKILL_TIPS;
+  }
+  if (hero === 'arc') {
+    return ARC_SKILL_TIPS;
+  }
+  if (hero === 'well') {
+    return WELL_SKILL_TIPS;
+  }
+  return HOOK_SKILL_TIPS;
+}
+
+export type SkillTipCopy = {
+  name: string;
+  effect: string;
+};
+
+export function skillTipCopy(hero: HeroId, slot: SkillSlot): SkillTipCopy {
+  const names = skillNames(hero);
+  const tips = skillTips(hero);
+  return {
+    name: names[slot - 1] ?? `技能${slot}`,
+    effect: tips[slot - 1] ?? '',
+  };
 }
 
 export function kitHudLine(hero: HeroId): string {

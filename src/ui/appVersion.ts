@@ -8,6 +8,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '长按技能键约 0.4 秒弹出骑士对外名 + 一行效果；松开收起；CD 中也可看；不挡点按进瞄 / 同键释放' },
   { title: '战场 HUD Layout B：角落比分/计时胶囊、右下紧凑技能、左下换英雄；默认隐藏调试；横屏全屏、竖屏转横提示' },
   { title: '站点图标：红蓝对撞金矛 favicon / 触屏图标' },
   { title: '对局顶栏可随时换英雄：比分旁下拉指定 6 人；只换 kit，血量/位置/对局不变；GM · H 仍循环' },
