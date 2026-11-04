@@ -8,6 +8,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '站点图标：红蓝对撞金矛 favicon / 触屏图标' },
   { title: '对局顶栏可随时换英雄：比分旁下拉指定 6 人；只换 kit，血量/位置/对局不变；GM · H 仍循环' },
   { title: '井绳四技能落地：双索 / 易位 / 索桩 / 回索；GM · H 循环钩刺 / 磁环 / 链生 / 钉壳 / 闪弧 / 井绳' },
   { title: '闪弧四技能落地：侧闪 / 掠刃 / 回印 / 虚影；GM · H 循环钩刺 / 磁环 / 链生 / 钉壳 / 闪弧' },

@@ -1,5 +1,5 @@
 # Idea pinball · 工程落地方案 v0
-更新：2026-11-04（对局顶栏可随时换英雄；井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋 2s 峰值 7.5）
+更新：2026-11-04（站点图标 E：红蓝对撞金矛；对局顶栏可随时换英雄；井绳四技能落地，6 人池齐；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋 2s 峰值 7.5）
 
 ## 栈
 - 客户端：TypeScript + PixiJS + Vite
@@ -61,6 +61,7 @@
 - `src/ui/settingsPanel.ts`：右上角齿轮设置（常规 / 版本 / GM，对齐 idle/story 分页）；点空白关；与 `?` 分开
 - `src/ui/appVersion.ts`：版本号 + 构建短 SHA + 简短 changelog
 - `src/ui/resultPanel.ts`：局结束结算（胜/负、击破分与领地分、用时、再来一局）
+- `public/`：站点图标（源图 `knightIconSource.jpg`；`favicon.png` 32 / `appleTouchIcon.png` 180 / `icon192.png` / `icon512.png`），Vite 原样拷到 dist；`index.html` 用根路径 link，构建时随 `base` `/idea9_pinball/` 解析
 - `src/input`：ActionBus 每帧采样 Aim / Skill1–4 / CancelAim；PC 鼠标点地 + 右侧四键（无左摇杆）
 - `src/core/skillStub.ts`：保底冲 / 弱强拧 / stub 冲量工具（对局释放已改钩刺）
 
