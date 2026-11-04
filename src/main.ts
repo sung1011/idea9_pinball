@@ -1,10 +1,28 @@
 import { Application, Container } from 'pixi.js';
+import { createBallBody } from './core/ballBody';
 import { MAP_HEIGHT, MAP_WIDTH } from './core/constants';
+import { stepPhysics } from './core/physicsStep';
+import { bindDebugVelocity } from './debug/debugVelocity';
 import { createArenaView } from './render/arenaView';
-import { applyWorldTransform, fitWorldToScreen } from './render/worldTransform';
+import { createBallView } from './render/ballView';
+import { applyWorldTransform, fitWorldToScreen, type WorldTransform } from './render/worldTransform';
 import './style.css';
 
 const VIEW_PADDING_PX = 32;
+
+function createPlaceholderBalls() {
+  return [
+    createBallBody({ x: 6, y: 3.5, color: 0xe24a4a, facingX: 1, facingY: 0 }),
+    createBallBody({ x: 14, y: 8.5, color: 0x3d7cf0, facingX: -1, facingY: 0 }),
+  ];
+}
+
+function mountDebugHint(host: HTMLElement): void {
+  const hint = document.createElement('div');
+  hint.className = 'debugHint';
+  hint.textContent = '调试：点击场地给最近球初速度 8；方向键/WASD/空格给当前目标球';
+  host.appendChild(hint);
+}
 
 async function boot(): Promise<void> {
   const host = document.querySelector<HTMLDivElement>('#app');
@@ -21,13 +39,28 @@ async function boot(): Promise<void> {
     resolution: Math.min(window.devicePixelRatio || 1, 2),
   });
   host.appendChild(app.canvas);
+  mountDebugHint(host);
 
   const world = new Container();
   world.addChild(createArenaView());
+
+  const balls = createPlaceholderBalls();
+  const views = balls.map((ball) => createBallView(ball));
+  for (const view of views) {
+    world.addChild(view.root);
+  }
   app.stage.addChild(world);
 
+  let transform: WorldTransform = fitWorldToScreen(
+    app.screen.width,
+    app.screen.height,
+    MAP_WIDTH,
+    MAP_HEIGHT,
+    VIEW_PADDING_PX,
+  );
+
   const layout = (): void => {
-    const transform = fitWorldToScreen(
+    transform = fitWorldToScreen(
       app.screen.width,
       app.screen.height,
       MAP_WIDTH,
@@ -39,6 +72,19 @@ async function boot(): Promise<void> {
 
   layout();
   app.renderer.on('resize', layout);
+
+  bindDebugVelocity({
+    canvas: app.canvas,
+    getTransform: () => transform,
+    balls,
+  });
+
+  app.ticker.add((ticker) => {
+    stepPhysics(balls, ticker.deltaMS / 1000);
+    for (let i = 0; i < balls.length; i += 1) {
+      views[i].sync(balls[i]);
+    }
+  });
 }
 
 boot().catch((err: unknown) => {

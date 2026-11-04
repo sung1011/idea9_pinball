@@ -34,3 +34,19 @@ export const RIGHT_PILLAR = {
   x: MAP_WIDTH - 2.5,
   y: MAP_HEIGHT / 2,
 } as const;
+
+/** 基础移速上限（格/秒） */
+export const SPEED_CAP = 8;
+
+/**
+ * 粘滞摩擦：满速 8 约 2 秒滑到爬行 0.4。
+ * v(t) = v0 * exp(-FRICTION * t)，ln(8/0.4)/2 ≈ 1.49786
+ */
+export const CRAWL_SPEED = 0.4;
+export const FRICTION = Math.log(SPEED_CAP / CRAWL_SPEED) / 2;
+
+/** 低于此速率视为静止，避免无限微滑 */
+export const REST_SPEED = 0.05;
+
+/** 墙/柱弹性系数；1 = 完全弹性反弹 */
+export const WALL_RESTITUTION = 1;

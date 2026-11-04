@@ -6,8 +6,20 @@ body,
   height: 100%;
   overflow: hidden;
   background: #082424;
+  position: relative;
 }
 
 canvas {
   display: block;
+}
+
+.debugHint {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  color: #9af6f6;
+  font: 13px/1.4 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  opacity: 0.85;
+  pointer-events: none;
+  user-select: none;
 }
