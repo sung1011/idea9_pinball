@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.9-plume-short",
+    "version": "0.0.9",
+    "date": "2026-11-05",
+    "summary": "骑士主体羽冠缩短到约六成；冲锋残影尺寸与逻辑不动"
+  },
+  {
     "id": "v0.0.9-hud-stage-anchor",
     "version": "0.0.9",
     "date": "2026-11-05",

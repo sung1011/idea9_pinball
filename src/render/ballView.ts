@@ -79,6 +79,9 @@ function syncSlotLabel(label: Text, ball: BallBody): void {
   label.visible = ball.inPlay;
 }
 
+/** 羽冠相对初版长度。只乘在主体羽冠上，冲锋残影不乘。 */
+const PLUME_LENGTH = 0.6;
+
 /** 羽冠：在瞄准/朝向反侧，略偏画面上方。 */
 function drawPlume(g: Graphics, fx: number, fy: number, color: number): void {
   const rx = -fx;
@@ -87,15 +90,17 @@ function drawPlume(g: Graphics, fx: number, fy: number, color: number): void {
   const py = fx;
   const bx = rx * 0.42;
   const by = ry * 0.42;
-  const lift = 0.12;
-  const midX = bx + rx * 0.26 + px * 0.02;
-  const midY = by + ry * 0.26 - lift;
-  const tipX = bx + rx * 0.52;
-  const tipY = by + ry * 0.52 - lift * 1.4;
+  const lift = 0.12 * PLUME_LENGTH;
+  const midX = bx + (rx * 0.26 + px * 0.02) * PLUME_LENGTH;
+  const midY = by + ry * 0.26 * PLUME_LENGTH - lift;
+  const tipX = bx + rx * 0.52 * PLUME_LENGTH;
+  const tipY = by + ry * 0.52 * PLUME_LENGTH - lift * 1.4;
+  const halfW = 0.06 * PLUME_LENGTH;
+  const midW = 0.2 * PLUME_LENGTH;
 
-  g.moveTo(bx + px * 0.06, by + py * 0.06);
-  g.quadraticCurveTo(midX + px * 0.2, midY + py * 0.2, tipX, tipY);
-  g.quadraticCurveTo(midX - px * 0.2, midY - py * 0.2, bx - px * 0.06, by - py * 0.06);
+  g.moveTo(bx + px * halfW, by + py * halfW);
+  g.quadraticCurveTo(midX + px * midW, midY + py * midW, tipX, tipY);
+  g.quadraticCurveTo(midX - px * midW, midY - py * midW, bx - px * halfW, by - py * halfW);
   g.closePath();
   g.fill({ color, alpha: 0.96 });
 
