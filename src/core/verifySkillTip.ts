@@ -72,7 +72,7 @@ export function verifySkillTip(): void {
   const instantBus = createActionBus();
   const pad = createTouchPad(instantHost, instantBus, { holdMs: 0 });
   const btns = instantHost.querySelectorAll<HTMLButtonElement>('button.touchSkillBtn');
-  assert(btns.length === 4, '技能提示：应为右下四键');
+  assert(btns.length === 4, '技能提示：应为左下横排四键');
   firePointer(btns[0], 'pointerdown', 'mouse');
   assert(instantBus.sample(0, 0).skillPress === 1, '技能提示：鼠标按住也应立刻进瞄');
   const tip = instantHost.querySelector<HTMLElement>('.skillTip.isOn');

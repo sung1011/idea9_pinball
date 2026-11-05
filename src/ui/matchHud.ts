@@ -131,6 +131,7 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   );
   const heroRow = document.createElement('div');
   heroRow.className = 'matchHudHeroRow';
+  heroRow.dataset.hud = 'heroPicks';
   heroRow.append(makeHeroWrap('我', pick), makeHeroWrap('队友', allyPick));
 
   const toast = document.createElement('div');

@@ -129,17 +129,12 @@ canvas {
 .matchHudHeroRow {
   position: absolute;
   left: calc(var(--hud-safe-left) + var(--hud-pad));
-  bottom: calc(var(--hud-safe-bottom) + var(--hud-pad));
+  top: calc(var(--hud-safe-top) + var(--hud-pad));
   display: flex;
-  align-items: center;
-  gap: 6px;
-  pointer-events: none;
-}
-
-.isPortrait .matchHudHeroRow {
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
+  pointer-events: none;
 }
 
 .matchHudHeroWrap {
@@ -819,10 +814,11 @@ canvas {
 
 .touchSkills {
   position: absolute;
-  right: calc(var(--hud-safe-right) + var(--hud-pad));
+  left: calc(var(--hud-safe-left) + var(--hud-pad));
   bottom: calc(var(--hud-safe-bottom) + var(--hud-pad));
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   gap: 8px;
   pointer-events: auto;
   touch-action: none;
@@ -941,8 +937,8 @@ canvas {
 
 .touchCancel {
   position: absolute;
-  right: calc(var(--hud-safe-right) + var(--hud-pad));
-  bottom: calc(var(--hud-safe-bottom) + var(--hud-pad) + 116px);
+  left: calc(var(--hud-safe-left) + var(--hud-pad));
+  bottom: calc(var(--hud-safe-bottom) + var(--hud-pad) + 58px);
   min-width: 56px;
   height: 32px;
   border-radius: 999px;

@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: 'HUD：左上竖叠我/队友下拉，左下 Skill1–4 横排；顶中比分与顶右齿轮不动' },
   { title: '战场 20×20；领地半径 2.5；红蓝上下两出生；竖/横窗 letterbox，画面不旋转' },
   { title: '纯竖屏操作：战场 letterbox，HUD 按竖窗重排，画面不旋转' },
   { title: '本机固定 2v2：玩家控红1 + 链生简 bot 红2，对 2 蓝简 bot；左下可换队友英雄' },

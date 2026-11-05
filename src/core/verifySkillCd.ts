@@ -51,7 +51,7 @@ export function verifySkillCd(): void {
   const bus = createActionBus();
   const pad = createTouchPad(host, bus, { holdMs: 0 });
   const btns = host.querySelectorAll<HTMLButtonElement>('button.touchSkillBtn');
-  assert(btns.length === 4, '技能 CD：应为右下 2×2 四键');
+  assert(btns.length === 4, '技能 CD：应为左下横排四键');
   assert(!!btns[0].querySelector('.touchSkillCdWipe'), '技能 CD：每键应有遮罩层');
   assert(btns[0].querySelector('.touchSkillName')?.textContent === '钩', '技能 CD：默认应显示短名');
 

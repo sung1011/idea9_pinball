@@ -25,7 +25,7 @@ function sample(partial: Partial<ActionSample> = {}): ActionSample {
   };
 }
 
-/** 左下角下拉指定自己/队友英雄；H 循环只跟自己；换 kit 不清血量/位置/编号。 */
+/** 左上双下拉指定自己/队友英雄；H 循环只跟自己；换 kit 不清血量/位置/编号。 */
 export function verifyHeroPick(): void {
   assert(HERO_IDS.length === 7, '换英雄：池应为 7 人');
   assert(HERO_IDS.every((id) => isHeroId(id)), '换英雄：池内 id 应全部合法');
