@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
 import { spearCdFill } from '../core/collisionDamage';
-import { BALL_RADIUS, SPEAR_TIP_DIST } from '../core/constants';
+import { SPEAR_TIP_DIST } from '../core/constants';
 
 export type BallViewSyncOpts = {
   charging?: boolean;
@@ -12,12 +12,47 @@ export type BallView = {
   sync: (ball: BallBody, opts?: BallViewSyncOpts) => void;
 };
 
-const SPEAR_GOLD = 0xffe08a;
-const SHIELD_RIM = 0xf4f0e4;
-const SLOT_FILL = 0xf8f4ea;
-const SLOT_STROKE = 0x1a1410;
+/** 马棕 / 高光 / 阴影。队色不涂满马身。 */
+const HORSE_FILL = 0x8b6914;
+const HORSE_HIGH = 0xb8892a;
+const HORSE_SHADOW = 0x5c4510;
+/** 冲锋残影：降饱和马棕，不金闪。 */
+const HORSE_TRAIL = 0x76622f;
+const TEAM_RED = 0xc43c3c;
+const TEAM_BLUE = 0x3a6fbf;
+const SPEAR_GOLD = 0xd4a017;
+const SHIELD_FILL = 0xfff8e7;
+const INK = 0x3a2e24;
+const ARMOR = 0x4a3a2c;
+const HELMET = 0xc4b08a;
+
+/**
+ * 胖椭圆半轴（格）。长/短 = 1.5；中心对齐物理圆心。
+ * 只改外观，不改 BALL_RADIUS。
+ */
+const HORSE_RY = 0.48;
+const HORSE_RX = HORSE_RY * 1.55;
+/** 骑士坐于长轴约 55% 偏后（0=鼻、1=尾）。 */
+const RIDER_T = 0.55;
+const RIDER_ALONG = HORSE_RX * (1 - 2 * RIDER_T);
+/** 侧小圆盾直径 ≈ 马短轴 42%。 */
+const SHIELD_R = HORSE_RY * 2 * 0.42 * 0.5;
+const SHIELD_SIDE = HORSE_RY * 0.58;
+
 const SLOT_FONT = 72;
-const SLOT_SCALE = 0.009;
+const SLOT_SCALE = 0.0038;
+
+const HP_BAR_WIDTH = 0.92;
+const HP_BAR_HEIGHT = 0.1;
+const HP_BAR_Y = -0.92;
+const SPEAR_CD_HEIGHT = 0.042;
+const SPEAR_CD_GAP = 0.016;
+const SPEAR_CD_TRACK = 0x1a1410;
+const SPEAR_CD_FILL = 0xe8d8b8;
+
+const TRAIL_MAX = 5;
+const TRAIL_SPACING = 0.34;
+const ELLIPSE_STEPS = 28;
 
 function unit(x: number, y: number): { x: number; y: number } {
   const len = Math.hypot(x, y);
@@ -27,26 +62,40 @@ function unit(x: number, y: number): { x: number; y: number } {
   return { x: x / len, y: y / len };
 }
 
-/** 圆盾 + 本队第几人大号数字。碰撞半径不变，只改外观。 */
-function drawKnightShield(g: Graphics, ball: BallBody): void {
-  const alpha = ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
-  const rim =
-    ball.hero === 'ring'
-      ? 0xb8fff4
-      : ball.hero === 'chain'
-        ? 0x86efac
-        : ball.hero === 'nail'
-          ? 0xf4bf6a
-          : ball.hero === 'arc'
-            ? 0x7dd3fc
-            : ball.hero === 'well'
-              ? 0xf59e0b
-              : ball.hero === 'mirror'
-                ? 0xa5d8ff
-                : SHIELD_RIM;
-  g.circle(0, 0, BALL_RADIUS);
-  g.fill({ color: ball.color, alpha });
-  g.stroke({ color: rim, width: 0.055, alpha: 0.95 });
+function alongSide(along: number, side: number, fx: number, fy: number): { x: number; y: number } {
+  return { x: along * fx - side * fy, y: along * fy + side * fx };
+}
+
+function drapeColor(ball: BallBody): number {
+  return ball.team === 'blue' ? TEAM_BLUE : TEAM_RED;
+}
+
+function bodyAlpha(ball: BallBody): number {
+  return ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
+}
+
+function drawOrientedEllipse(
+  g: Graphics,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  fx: number,
+  fy: number,
+): void {
+  const px = -fy;
+  const py = fx;
+  for (let i = 0; i <= ELLIPSE_STEPS; i += 1) {
+    const t = (i / ELLIPSE_STEPS) * Math.PI * 2;
+    const x = cx + Math.cos(t) * rx * fx + Math.sin(t) * ry * px;
+    const y = cy + Math.cos(t) * rx * fy + Math.sin(t) * ry * py;
+    if (i === 0) {
+      g.moveTo(x, y);
+    } else {
+      g.lineTo(x, y);
+    }
+  }
+  g.closePath();
 }
 
 function slotDigits(slot: number): string {
@@ -60,8 +109,8 @@ function makeSlotLabel(slot: number): Text {
       fontFamily: 'ui-rounded, ui-sans-serif, system-ui, sans-serif',
       fontSize: SLOT_FONT,
       fontWeight: '800',
-      fill: SLOT_FILL,
-      stroke: { color: SLOT_STROKE, width: 8, join: 'round' },
+      fill: INK,
+      stroke: { color: SHIELD_FILL, width: 5, join: 'round' },
       align: 'center',
     },
   });
@@ -70,48 +119,84 @@ function makeSlotLabel(slot: number): Text {
   return label;
 }
 
-function syncSlotLabel(label: Text, ball: BallBody): void {
+function shieldPos(fx: number, fy: number): { x: number; y: number } {
+  return alongSide(RIDER_ALONG + 0.02, SHIELD_SIDE, fx, fy);
+}
+
+function syncSlotLabel(label: Text, ball: BallBody, fx: number, fy: number): void {
   const digits = slotDigits(ball.teamSlot);
   if (label.text !== digits) {
     label.text = digits;
   }
+  const pos = shieldPos(fx, fy);
+  label.position.set(pos.x, pos.y);
   label.scale.set(digits.length > 1 ? SLOT_SCALE * 0.72 : SLOT_SCALE);
-  label.alpha = ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
+  label.alpha = bodyAlpha(ball);
   label.visible = ball.inPlay;
 }
 
-/** 羽冠相对初版长度。只乘在主体羽冠上，冲锋残影不乘。 */
-const PLUME_LENGTH = 0.6;
+/** 马身椭圆：阴影 → 填色 → 高光；前侧小耳。 */
+function drawHorseBody(g: Graphics, fx: number, fy: number, alpha: number): void {
+  const shadow = alongSide(-0.04, 0.03, fx, fy);
+  drawOrientedEllipse(g, shadow.x, shadow.y, HORSE_RX * 1.02, HORSE_RY * 1.04, fx, fy);
+  g.fill({ color: HORSE_SHADOW, alpha: alpha * 0.9 });
 
-/** 羽冠：在瞄准/朝向反侧，略偏画面上方。 */
-function drawPlume(g: Graphics, fx: number, fy: number, color: number): void {
-  const rx = -fx;
-  const ry = -fy;
-  const px = -fy;
-  const py = fx;
-  const bx = rx * 0.42;
-  const by = ry * 0.42;
-  const lift = 0.12 * PLUME_LENGTH;
-  const midX = bx + (rx * 0.26 + px * 0.02) * PLUME_LENGTH;
-  const midY = by + ry * 0.26 * PLUME_LENGTH - lift;
-  const tipX = bx + rx * 0.52 * PLUME_LENGTH;
-  const tipY = by + ry * 0.52 * PLUME_LENGTH - lift * 1.4;
-  const halfW = 0.06 * PLUME_LENGTH;
-  const midW = 0.2 * PLUME_LENGTH;
+  drawOrientedEllipse(g, 0, 0, HORSE_RX, HORSE_RY, fx, fy);
+  g.fill({ color: HORSE_FILL, alpha });
+  g.stroke({ color: HORSE_SHADOW, width: 0.035, alpha: alpha * 0.95 });
 
-  g.moveTo(bx + px * halfW, by + py * halfW);
-  g.quadraticCurveTo(midX + px * midW, midY + py * midW, tipX, tipY);
-  g.quadraticCurveTo(midX - px * midW, midY - py * midW, bx - px * halfW, by - py * halfW);
-  g.closePath();
-  g.fill({ color, alpha: 0.96 });
+  const hi = alongSide(0.12, -0.1, fx, fy);
+  drawOrientedEllipse(g, hi.x, hi.y, HORSE_RX * 0.55, HORSE_RY * 0.42, fx, fy);
+  g.fill({ color: HORSE_HIGH, alpha: alpha * 0.38 });
 
-  g.circle(bx, by, 0.042);
-  g.fill({ color: SHIELD_RIM, alpha: 0.95 });
+  for (const side of [-1, 1] as const) {
+    const ear = alongSide(HORSE_RX * 0.78, side * HORSE_RY * 0.38, fx, fy);
+    drawOrientedEllipse(g, ear.x, ear.y, 0.07, 0.045, fx, fy);
+    g.fill({ color: HORSE_SHADOW, alpha: alpha * 0.95 });
+  }
 }
 
-/** 矛尖：指示 targetDir（点地 / 鼠标 / bot 目标）。 */
-function drawTargetSpear(g: Graphics, tx: number, ty: number): void {
-  const { x: fx, y: fy } = unit(tx, ty);
+/** 鞍褥 + 队色短披条，不涂满马身。 */
+function drawSaddleDrape(g: Graphics, fx: number, fy: number, team: number, alpha: number): void {
+  const cloth = alongSide(RIDER_ALONG + 0.02, 0, fx, fy);
+  drawOrientedEllipse(g, cloth.x, cloth.y, 0.11, HORSE_RY * 0.92, fx, fy);
+  g.fill({ color: team, alpha: alpha * 0.95 });
+
+  const cape = alongSide(RIDER_ALONG - HORSE_RX * 0.22, 0, fx, fy);
+  drawOrientedEllipse(g, cape.x, cape.y, 0.16, HORSE_RY * 0.42, fx, fy);
+  g.fill({ color: team, alpha: alpha * 0.88 });
+
+  const seat = alongSide(RIDER_ALONG, 0, fx, fy);
+  drawOrientedEllipse(g, seat.x, seat.y, 0.08, HORSE_RY * 0.4, fx, fy);
+  g.fill({ color: HORSE_SHADOW, alpha: alpha * 0.7 });
+}
+
+/** 小 Q 骑士躯干，坐于鞍上。 */
+function drawRider(g: Graphics, fx: number, fy: number, alpha: number): void {
+  const body = alongSide(RIDER_ALONG, 0, fx, fy);
+  drawOrientedEllipse(g, body.x, body.y, 0.13, 0.11, fx, fy);
+  g.fill({ color: ARMOR, alpha });
+  g.stroke({ color: 0x2a2218, width: 0.025, alpha: alpha * 0.9 });
+
+  const head = alongSide(RIDER_ALONG + 0.07, 0, fx, fy);
+  g.circle(head.x, head.y, 0.095);
+  g.fill({ color: HELMET, alpha });
+  g.stroke({ color: 0x2a2218, width: 0.022, alpha: alpha * 0.9 });
+
+  const visor = alongSide(RIDER_ALONG + 0.11, 0, fx, fy);
+  drawOrientedEllipse(g, visor.x, visor.y, 0.03, 0.055, fx, fy);
+  g.fill({ color: 0x2a2218, alpha: alpha * 0.85 });
+}
+
+function drawSideShield(g: Graphics, fx: number, fy: number, alpha: number): void {
+  const pos = shieldPos(fx, fy);
+  g.circle(pos.x, pos.y, SHIELD_R);
+  g.fill({ color: SHIELD_FILL, alpha });
+  g.stroke({ color: INK, width: 0.03, alpha: alpha * 0.95 });
+}
+
+/** 矛尖跟 aim（否则 facing）；尖距对齐 SPEAR_TIP_DIST。 */
+function drawTargetSpear(g: Graphics, fx: number, fy: number): void {
   const px = -fy;
   const py = fx;
   const rootX = fx * 0.48;
@@ -136,13 +221,32 @@ function drawTargetSpear(g: Graphics, tx: number, ty: number): void {
   g.fill({ color: SPEAR_GOLD });
 }
 
-const HP_BAR_WIDTH = 0.92;
-const HP_BAR_HEIGHT = 0.1;
-const HP_BAR_Y = -0.74;
-const SPEAR_CD_HEIGHT = 0.042;
-const SPEAR_CD_GAP = 0.016;
-const SPEAR_CD_TRACK = 0x1a1410;
-const SPEAR_CD_FILL = 0xe8d8b8;
+/** 马尾：主用尾，不画旧羽冠。 */
+function drawHorseTail(g: Graphics, fx: number, fy: number, alpha: number): void {
+  const px = -fy;
+  const py = fx;
+  const base = alongSide(-HORSE_RX * 0.92, 0, fx, fy);
+  const len = 0.38;
+  const lift = 0.035;
+  const tipX = base.x - fx * len;
+  const tipY = base.y - fy * len - lift;
+  const midW = 0.15;
+  const baseW = 0.055;
+  const midX = base.x - fx * len * 0.46;
+  const midY = base.y - fy * len * 0.46 - lift * 0.45;
+
+  g.moveTo(base.x + px * baseW, base.y + py * baseW);
+  g.quadraticCurveTo(midX + px * midW, midY + py * midW, tipX, tipY);
+  g.quadraticCurveTo(midX - px * midW, midY - py * midW, base.x - px * baseW, base.y - py * baseW);
+  g.closePath();
+  g.fill({ color: HORSE_SHADOW, alpha: alpha * 0.96 });
+
+  const hiX = base.x - fx * len * 0.55 + px * 0.03;
+  const hiY = base.y - fy * len * 0.55 - lift * 0.6;
+  g.moveTo(base.x + px * 0.02, base.y + py * 0.02);
+  g.quadraticCurveTo(hiX, hiY, tipX + fx * 0.04, tipY + fy * 0.04);
+  g.stroke({ color: HORSE_HIGH, width: 0.035, alpha: alpha * 0.45, cap: 'round' });
+}
 
 function drawHpBar(g: Graphics, hp: number, maxHp: number, spearCdRemain: number): void {
   const x = -HP_BAR_WIDTH / 2;
@@ -165,44 +269,105 @@ function drawHpBar(g: Graphics, hp: number, maxHp: number, spearCdRemain: number
   }
 }
 
-const TRAIL_MAX = 10;
+function strokeHorseRing(
+  g: Graphics,
+  pad: number,
+  fx: number,
+  fy: number,
+  color: number,
+  width: number,
+  alpha: number,
+): void {
+  drawOrientedEllipse(g, 0, 0, HORSE_RX + pad, HORSE_RY + pad, fx, fy);
+  g.stroke({ color, width, alpha });
+}
 
-/** 冲锋残影：队色拖线 + 淡盾影 + 少量金尘。 */
+function drawStatusRings(g: Graphics, next: BallBody, fx: number, fy: number): void {
+  if (next.invincibleRemain > 0) {
+    const pulse = 0.45 + 0.45 * (0.5 + 0.5 * Math.sin(next.invincibleRemain * 10));
+    strokeHorseRing(g, 0.14, fx, fy, 0xffffff, 0.07, pulse);
+  }
+  if (next.activeRamRemain > 0) {
+    strokeHorseRing(g, 0.08, fx, fy, SPEAR_GOLD, 0.055, 0.95);
+  }
+  if (next.fineTuneRemain > 0) {
+    strokeHorseRing(g, 0.16, fx, fy, 0x7ee8ff, 0.05, 0.9);
+  }
+  if (next.fieldRemain > 0) {
+    strokeHorseRing(g, 0.22, fx, fy, 0x5eead4, 0.055, 0.88);
+  }
+  if (next.healRemain > 0) {
+    strokeHorseRing(g, 0.2, fx, fy, 0x86efac, 0.05, 0.9);
+  }
+  if (next.shieldRemain > 0) {
+    strokeHorseRing(g, 0.26, fx, fy, 0xfde68a, 0.06, 0.92);
+  }
+  if (next.armorRemain > 0) {
+    strokeHorseRing(g, 0.28, fx, fy, 0xf4bf6a, 0.07, next.armorBroken ? 0.45 : 0.95);
+  }
+  if (next.reflectRemain > 0 && next.reflectArmed) {
+    strokeHorseRing(g, 0.18, fx, fy, 0xfb7185, 0.055, 0.92);
+  }
+  if (next.pinRemain > 0) {
+    strokeHorseRing(g, 0.12, fx, fy, 0xf59e0b, 0.07, 0.95);
+  }
+  if (next.grazeRemain > 0) {
+    strokeHorseRing(g, 0.2, fx, fy, 0x7dd3fc, 0.05, 0.9);
+  }
+  if (next.echoMarkRemain > 0) {
+    strokeHorseRing(g, 0.24, fx, fy, 0xf0abfc, 0.06, 0.92);
+  }
+  if (next.phaseRemain > 0) {
+    strokeHorseRing(g, 0.16, fx, fy, 0xe0f2fe, 0.05, 0.7);
+  }
+  if (next.refractRemain > 0) {
+    strokeHorseRing(g, 0.3, fx, fy, 0xa5d8ff, 0.06, 0.92);
+  }
+}
+
+/** 冲锋残影：同朝向胖椭圆马身 + 淡披条。禁止旧圆盾/圆球影与金尘。 */
 function drawChargeFx(
   g: Graphics,
   next: BallBody,
   trail: readonly { x: number; y: number }[],
+  fx: number,
+  fy: number,
 ): void {
-  const speed = Math.hypot(next.vx, next.vy);
-  const { x: fx, y: fy } = unit(speed > 1e-6 ? next.vx : next.facingX, speed > 1e-6 ? next.vy : next.facingY);
   const px = -fy;
   const py = fx;
-
-  for (let i = 1; i <= 5; i += 1) {
-    const start = 0.18 + i * 0.16;
-    const end = start + 0.38;
-    const sway = i % 2 === 0 ? 0.07 : -0.07;
+  for (let i = 1; i <= 4; i += 1) {
+    const start = 0.22 + i * 0.14;
+    const end = start + 0.3;
+    const sway = i % 2 === 0 ? 0.06 : -0.06;
     g.moveTo(-fx * start + px * sway, -fy * start + py * sway);
-    g.lineTo(-fx * end + px * sway * 1.15, -fy * end + py * sway * 1.15);
+    g.lineTo(-fx * end + px * sway * 1.1, -fy * end + py * sway * 1.1);
     g.stroke({
-      color: next.color,
-      width: 0.11 - i * 0.012,
-      alpha: 0.5 * (1 - i / 6),
+      color: HORSE_TRAIL,
+      width: 0.085 - i * 0.01,
+      alpha: 0.3 * (1 - i / 5),
       cap: 'round',
     });
   }
 
+  const drape = drapeColor(next);
   for (let i = 1; i < trail.length; i += 1) {
-    const alpha = 0.22 * (1 - i / TRAIL_MAX);
-    g.circle(trail[i].x - next.x, trail[i].y - next.y, BALL_RADIUS * (0.82 - i * 0.04));
-    g.fill({ color: next.color, alpha });
-  }
-
-  for (let i = 1; i <= 4; i += 1) {
-    const d = 0.34 * i;
-    const sway = i % 2 === 0 ? 0.12 : -0.12;
-    g.circle(-fx * d + px * sway, -fy * d + py * sway, 0.055 + 0.02 * (5 - i));
-    g.fill({ color: SPEAR_GOLD, alpha: 0.32 * (1 - i / 5) });
+    const fade = 1 - i / TRAIL_MAX;
+    const scale = 0.9 - i * 0.045;
+    const ox = trail[i].x - next.x;
+    const oy = trail[i].y - next.y;
+    drawOrientedEllipse(g, ox, oy, HORSE_RX * scale, HORSE_RY * scale, fx, fy);
+    g.fill({ color: HORSE_TRAIL, alpha: 0.34 * fade });
+    const cloth = alongSide(RIDER_ALONG * scale, 0, fx, fy);
+    drawOrientedEllipse(
+      g,
+      ox + cloth.x,
+      oy + cloth.y,
+      0.09 * scale,
+      HORSE_RY * 0.82 * scale,
+      fx,
+      fy,
+    );
+    g.fill({ color: drape, alpha: 0.16 * fade });
   }
 }
 
@@ -211,9 +376,9 @@ export function createBallView(ball: BallBody): BallView {
   const fx = new Graphics();
   const body = new Graphics();
   const slotLabel = makeSlotLabel(ball.teamSlot);
-  const hpBar = new Graphics();
   const spear = new Graphics();
-  root.addChild(fx, body, slotLabel, hpBar, spear);
+  const hpBar = new Graphics();
+  root.addChild(fx, body, slotLabel, spear, hpBar);
   const trail: Array<{ x: number; y: number }> = [];
 
   const sync = (next: BallBody, opts: BallViewSyncOpts = {}): void => {
@@ -227,87 +392,39 @@ export function createBallView(ball: BallBody): BallView {
     }
 
     if (opts.charging) {
-      trail.unshift({ x: next.x, y: next.y });
-      if (trail.length > TRAIL_MAX) {
-        trail.length = TRAIL_MAX;
+      const last = trail[0];
+      if (!last || Math.hypot(next.x - last.x, next.y - last.y) >= TRAIL_SPACING) {
+        trail.unshift({ x: next.x, y: next.y });
+        if (trail.length > TRAIL_MAX) {
+          trail.length = TRAIL_MAX;
+        }
       }
     } else {
       trail.length = 0;
     }
 
+    const dir = next.hasAim ? unit(next.aimX, next.aimY) : unit(next.facingX, next.facingY);
+    const alpha = bodyAlpha(next);
+
     fx.clear();
     if (opts.charging) {
-      drawChargeFx(fx, next, trail);
+      drawChargeFx(fx, next, trail, dir.x, dir.y);
     }
 
     body.clear();
-    drawKnightShield(body, next);
-    syncSlotLabel(slotLabel, next);
-    const dir = next.hasAim ? unit(next.aimX, next.aimY) : unit(next.facingX, next.facingY);
-    drawPlume(body, dir.x, dir.y, next.color);
-    if (next.invincibleRemain > 0) {
-      const pulse = 0.45 + 0.45 * (0.5 + 0.5 * Math.sin(next.invincibleRemain * 10));
-      body.circle(0, 0, BALL_RADIUS + 0.14);
-      body.stroke({ color: 0xffffff, width: 0.07, alpha: pulse });
-    }
-    if (next.activeRamRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.08);
-      body.stroke({ color: SPEAR_GOLD, width: 0.055, alpha: 0.95 });
-    }
-    if (next.fineTuneRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.16);
-      body.stroke({ color: 0x7ee8ff, width: 0.05, alpha: 0.9 });
-    }
-    if (next.fieldRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.22);
-      body.stroke({ color: 0x5eead4, width: 0.055, alpha: 0.88 });
-    }
-    if (next.healRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.2);
-      body.stroke({ color: 0x86efac, width: 0.05, alpha: 0.9 });
-    }
-    if (next.shieldRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.26);
-      body.stroke({ color: 0xfde68a, width: 0.06, alpha: 0.92 });
-    }
-    if (next.armorRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.28);
-      body.stroke({ color: 0xf4bf6a, width: 0.07, alpha: next.armorBroken ? 0.45 : 0.95 });
-    }
-    if (next.reflectRemain > 0 && next.reflectArmed) {
-      body.circle(0, 0, BALL_RADIUS + 0.18);
-      body.stroke({ color: 0xfb7185, width: 0.055, alpha: 0.92 });
-    }
-    if (next.pinRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.12);
-      body.stroke({ color: 0xf59e0b, width: 0.07, alpha: 0.95 });
-    }
-    if (next.grazeRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.2);
-      body.stroke({ color: 0x7dd3fc, width: 0.05, alpha: 0.9 });
-    }
-    if (next.echoMarkRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.24);
-      body.stroke({ color: 0xf0abfc, width: 0.06, alpha: 0.92 });
-    }
-    if (next.phaseRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.16);
-      body.stroke({ color: 0xe0f2fe, width: 0.05, alpha: 0.7 });
-    }
-    if (next.refractRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.3);
-      body.stroke({ color: 0xa5d8ff, width: 0.06, alpha: 0.92 });
-    }
+    drawHorseBody(body, dir.x, dir.y, alpha);
+    drawSaddleDrape(body, dir.x, dir.y, drapeColor(next), alpha);
+    drawRider(body, dir.x, dir.y, alpha);
+    drawSideShield(body, dir.x, dir.y, alpha);
+    drawStatusRings(body, next, dir.x, dir.y);
+    syncSlotLabel(slotLabel, next, dir.x, dir.y);
+
+    spear.clear();
+    drawTargetSpear(spear, dir.x, dir.y);
+    drawHorseTail(spear, dir.x, dir.y, alpha);
 
     hpBar.clear();
     drawHpBar(hpBar, next.hp, next.maxHp, next.spearCdRemain);
-
-    spear.clear();
-    if (next.hasAim) {
-      drawTargetSpear(spear, next.aimX, next.aimY);
-    } else {
-      drawTargetSpear(spear, next.facingX, next.facingY);
-    }
   };
 
   sync(ball);

@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '局内主体换成俯视椭圆战马骑士；冲锋残影跟新皮，无旧圆盾影' },
   { title: '枪尖普攻去掉相对速度门槛；成功掉血后 1s CD，血条下细进度条从空涨到满' },
   { title: '触屏瞄准中点空白=瞄向并释放；滑动只改向；再点技能键仍释放；鼠键逻辑不动' },
   { title: '玩法说明卡与设置模态换羊皮纸木框皮；标题墨色，金仍只点在计时；胜利板不动' },
