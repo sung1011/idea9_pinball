@@ -19,6 +19,7 @@ import { verifyHeroPick } from './core/verifyHeroPick';
 import { verifyHudLayout } from './core/verifyHudLayout';
 import { verifySkillCd } from './core/verifySkillCd';
 import { verifySkillTip } from './core/verifySkillTip';
+import { verifyTouchAim } from './core/verifyTouchAim';
 import { verifyUiTheme } from './core/verifyUiTheme';
 import { verifyCombatFloat } from './core/verifyCombatFloat';
 import { resetBoomFlashes } from './core/boomFlashes';
@@ -67,6 +68,7 @@ async function boot(): Promise<void> {
   verifyHudLayout();
   verifySkillTip();
   verifySkillCd();
+  verifyTouchAim();
   verifyUiTheme();
   verifyCombatFloat();
 
@@ -142,6 +144,7 @@ async function boot(): Promise<void> {
     canvas: app.canvas,
     getTransform: () => transform,
     bus,
+    getAimingSlot: () => control.getAimingSlot(),
   });
 
   let syncHeroUi = (): void => {};

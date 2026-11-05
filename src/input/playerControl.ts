@@ -39,7 +39,7 @@ export type PlayerControl = {
   setHero: (ball: BallBody, hero: HeroId) => void;
 };
 
-/** 红球施放：同键或左键释放；点地只纠偏；前摇从释放后起算。 */
+/** 红球施放：同键或左键释放；触屏瞄准中点空白也可释放、滑动只改向；前摇从释放后起算。 */
 export function createPlayerControl(initial: HeroId = 'hook'): PlayerControl {
   let caster = createSkillCaster(initial);
 

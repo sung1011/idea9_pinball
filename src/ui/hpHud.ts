@@ -114,7 +114,7 @@ export function createHpHud(host: HTMLElement): HpHud {
       if (status.aimHint?.stage === 2 && status.aimingSlot === 1) {
         parts.push(`已锁敌 · 再点落点释放${name} · 右键/Esc/取消键取消`);
       } else {
-        parts.push(`瞄准${name} · 再按同键或左键释放 · 右键/Esc/取消键取消`);
+        parts.push(`瞄准${name} · 再按同键或左键释放；触屏点空白也可释放 · 右键/Esc/取消键取消`);
       }
     }
     if (status?.windup) {

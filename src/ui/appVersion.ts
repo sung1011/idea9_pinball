@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '触屏瞄准中点空白=瞄向并释放；滑动只改向；再点技能键仍释放；鼠键逻辑不动' },
   { title: '玩法说明卡与设置模态换羊皮纸木框皮；标题墨色，金仍只点在计时；胜利板不动' },
   { title: '局内 HUD chrome 换皮：羊皮纸+木框 2px；金只点在顶中计时；技能就绪无金闪' },
   { title: '开局与每次 R：队友和两名敌方从含镜卫全池均匀随机；玩家英雄记住上次所选' },

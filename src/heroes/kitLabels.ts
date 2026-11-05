@@ -162,7 +162,7 @@ export function skillTipCopy(hero: HeroId, slot: SkillSlot): SkillTipCopy {
 
 export function kitHudLine(hero: HeroId): string {
   const shorts = skillShorts(hero);
-  return `${kitTitle(hero)}：1${shorts[0]} 2${shorts[1]} 3${shorts[2]} 4${shorts[3]} · 点地纠偏 · 同键或左键释放`;
+  return `${kitTitle(hero)}：1${shorts[0]} 2${shorts[1]} 3${shorts[2]} 4${shorts[3]} · 点地纠偏 · 同键或左键释放；触屏瞄准中点空白也可释放`;
 }
 
 export function kitHelpSkills(hero: HeroId): string {
