@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.10-hud-chrome",
+    "version": "0.0.10",
+    "date": "2026-11-05",
+    "summary": "局内 HUD chrome 换皮：羊皮纸+木框 2px；金只点在顶中计时；技能就绪无金闪"
+  },
+  {
     "id": "v0.0.9-opening-roster",
     "version": "0.0.9",
     "date": "2026-11-05",

@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '局内 HUD chrome 换皮：羊皮纸+木框 2px；金只点在顶中计时；技能就绪无金闪' },
   { title: '开局与每次 R：队友和两名敌方从含镜卫全池均匀随机；玩家英雄记住上次所选' },
   { title: '钩刺钩矛：二次确认按瞄准预览扇形锁敌，后退滑时圈内敌也能放出' },
   { title: '骑士主体羽冠缩短到约六成；冲锋残影尺寸与逻辑不动' },

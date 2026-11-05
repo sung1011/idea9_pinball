@@ -116,10 +116,14 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   const makeHeroWrap = (tag: string, pick: HTMLSelectElement): HTMLLabelElement => {
     const wrap = document.createElement('label');
     wrap.className = 'matchHudHeroWrap';
+    wrap.dataset.team = 'red';
+    const stripe = document.createElement('span');
+    stripe.className = 'matchHudHeroStripe';
+    stripe.setAttribute('aria-hidden', 'true');
     const name = document.createElement('span');
     name.className = 'matchHudHeroTag';
     name.textContent = tag;
-    wrap.append(name, pick);
+    wrap.append(stripe, name, pick);
     return wrap;
   };
 

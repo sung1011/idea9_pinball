@@ -16,6 +16,35 @@ body,
   -webkit-touch-callout: none;
 }
 
+:root,
+#app {
+  --parchment-base: #F3E6C8;
+  --parchment-shadow: #D4C19A;
+  --parchment-highlight: #FFF8E7;
+  --ink: #3A2E24;
+  --ink-muted: #6B5A48;
+  --wood-frame: #8B5A2B;
+  --wood-frame-dark: #5C3A1A;
+  --panel-border: #A67C52;
+  --button-idle: #F7EDD6;
+  --button-pressed: #C9B48A;
+  --team-red: #C43C3C;
+  --team-red-shadow: #8E2A2A;
+  --team-red-highlight: #E86A5A;
+  --team-blue: #3A6FBF;
+  --team-blue-shadow: #254A86;
+  --team-blue-highlight: #6A9AE0;
+  --gold-spear: #D4A017;
+  --gold-spear-shadow: #A07812;
+  --gold-spear-highlight: #F0C94A;
+  --cd-mask: rgba(42, 34, 24, 0.55);
+  --outline-ui: #2F241A;
+  --float-damage: #E85A2A;
+  --float-heal: #3CB371;
+  --float-shield: #3DB8C5;
+  --hud-shadow: 0 2px 6px rgba(47, 36, 26, 0.24);
+}
+
 #app {
   --hud-pad: 8px;
   --hud-fab: 28px;
@@ -39,7 +68,7 @@ canvas {
 .matchHud {
   position: absolute;
   inset: 0;
-  color: #e8ffff;
+  color: var(--ink);
   font: 13px/1.3 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   pointer-events: none;
   user-select: none;
@@ -59,11 +88,12 @@ canvas {
   box-sizing: border-box;
   padding: 3px 12px;
   border-radius: 999px;
-  background: #0b1014cc;
-  border: 1px solid #ffffff22;
+  background-color: var(--parchment-base);
+  background-image: linear-gradient(180deg, var(--parchment-highlight) 0%, transparent 42%);
+  border: 2px solid var(--wood-frame);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 var(--parchment-highlight), var(--hud-shadow);
 }
 
 .matchHudSide {
@@ -73,16 +103,17 @@ canvas {
 }
 
 .matchHudRed {
-  color: #f68a8a;
+  color: var(--team-red);
 }
 
 .matchHudBlue {
-  color: #8ab4f6;
+  color: var(--team-blue);
 }
 
 .matchHudScoreVal {
-  font-size: 15px;
+  font-size: 16px;
   letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 var(--parchment-highlight);
 }
 
 .matchHudMark {
@@ -99,35 +130,38 @@ canvas {
 }
 
 .matchHudSep {
-  width: 1px;
+  width: 2px;
   height: 14px;
-  background: #ffffff28;
+  background: var(--gold-spear);
   flex-shrink: 0;
+  border-radius: 1px;
+  box-shadow: 0 1px 0 var(--gold-spear-shadow);
 }
 
 .matchHudClock {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #e8ffff;
+  color: var(--gold-spear);
   font-size: 13px;
   min-width: 4.6em;
+  text-shadow: 0 1px 0 var(--gold-spear-shadow);
 }
 
 .matchHudClock.isOvertime {
-  color: #ffe08a;
+  color: var(--gold-spear-highlight);
 }
 
 .matchHudClock.isResult {
-  color: #9af6f6;
+  color: var(--gold-spear);
 }
 
 .matchHudCluster[data-hold='red'] {
-  box-shadow: inset 0 0 0 1px #f68a8a66;
+  box-shadow: inset 0 1px 0 var(--parchment-highlight), inset 0 0 0 2px var(--team-red), var(--hud-shadow);
 }
 
 .matchHudCluster[data-hold='blue'] {
-  box-shadow: inset 0 0 0 1px #8ab4f666;
+  box-shadow: inset 0 1px 0 var(--parchment-highlight), inset 0 0 0 2px var(--team-blue), var(--hud-shadow);
 }
 
 .matchHudHeroRow {
@@ -154,13 +188,27 @@ canvas {
 
 .matchHudHeroWrap {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: stretch;
+  gap: 0;
   pointer-events: auto;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--parchment-base);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--hud-shadow);
+}
+
+.matchHudHeroStripe {
+  width: 4px;
+  flex: none;
+  background: var(--team-red);
 }
 
 .matchHudHeroTag {
-  color: #e8ffffaa;
+  display: flex;
+  align-items: center;
+  padding: 0 4px 0 6px;
+  color: var(--ink-muted);
   font: 700 10px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   letter-spacing: 0.04em;
 }
@@ -170,34 +218,34 @@ canvas {
   -webkit-appearance: none;
   min-height: 28px;
   min-width: 4.2em;
-  padding: 3px 20px 3px 8px;
-  border: 1px solid #ffffff28;
-  border-radius: 999px;
-  background-color: #0b1014cc;
-  background-image: linear-gradient(45deg, transparent 50%, #e8ffff 50%),
-    linear-gradient(135deg, #e8ffff 50%, transparent 50%);
+  padding: 3px 20px 3px 6px;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%),
+    linear-gradient(135deg, var(--ink) 50%, transparent 50%);
   background-position: calc(100% - 12px) calc(50% - 2px), calc(100% - 7px) calc(50% - 2px);
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
-  color: #e8ffff;
+  color: var(--ink);
   font: 700 12px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   cursor: pointer;
   user-select: auto;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  backdrop-filter: blur(6px);
 }
 
 .matchHudHero:hover,
 .matchHudHero:focus-visible {
-  border-color: #ffe08a;
-  color: #ffe08a;
-  outline: none;
+  background-color: var(--button-pressed);
+  color: var(--ink);
+  outline: 2px solid var(--outline-ui);
+  outline-offset: -2px;
 }
 
 .matchHudHero option {
-  background: #0b1014;
-  color: #e8ffff;
+  background: var(--parchment-base);
+  color: var(--ink);
 }
 
 .matchHudToast {
@@ -205,11 +253,11 @@ canvas {
   top: calc(var(--hud-safe-top) + var(--hud-pad) + 34px);
   left: 50%;
   transform: translateX(-50%);
-  color: #ffe08a;
+  color: var(--parchment-highlight);
   min-height: 0;
   font-size: 12px;
   text-align: center;
-  text-shadow: 0 1px 6px #071018cc;
+  text-shadow: 0 1px 4px var(--outline-ui);
   max-width: min(52vw, 420px);
 }
 
@@ -253,9 +301,9 @@ canvas {
   width: var(--hud-fab, 28px);
   height: var(--hud-fab, 28px);
   border-radius: 50%;
-  border: 1px solid #ffffff28;
-  background: #0b1014cc;
-  color: #e8ffff;
+  border: 2px solid var(--wood-frame);
+  background: var(--button-idle);
+  color: var(--ink);
   font: 700 16px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   cursor: pointer;
   z-index: 28;
@@ -265,7 +313,7 @@ canvas {
   display: grid;
   place-items: center;
   padding: 0;
-  backdrop-filter: blur(6px);
+  box-shadow: var(--hud-shadow);
 }
 
 .settingsFab {
@@ -282,10 +330,14 @@ canvas {
 
 .helpFab.isOn,
 .helpFab:hover,
+.helpFab:active,
 .settingsFab.isOn,
-.settingsFab:hover {
-  border-color: #ffe08a;
-  color: #ffe08a;
+.settingsFab:hover,
+.settingsFab:active {
+  background: var(--button-pressed);
+  border-color: var(--wood-frame-dark);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(47, 36, 26, 0.22);
 }
 
 .helpOverlay,
@@ -877,14 +929,13 @@ canvas {
   min-width: 40px;
   min-height: 40px;
   border-radius: 50%;
-  border: 2px solid #ffffff2a;
-  background: #0b1014cc;
-  color: #e8ffff;
+  border: 2px solid var(--wood-frame);
+  background: var(--button-idle);
+  color: var(--ink);
   font: 700 11px/1.1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  box-shadow: 0 0 8px #04161666;
+  box-shadow: var(--hud-shadow);
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
-  backdrop-filter: blur(6px);
 }
 
 .touchSkillName {
@@ -901,8 +952,8 @@ canvas {
   z-index: 2;
   background: conic-gradient(
     from -90deg,
-    #9af6f626 0 calc((1 - var(--cd-remain, 0)) * 1turn),
-    #02080ee8 calc((1 - var(--cd-remain, 0)) * 1turn)
+    transparent 0 calc((1 - var(--cd-remain, 0)) * 1turn),
+    var(--cd-mask) calc((1 - var(--cd-remain, 0)) * 1turn)
   );
 }
 
@@ -914,19 +965,20 @@ canvas {
   pointer-events: none;
   place-items: center;
   font: 700 12px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  color: #ffe08a;
-  text-shadow: 0 1px 3px #041616ee;
+  color: var(--parchment-highlight);
+  text-shadow: 0 1px 2px var(--outline-ui);
 }
 
 .touchSkillBtn.isAiming,
 .touchSkillBtn:active {
-  border-color: #ffe08a;
-  color: #ffe08a;
-  box-shadow: 0 0 16px #ffe08a88;
+  background: var(--button-pressed);
+  border-color: var(--wood-frame-dark);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(47, 36, 26, 0.22);
 }
 
 .touchSkillBtn.isCd {
-  background: #24303acc;
+  background: var(--button-idle);
 }
 
 .touchSkillBtn.isCd .touchSkillName {
@@ -950,13 +1002,13 @@ canvas {
   max-width: min(200px, 38vw);
   padding: 6px 8px 7px;
   border-radius: 10px;
-  background: #0b1014ee;
-  border: 1px solid #ffe08a88;
-  color: #e8ffff;
+  background-color: var(--parchment-base);
+  background-image: linear-gradient(180deg, var(--parchment-highlight) 0%, transparent 50%);
+  border: 1px solid var(--panel-border);
+  color: var(--ink);
   font: 12px/1.3 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  box-shadow: 0 6px 18px #041616aa;
+  box-shadow: var(--hud-shadow);
   transform: translate(-50%, -100%);
-  backdrop-filter: blur(6px);
 }
 
 .skillTip.isOn {
@@ -965,14 +1017,14 @@ canvas {
 
 .skillTipName {
   font-weight: 800;
-  color: #ffe08a;
+  color: var(--ink);
   letter-spacing: 0.04em;
 }
 
 .skillTipEffect {
   margin-top: 2px;
   font-size: 11px;
-  color: #e8ffff;
+  color: var(--ink-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

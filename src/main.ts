@@ -19,6 +19,7 @@ import { verifyHeroPick } from './core/verifyHeroPick';
 import { verifyHudLayout } from './core/verifyHudLayout';
 import { verifySkillCd } from './core/verifySkillCd';
 import { verifySkillTip } from './core/verifySkillTip';
+import { verifyUiTheme } from './core/verifyUiTheme';
 import { verifyCombatFloat } from './core/verifyCombatFloat';
 import { resetBoomFlashes } from './core/boomFlashes';
 import { floatsFromHits, resetCombatFloatAcc, takeHealFloats } from './core/combatFloat';
@@ -47,6 +48,7 @@ import { createAppVersions } from './ui/appVersion';
 import { createSettingsPanel } from './ui/settingsPanel';
 import { createUpdatePrompt } from './ui/updatePrompt';
 import { applyStageVars, computeLandscapeStage, readSafeInsets } from './ui/stageLayout';
+import { applyUiTheme } from './ui/uiTheme';
 import './style.css';
 
 async function boot(): Promise<void> {
@@ -65,12 +67,14 @@ async function boot(): Promise<void> {
   verifyHudLayout();
   verifySkillTip();
   verifySkillCd();
+  verifyUiTheme();
   verifyCombatFloat();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
     throw new Error('未找到 #app');
   }
+  applyUiTheme(host);
 
   const app = new Application();
   await app.init({
