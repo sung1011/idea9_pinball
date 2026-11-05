@@ -5,6 +5,7 @@ import {
   FLOOR_SPEED,
   FRICTION,
   HARD_CC_DIMINISH_WINDOW,
+  LEFT_PILLAR,
   MAX_HP,
   RESPAWN_SEC,
   SPAWN_INVINCIBLE_SEC,
@@ -141,8 +142,11 @@ export function verifyM5(): void {
   advance(miss, missBall, [missBall], 0.45);
   assert(Math.abs(miss.getCds()[0] - HOOK_PULL.missCd) < 0.1, 'M5：未勾中 CD 应变 4s');
 
-  assert(segmentBlocked(2.5, 3.2, 2.5, 8.8), 'M5：穿矮柱勾索应被墙挡');
-  const [wallRed, wallBlue] = redBlue(2.5, 3.2, 2.5, 8.8);
+  assert(
+    segmentBlocked(LEFT_PILLAR.x, LEFT_PILLAR.y - 2, LEFT_PILLAR.x, LEFT_PILLAR.y + 2),
+    'M5：穿矮柱勾索应被墙挡',
+  );
+  const [wallRed, wallBlue] = redBlue(LEFT_PILLAR.x, LEFT_PILLAR.y - 2, LEFT_PILLAR.x, LEFT_PILLAR.y + 2);
   const wall = createSkillCaster();
   fire(wall, wallRed, 1, 0, 1);
   advance(wall, wallRed, [wallRed, wallBlue], 0.45);

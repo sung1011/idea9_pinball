@@ -48,7 +48,7 @@ export function clientToHostLocal(
   return { x: clientX - rect.left, y: clientY - rect.top };
 }
 
-/** 始终按 20×12 横构图取最大舞台；竖窗上下留黑边，横窗左右留黑边。 */
+/** 按 20×20 正方形取最大舞台；竖窗上下留黑边，横窗左右留黑边。 */
 export function computeLandscapeStage(viewW: number, viewH: number, insets: SafeInsets): StageRect {
   const left = insets.left + STAGE_GAP_PX;
   const right = insets.right + STAGE_GAP_PX;

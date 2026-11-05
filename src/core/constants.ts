@@ -1,8 +1,8 @@
-/** 逻辑地图长边（格） */
+/** 逻辑地图边长（格）；正方形 */
 export const MAP_WIDTH = 20;
 
-/** 逻辑地图短边（格） */
-export const MAP_HEIGHT = 12;
+/** 逻辑地图边长（格）；与 MAP_WIDTH 相同 */
+export const MAP_HEIGHT = 20;
 
 /** 玩家半径（格） */
 export const BALL_RADIUS = 0.5;
@@ -23,15 +23,15 @@ export const CONTROL_POINT = {
 export const PILLAR_WIDTH = 2;
 export const PILLAR_HEIGHT = 1;
 
-/** 左矮柱中心：左半场、垂直居中 */
+/** 左矮柱中心：左半场四分位、垂直居中，让开 Stall */
 export const LEFT_PILLAR = {
-  x: 2.5,
+  x: MAP_WIDTH * 0.25,
   y: MAP_HEIGHT / 2,
 } as const;
 
-/** 右矮柱中心：右半场、垂直居中 */
+/** 右矮柱中心：右半场四分位、垂直居中 */
 export const RIGHT_PILLAR = {
-  x: MAP_WIDTH - 2.5,
+  x: MAP_WIDTH * 0.75,
   y: MAP_HEIGHT / 2,
 } as const;
 
@@ -129,8 +129,8 @@ export const OPENING_CHARGE_STEER_RAD_PER_SEC = (OPENING_CHARGE_STEER_DEG_PER_SE
 
 /** 开局 stall：贴各队半场底线，从底线向内的深度（格） */
 export const STALL_DEPTH = 2.4;
-/** stall 上下留白，避开圆角死角 */
-export const STALL_Y_PAD = 0.4;
+/** stall 上下留白，对齐圆角半径，避开死角 */
+export const STALL_Y_PAD = ARENA_CORNER_RADIUS;
 
 /** 先到此分立即结束 */
 export const MATCH_SCORE_LIMIT = 100;
@@ -151,16 +151,38 @@ export const MIDPOINT_TICK_SEC = 1;
 /** 调试：仅加速一局时钟（倒计时/回场/领地），物理仍按真实 dt。默认 1 */
 export const DEBUG_CLOCK_SCALE = 1;
 
-/** 半场底线出生：红左底、蓝右底，上下错开避开矮柱；本机固定 2v2 */
+/** 出生距底线（格）；落在 Stall 内 */
+export const SPAWN_X_INSET = 1.2;
+/** 上出生：四分位，避开圆角与中线 */
+export const SPAWN_Y_TOP = MAP_HEIGHT * 0.25;
+/** 下出生：四分位 */
+export const SPAWN_Y_BOT = MAP_HEIGHT * 0.75;
+
+/** 朝领地圆心的单位朝向 */
+export function facingTowardControl(x: number, y: number): { facingX: number; facingY: number } {
+  const dx = CONTROL_POINT.x - x;
+  const dy = CONTROL_POINT.y - y;
+  const len = Math.hypot(dx, dy);
+  if (len < 1e-8) {
+    return { facingX: x < CONTROL_POINT.x ? 1 : -1, facingY: 0 };
+  }
+  return { facingX: dx / len, facingY: dy / len };
+}
+
+function makeSpawn(x: number, y: number): { x: number; y: number; facingX: number; facingY: number } {
+  return { x, y, ...facingTowardControl(x, y) };
+}
+
+/** 红左半场上下两出生、蓝右半场上下两出生；facing 朝领地；本机固定 2v2 */
 export const RED_SPAWNS = [
-  { x: 1.2, y: 3.4, facingX: 1, facingY: 0 },
-  { x: 1.2, y: 8.6, facingX: 1, facingY: 0 },
-] as const;
+  makeSpawn(SPAWN_X_INSET, SPAWN_Y_TOP),
+  makeSpawn(SPAWN_X_INSET, SPAWN_Y_BOT),
+];
 
 export const BLUE_SPAWNS = [
-  { x: 18.8, y: 3.4, facingX: -1, facingY: 0 },
-  { x: 18.8, y: 8.6, facingX: -1, facingY: 0 },
-] as const;
+  makeSpawn(MAP_WIDTH - SPAWN_X_INSET, SPAWN_Y_TOP),
+  makeSpawn(MAP_WIDTH - SPAWN_X_INSET, SPAWN_Y_BOT),
+];
 
 /** 简 bot：决策间隔（急停 / 靠近 / 偶勾） */
 export const BOT_INTERVAL_SEC = 1.5;

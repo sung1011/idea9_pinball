@@ -54,7 +54,7 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
     body.replaceChildren();
     addBlock(body, '开局', [
       '本机固定 2v2：你控红 1，红 2 默认链生简 bot，对 2 名蓝简 bot（蓝 1 磁环、蓝 2 钩刺）。',
-      '红左底 / 蓝右底木栏 Stall，开口朝领地，大号倒计时 5 秒，栏内不可出。',
+      '地图 20×20。红左半场上下、蓝右半场上下各一出生；木栏 Stall 贴底线开口朝领地，大号倒计时 5 秒，栏内不可出。',
       '倒计时结束围栏消失，冲锋 1 秒：前 0.2 秒拉到峰值 7.5，禁技能、几乎锁拧、全程无敌。',
       '冲锋结束才点地纠偏、放技能。Esc 或点空白可跳过 Stall，直接开战。',
     ]);

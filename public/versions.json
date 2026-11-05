@@ -1,9 +1,15 @@
 [
   {
+    "id": "v0.0.8-arena-20",
+    "version": "0.0.8",
+    "date": "2026-11-05",
+    "summary": "战场 20×20；领地半径 2.5；红蓝上下两出生；竖/横窗 letterbox，画面不旋转"
+  },
+  {
     "id": "v0.0.7-portrait-letterbox",
     "version": "0.0.7",
     "date": "2026-11-05",
-    "summary": "纯竖屏操作：删掉横屏翻转，战场 20×12 letterbox，HUD 按竖窗重排"
+    "summary": "纯竖屏操作：战场 letterbox，HUD 按竖窗重排，画面不旋转"
   },
   {
     "id": "v0.0.6-local-2v2",

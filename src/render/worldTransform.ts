@@ -6,7 +6,7 @@ export type WorldTransform = {
   offsetY: number;
 };
 
-/** 将 20×12 逻辑世界等比适配到屏幕，四周留白并居中。 */
+/** 将 20×20 逻辑世界等比适配到屏幕，四周留白并居中。 */
 export function fitWorldToScreen(
   screenWidth: number,
   screenHeight: number,

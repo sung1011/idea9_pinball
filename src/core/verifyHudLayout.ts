@@ -38,30 +38,28 @@ function dummySnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
   };
 }
 
-/** 竖窗 HUD：20×12 letterbox、无翻转；顶中红|计时|蓝一颗胶囊，底左我/队友。 */
+/** 竖窗 HUD：20×20 正方形 letterbox；顶中红|计时|蓝一颗胶囊，底左我/队友。 */
 export function verifyHudLayout(): void {
   const none = { top: 0, right: 0, bottom: 0, left: 0 };
   const landscape = computeLandscapeStage(1600, 900, none);
-  assert(landscape.width > landscape.height, 'HUD：横屏舞台应为横构图');
-  assert(Math.abs(landscape.width / landscape.height - 20 / 12) < 1e-6, 'HUD：舞台比例应为 20×12');
+  assert(Math.abs(landscape.width - landscape.height) < 1e-6, 'HUD：舞台应为 20×20 正方形');
+  assert(landscape.x > 10, 'HUD：横窗应左右留 letterbox');
 
   const portrait = computeLandscapeStage(800, 1200, none);
-  assert(portrait.width > portrait.height, 'HUD：竖窗仍保持横构图');
+  assert(Math.abs(portrait.width - portrait.height) < 1e-6, 'HUD：竖窗舞台仍为正方形');
   assert(portrait.x + portrait.width <= 800 + 1e-6, 'HUD：竖窗舞台不应超出宽度');
   assert(portrait.y > 10, 'HUD：竖窗应上下留 letterbox');
 
   const phonePortrait = computeLandscapeStage(375, 667, none);
-  assert(phonePortrait.width > phonePortrait.height, 'HUD：竖持仍按横构图 letterbox，不互换宽高');
+  assert(Math.abs(phonePortrait.width - phonePortrait.height) < 1e-6, 'HUD：竖持仍按正方形 letterbox，不互换宽高');
   assert(phonePortrait.y > 10, 'HUD：竖持应上下留黑边');
 
   const phoneLand = computeLandscapeStage(667, 375, none);
-  assert(phoneLand.width > phoneLand.height, 'HUD：横持仍保持 20×12');
-  assert(Math.abs(phoneLand.width / phoneLand.height - 20 / 12) < 1e-6, 'HUD：横持舞台比例应为 20×12');
+  assert(Math.abs(phoneLand.width - phoneLand.height) < 1e-6, 'HUD：横持仍为正方形');
   assert(phoneLand.x > 1, 'HUD：横持应左右留 letterbox');
 
   const pcWide = computeLandscapeStage(1920, 1080, none);
-  assert(pcWide.width > pcWide.height, 'HUD：PC 宽窗仍保持横构图');
-  assert(Math.abs(pcWide.width / pcWide.height - 20 / 12) < 1e-6, 'HUD：PC 任意窗舞台比例应为 20×12');
+  assert(Math.abs(pcWide.width - pcWide.height) < 1e-6, 'HUD：PC 宽窗仍为正方形');
 
   const notch = computeLandscapeStage(1600, 900, { top: 0, right: 44, bottom: 0, left: 44 });
   assert(notch.x >= 44, 'HUD：舞台应避开左侧安全区');
@@ -74,8 +72,7 @@ export function verifyHudLayout(): void {
   document.body.appendChild(stageHost);
   applyStageVars(stageHost, computeLandscapeStage(375, 667, none));
   assert(stageHost.classList.contains('isPortrait'), 'HUD：竖窗应标 isPortrait');
-  assert(!stageHost.classList.contains('isLandscapeFlip'), 'HUD：不应再标横屏翻转');
-  assert(!stageHost.style.transform, 'HUD：#app 不应再写旋转 transform');
+  assert(!stageHost.style.transform, 'HUD：宿主不应写画面变换');
   stageHost.remove();
 
   const plain = document.createElement('div');

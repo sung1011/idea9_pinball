@@ -40,9 +40,10 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
-  { title: '纯竖屏操作：删掉横屏翻转，战场 20×12 letterbox，HUD 按竖窗重排' },
+  { title: '战场 20×20；领地半径 2.5；红蓝上下两出生；竖/横窗 letterbox，画面不旋转' },
+  { title: '纯竖屏操作：战场 letterbox，HUD 按竖窗重排，画面不旋转' },
   { title: '本机固定 2v2：玩家控红1 + 链生简 bot 红2，对 2 蓝简 bot；左下可换队友英雄' },
-  { title: '竖持 letterbox；仅横屏翻转扶正' },
+  { title: '竖持 letterbox，画面不旋转' },
   { title: '镜卫四技能落地：折光 / 反照 / 裂镜 / 镜壁；7 人池，同局可重复选' },
   { title: '竖持强制横屏显示，去掉转屏提示' },
   { title: '战斗飘字仅数字：伤害红橙、治疗绿、护盾青；从结算点上浮淡出' },

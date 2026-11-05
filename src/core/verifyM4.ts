@@ -5,6 +5,7 @@ import {
   CONTROL_POINT,
   FLOOR_SPEED,
   KNOCKOUT_SCORE,
+  MAP_HEIGHT,
   MAP_WIDTH,
   MATCH_COUNTDOWN_SEC,
   MATCH_SCORE_LIMIT,
@@ -56,11 +57,20 @@ function assert(cond: boolean, message: string): void {
 
 /** 一局规则：击破/助攻、回场无敌、领地、加时与下次击破。 */
 export function verifyM4(): void {
+  assert(MAP_WIDTH === 20 && MAP_HEIGHT === 20, 'M4：地图应为 20×20');
   assert(CONTROL_POINT.radius === 2.5, 'M4：领地半径应为 2.5');
-  assert(CONTROL_POINT.x === 10 && CONTROL_POINT.y === 6, 'M4：领地应在地图中心');
+  assert(CONTROL_POINT.x === 10 && CONTROL_POINT.y === 10, 'M4：领地应在地图中心');
   assert(midpointHold(2, 1) === 'red' && midpointHold(1, 1) === 'none', 'M4：领地须严格多数');
   const roster = createMatchRoster();
   assert(roster.length === 4, 'M4：本机固定 2v2，场上应为 4 球');
+  assert(roster[0].y < roster[1].y && roster[2].y < roster[3].y, 'M4：同队应上下两出生');
+  for (const ball of roster) {
+    const dx = CONTROL_POINT.x - ball.x;
+    const dy = CONTROL_POINT.y - ball.y;
+    const len = Math.hypot(dx, dy);
+    const aligned = (ball.facingX * dx + ball.facingY * dy) / len;
+    assert(aligned > 0.99, `M4：${ball.label} facing 应朝领地`);
+  }
   assert(roster[0].team === 'red' && roster[0].teamSlot === 1 && roster[0].hero === 'hook', 'M4：红1 应为玩家钩刺');
   assert(roster[1].team === 'red' && roster[1].teamSlot === 2 && roster[1].hero === 'chain', 'M4：红2 默认链生');
   assert(roster[2].team === 'blue' && roster[2].teamSlot === 1 && roster[2].hero === 'ring', 'M4：蓝1 默认磁环');

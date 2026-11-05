@@ -7,6 +7,7 @@ import {
   BLUE_SPAWNS,
   CONTROL_POINT,
   DEBUG_CLOCK_SCALE,
+  facingTowardControl,
   KNOCKOUT_SCORE,
   MATCH_COUNTDOWN_SEC,
   MATCH_OVERTIME_SEC,
@@ -197,13 +198,11 @@ function resetBall(ball: BallBody, openingInvincible: number): void {
   ball.suppressCombat = false;
   ball.hasAim = false;
   clearKitAuras(ball);
-  if (ball.team === 'blue') {
-    ball.facingX = -1;
-    ball.facingY = 0;
-  } else if (ball.team === 'red') {
-    ball.facingX = 1;
-    ball.facingY = 0;
-  }
+  const face = facingTowardControl(ball.x, ball.y);
+  ball.facingX = face.facingX;
+  ball.facingY = face.facingY;
+  ball.aimX = face.facingX;
+  ball.aimY = face.facingY;
 }
 
 export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) {
