@@ -1,5 +1,5 @@
 import { clearKitAuras, createBallBody, grantInvincible, type BallBody, type TeamId } from './ballBody';
-import type { HeroId } from '../heroes/heroIds';
+import { pickRandomHero, type HeroId } from '../heroes/heroIds';
 import type { CollisionHit } from './collisionDamage';
 import {
   ASSIST_SCORE,
@@ -124,8 +124,39 @@ export function findAssistSource(
   return best ? (balls.find((ball) => ball.id === best.sourceId) ?? null) : null;
 }
 
-/** 本机固定 2v2：红1 玩家钩刺、红2 链生简 bot，蓝1 磁环、蓝2 钩刺。 */
-export function createMatchRoster(): BallBody[] {
+export type MatchRosterKits = {
+  player: HeroId;
+  ally: HeroId;
+  blue1: HeroId;
+  blue2: HeroId;
+};
+
+export type MatchRosterKitOpts = Partial<MatchRosterKits>;
+
+/** 红1 用玩家缺省；红2 / 蓝1 / 蓝2 从含镜卫全池均匀随机，允许同局重复。 */
+export function pickMatchRosterKits(
+  player: HeroId = 'hook',
+  random: () => number = Math.random,
+): MatchRosterKits {
+  return {
+    player,
+    ally: pickRandomHero(random),
+    blue1: pickRandomHero(random),
+    blue2: pickRandomHero(random),
+  };
+}
+
+/** 本机固定 2v2：红1 玩家 + 红2 简 bot vs 蓝1/蓝2 简 bot；未指定的 bot kit 开局随机。 */
+export function createMatchRoster(
+  kits: MatchRosterKitOpts = {},
+  random: () => number = Math.random,
+): BallBody[] {
+  const resolved: MatchRosterKits = {
+    player: kits.player ?? 'hook',
+    ally: kits.ally ?? pickRandomHero(random),
+    blue1: kits.blue1 ?? pickRandomHero(random),
+    blue2: kits.blue2 ?? pickRandomHero(random),
+  };
   const reds = RED_SPAWNS.map((spawn, i) =>
     createRosterBall({
       x: spawn.x,
@@ -136,7 +167,7 @@ export function createMatchRoster(): BallBody[] {
       label: `红${i + 1}`,
       team: 'red',
       teamSlot: i + 1,
-      hero: i === 0 ? 'hook' : 'chain',
+      hero: i === 0 ? resolved.player : resolved.ally,
     }),
   );
   const blues = BLUE_SPAWNS.map((spawn, i) =>
@@ -149,7 +180,7 @@ export function createMatchRoster(): BallBody[] {
       label: `蓝${i + 1}`,
       team: 'blue',
       teamSlot: i + 1,
-      hero: i === 0 ? 'ring' : 'hook',
+      hero: i === 0 ? resolved.blue1 : resolved.blue2,
     }),
   );
   return [...reds, ...blues];

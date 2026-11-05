@@ -1,9 +1,11 @@
 import { isAimUiTarget } from '../input/actionBus';
 import { createPlayerControl } from '../input/playerControl';
 import type { ActionSample } from '../input/actionTypes';
-import { HERO_IDS, heroZh, isHeroId, nextHero, type HeroId } from '../heroes/heroIds';
+import { HERO_IDS, heroZh, isHeroId, nextHero, pickRandomHero, type HeroId } from '../heroes/heroIds';
+import { LAST_HERO_STORAGE_KEY, loadLastHeroId, saveLastHeroId } from '../heroes/lastHeroId';
 import { createMatchHud } from '../ui/matchHud';
 import { createBallBody } from './ballBody';
+import { createMatchRoster, pickMatchRosterKits } from './matchSession';
 import { createSimpleBot } from './simpleBot';
 
 function assert(cond: boolean, message: string): void {
@@ -128,4 +130,63 @@ export function verifyHeroPick(): void {
   assert(ally.teamSlot === 2 && ally.team === 'red', '换英雄：换队友不换号');
   assert(ally.hp === 188 && ally.x === 1.2 && ally.y === 8.6, '换英雄：换队友应保留血量与位置');
   assert(ally.vx === 2.1 && ally.vy === 0.4, '换英雄：换队友应保留速度');
+
+  const seen = new Set<HeroId>();
+  for (let i = 0; i < HERO_IDS.length; i += 1) {
+    seen.add(pickRandomHero(() => (i + 0.5) / HERO_IDS.length));
+  }
+  assert(seen.size === 7 && seen.has('mirror'), '开局：随机应覆盖含镜卫全池');
+
+  const dup = pickMatchRosterKits('hook', () => 0.99);
+  assert(dup.player === 'hook', '开局：玩家 kit 不随 bot 随机');
+  assert(
+    dup.ally === 'mirror' && dup.blue1 === 'mirror' && dup.blue2 === 'mirror',
+    '开局：允许同局重复镜卫',
+  );
+
+  const rolled = createMatchRoster({ player: 'well' }, () => 0);
+  assert(rolled[0].hero === 'well', '开局：红1 应用玩家缺省');
+  assert(
+    rolled[1].hero === 'hook' && rolled[2].hero === 'hook' && rolled[3].hero === 'hook',
+    '开局：未指定 bot 应从全池随机',
+  );
+  assert(rolled.length === 4 && rolled[0].teamSlot === 1 && rolled[1].teamSlot === 2, '开局：仍是固定 2v2');
+
+  const locked = createMatchRoster(
+    { player: 'arc', ally: 'mirror', blue1: 'well', blue2: 'nail' },
+    () => {
+      throw new Error('指定 kit 不应再随机');
+    },
+  );
+  assert(
+    locked[0].hero === 'arc' && locked[1].hero === 'mirror' && locked[2].hero === 'well' && locked[3].hero === 'nail',
+    '开局：指定 kit 应原样采用',
+  );
+
+  let prevLast: string | null = null;
+  let hadPrev = false;
+  try {
+    prevLast = localStorage.getItem(LAST_HERO_STORAGE_KEY);
+    hadPrev = true;
+    localStorage.removeItem(LAST_HERO_STORAGE_KEY);
+    assert(loadLastHeroId() === 'hook', '换英雄：无记录时玩家缺省应为钩刺');
+    saveLastHeroId('mirror');
+    assert(loadLastHeroId() === 'mirror', '换英雄：应记住上次所选含镜卫');
+    localStorage.setItem(LAST_HERO_STORAGE_KEY, 'nope');
+    assert(loadLastHeroId() === 'hook', '换英雄：非法记录应回钩刺');
+
+    saveLastHeroId('well');
+    assert(loadLastHeroId() === 'well', '换英雄：局中换自己应立刻写入缺省');
+    saveLastHeroId('well');
+    assert(loadLastHeroId() === 'well', '换英雄：再选当前英雄缺省仍是自己');
+    assert(loadLastHeroId() === 'well', '换英雄：换队友不应写入玩家缺省');
+  } finally {
+    if (hadPrev) {
+      if (prevLast === null) {
+        localStorage.removeItem(LAST_HERO_STORAGE_KEY);
+      } else {
+        localStorage.setItem(LAST_HERO_STORAGE_KEY, prevLast);
+      }
+    }
+  }
 }

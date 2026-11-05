@@ -1,6 +1,7 @@
 import { Application, Container } from 'pixi.js';
 import { MAP_HEIGHT, MAP_WIDTH } from './core/constants';
-import { createMatchRoster, createMatchSession } from './core/matchSession';
+import { createMatchRoster, createMatchSession, pickMatchRosterKits } from './core/matchSession';
+import type { BallBody } from './core/ballBody';
 import { stepPhysics } from './core/physicsStep';
 import { createSimpleBot } from './core/simpleBot';
 import { verifyM2 } from './core/verifyM2';
@@ -25,6 +26,7 @@ import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
 import { nextHero, type HeroId } from './heroes/heroIds';
+import { loadLastHeroId, saveLastHeroId } from './heroes/lastHeroId';
 import { createFieldOverlay } from './render/fieldOverlay';
 import { bindDebugMatch } from './debug/debugMatch';
 import { bindDebugVelocity } from './debug/debugVelocity';
@@ -84,7 +86,7 @@ async function boot(): Promise<void> {
   const arena = createArenaView();
   world.addChild(arena.root);
 
-  const balls = createMatchRoster();
+  const balls = createMatchRoster({ player: loadLastHeroId() });
   const player = balls.find((ball) => ball.team === 'red' && ball.teamSlot === 1) ?? balls[0];
   const ally = balls.find((ball) => ball.team === 'red' && ball.teamSlot === 2) ?? null;
   const botHandles = balls
@@ -130,7 +132,7 @@ async function boot(): Promise<void> {
   window.screen.orientation?.addEventListener('change', layout);
 
   const bus = createActionBus();
-  const control = createPlayerControl();
+  const control = createPlayerControl(player.hero);
   const touchPad = createTouchPad(host, bus);
   bindPcInput({
     canvas: app.canvas,
@@ -144,6 +146,7 @@ async function boot(): Promise<void> {
     if (player.hero !== hero) {
       control.setHero(player, hero);
       bus.reset();
+      saveLastHeroId(player.hero);
     }
     syncHeroUi();
   };
@@ -154,6 +157,27 @@ async function boot(): Promise<void> {
       handle?.ai.setHero(ally, hero);
     }
     syncHeroUi();
+  };
+
+  const applyBotKit = (ball: BallBody | null | undefined, hero: HeroId): void => {
+    if (!ball || ball.hero === hero) {
+      return;
+    }
+    const handle = botHandles.find((item) => item.ball === ball);
+    handle?.ai.setHero(ball, hero);
+  };
+
+  const rollOpeningBots = (): void => {
+    const kits = pickMatchRosterKits(player.hero);
+    applyBotKit(ally, kits.ally);
+    applyBotKit(
+      balls.find((ball) => ball.team === 'blue' && ball.teamSlot === 1),
+      kits.blue1,
+    );
+    applyBotKit(
+      balls.find((ball) => ball.team === 'blue' && ball.teamSlot === 2),
+      kits.blue2,
+    );
   };
 
   const swapPlayerHero = (): void => {
@@ -170,6 +194,7 @@ async function boot(): Promise<void> {
   arena.syncStalls(match.snapshot().stalls);
 
   const restart = (): void => {
+    rollOpeningBots();
     resetTrapZones();
     resetStakes();
     resetMirrorWalls();

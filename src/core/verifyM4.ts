@@ -21,6 +21,7 @@ import {
   STALL_DEPTH,
 } from './constants';
 import { applyOpeningCharge, chargeSpeedAt } from './openingCharge';
+import { isHeroId } from '../heroes/heroIds';
 import {
   countTeamInPoint,
   createMatchRoster,
@@ -71,10 +72,10 @@ export function verifyM4(): void {
     const aligned = (ball.facingX * dx + ball.facingY * dy) / len;
     assert(aligned > 0.99, `M4：${ball.label} facing 应朝领地`);
   }
-  assert(roster[0].team === 'red' && roster[0].teamSlot === 1 && roster[0].hero === 'hook', 'M4：红1 应为玩家钩刺');
-  assert(roster[1].team === 'red' && roster[1].teamSlot === 2 && roster[1].hero === 'chain', 'M4：红2 默认链生');
-  assert(roster[2].team === 'blue' && roster[2].teamSlot === 1 && roster[2].hero === 'ring', 'M4：蓝1 默认磁环');
-  assert(roster[3].team === 'blue' && roster[3].teamSlot === 2 && roster[3].hero === 'hook', 'M4：蓝2 默认钩刺');
+  assert(roster[0].team === 'red' && roster[0].teamSlot === 1 && roster[0].hero === 'hook', 'M4：未指定时红1 缺省钩刺');
+  assert(roster[1].team === 'red' && roster[1].teamSlot === 2 && isHeroId(roster[1].hero), 'M4：红2 应从全池随机');
+  assert(roster[2].team === 'blue' && roster[2].teamSlot === 1 && isHeroId(roster[2].hero), 'M4：蓝1 应从全池随机');
+  assert(roster[3].team === 'blue' && roster[3].teamSlot === 2 && isHeroId(roster[3].hero), 'M4：蓝2 应从全池随机');
   assert(
     roster[0].label === '红1' && roster[1].label === '红2' && roster[2].label === '蓝1' && roster[3].label === '蓝2',
     'M4：编号标签应为 红1/红2/蓝1/蓝2',
