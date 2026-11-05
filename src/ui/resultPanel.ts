@@ -27,7 +27,22 @@ function addScoreRow(host: HTMLElement, label: string, red: number, blue: number
   host.appendChild(row);
 }
 
-/** 局结束弹出：胜/负、双方总分与分项、用时；再来一局走现有重开。 */
+const SHARD_COUNT = 12;
+
+function makeBurst(): HTMLDivElement {
+  const burst = document.createElement('div');
+  burst.className = 'resultPanelBurst';
+  burst.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < SHARD_COUNT; i += 1) {
+    const shard = document.createElement('span');
+    shard.className = 'resultPanelShard';
+    shard.dataset.i = String(i + 1);
+    burst.appendChild(shard);
+  }
+  return burst;
+}
+
+/** 局结束弹出：胜/负、双方总分与分项、用时；再来一局走现有重开。视觉为羊皮纸木框 + 热闹金矛碎裂。 */
 export function createResultPanel(host: HTMLElement, onRestart: () => void): ResultPanel {
   const overlay = document.createElement('div');
   overlay.className = 'resultOverlay';
@@ -35,6 +50,8 @@ export function createResultPanel(host: HTMLElement, onRestart: () => void): Res
 
   const card = document.createElement('div');
   card.className = 'resultPanel';
+
+  const burst = makeBurst();
 
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
@@ -58,7 +75,7 @@ export function createResultPanel(host: HTMLElement, onRestart: () => void): Res
   again.className = 'resultPanelAgain';
   again.textContent = '再来一局';
 
-  card.append(closeBtn, title, reason, scores, elapsed, again);
+  card.append(burst, closeBtn, title, reason, scores, elapsed, again);
   overlay.appendChild(card);
   host.appendChild(overlay);
 
@@ -74,11 +91,19 @@ export function createResultPanel(host: HTMLElement, onRestart: () => void): Res
     hide();
   };
 
+  const restartBurst = (): void => {
+    burst.classList.remove('isBurst');
+    void burst.offsetWidth;
+    burst.classList.add('isBurst');
+  };
+
   const fill = (snap: MatchSnapshot): void => {
     const win = snap.winner === 'red';
     title.textContent = win ? '胜利' : '失败';
     title.classList.toggle('isWin', win);
     title.classList.toggle('isLose', !win);
+    card.classList.toggle('isWin', win);
+    card.classList.toggle('isLose', !win);
     const who = snap.winner === 'red' ? '红方胜' : snap.winner === 'blue' ? '蓝方胜' : '结束';
     reason.textContent = snap.finishReason ? `${who} · ${snap.finishReason}` : who;
 
@@ -139,8 +164,12 @@ export function createResultPanel(host: HTMLElement, onRestart: () => void): Res
         hide();
         return;
       }
+      const justOpened = !overlay.classList.contains('isOn');
       fill(snap);
       overlay.classList.add('isOn');
+      if (justOpened) {
+        restartBurst();
+      }
     },
   };
 }

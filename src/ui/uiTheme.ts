@@ -1,4 +1,4 @@
-/** 骑士冲杀 HUD chrome 色板 v0：中古骑士团 + 偏卡通 Q 版。 */
+/** 骑士冲杀 HUD chrome 色板 v0：中古骑士团 + 偏卡通 Q 版。局内金矛只点计时；结算板可用热闹金。 */
 
 export const UI_THEME = {
   parchmentBase: '#F3E6C8',
@@ -104,7 +104,7 @@ export function sameCssColor(value: string, hex: string, alpha = 1): boolean {
   return parsed.r === r && parsed.g === g && parsed.b === b && Math.abs(parsed.a - alpha) < 0.02;
 }
 
-/** 金只点在计时上：技能/齿轮/下拉的阴影与边框不得带金矛色。 */
+/** 局内金只点在计时上：技能/齿轮/下拉的阴影与边框不得带金矛色。结算板可热闹金。 */
 export function cssColorHasGold(value: string): boolean {
   const chunks = value.split(/,(?![^()]*\))/);
   for (const chunk of chunks) {

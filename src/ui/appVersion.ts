@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '胜利结算板换羊皮纸木框皮；热闹金矛碎裂庆祝点缀；交互与胜负结算不动' },
   { title: '链生愈链友HOT/敌DoT、盾脉贴敌吸血、援勾对敌击退；闪弧侧闪贴背、掠刃荼毒下次枪尖+6' },
   { title: '局内主体换成俯视椭圆战马骑士；冲锋残影跟新皮，无旧圆盾影' },
   { title: '枪尖普攻去掉相对速度门槛；成功掉血后 1s CD，血条下细进度条从空涨到满' },

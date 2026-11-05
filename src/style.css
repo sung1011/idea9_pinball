@@ -354,12 +354,9 @@ canvas {
 }
 
 .helpOverlay,
+.resultOverlay,
 .settingsOverlay {
   background: rgba(47, 36, 26, 0.48);
-}
-
-.resultOverlay {
-  background: #04161699;
 }
 
 .helpOverlay.isOn,
@@ -389,6 +386,7 @@ canvas {
 }
 
 .helpCard,
+.resultPanel,
 .settingsPanel {
   background-color: var(--parchment-base);
   background-image: linear-gradient(180deg, var(--parchment-highlight) 0%, transparent 42%);
@@ -398,10 +396,7 @@ canvas {
 }
 
 .resultPanel {
-  background: #0c2c2cee;
-  border: 1px solid #9af6f655;
-  color: #e8ffff;
-  box-shadow: 0 12px 40px #041616aa;
+  overflow: hidden;
 }
 
 .helpCardHead {
@@ -424,7 +419,8 @@ canvas {
 }
 
 .helpCardClose,
-.settingsClose {
+.settingsClose,
+.resultPanelClose {
   width: 32px;
   height: 32px;
   border: 2px solid var(--wood-frame);
@@ -440,7 +436,9 @@ canvas {
 .helpCardClose:hover,
 .helpCardClose:active,
 .settingsClose:hover,
-.settingsClose:active {
+.settingsClose:active,
+.resultPanelClose:hover,
+.resultPanelClose:active {
   background: var(--button-pressed);
   border-color: var(--wood-frame-dark);
   color: var(--ink);
@@ -451,15 +449,7 @@ canvas {
   position: absolute;
   right: 12px;
   top: 12px;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  border-radius: 50%;
-  background: #163838;
-  color: #e8ffff;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
+  z-index: 2;
 }
 
 .helpCardBlock {
@@ -483,27 +473,116 @@ canvas {
   margin-top: 4px;
 }
 
+.resultPanelBurst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+  z-index: 0;
+}
+
+.resultPanelShard {
+  position: absolute;
+  top: 38px;
+  left: 50%;
+  width: 11px;
+  height: 20px;
+  margin-left: -5px;
+  background: var(--gold-spear);
+  border-radius: 2px 2px 7px 7px;
+  clip-path: polygon(50% 0, 100% 72%, 64% 100%, 36% 100%, 0 72%);
+  box-shadow: 0 1px 0 var(--gold-spear-shadow);
+  opacity: 0;
+  transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(var(--rot, 0deg));
+}
+
+.resultPanelShard:nth-child(odd) {
+  background: var(--gold-spear-highlight);
+}
+
+.resultPanelShard:nth-child(3n) {
+  width: 8px;
+  height: 14px;
+  background: var(--gold-spear);
+}
+
+.resultPanelShard:nth-child(1) { --dx: -86px; --dy: -16px; --rot: -32deg; --spin: -48deg; animation-delay: 0ms; }
+.resultPanelShard:nth-child(2) { --dx: 82px; --dy: -12px; --rot: 28deg; --spin: 44deg; animation-delay: 30ms; }
+.resultPanelShard:nth-child(3) { --dx: -54px; --dy: 22px; --rot: -12deg; --spin: -36deg; animation-delay: 50ms; }
+.resultPanelShard:nth-child(4) { --dx: 58px; --dy: 18px; --rot: 18deg; --spin: 40deg; animation-delay: 20ms; }
+.resultPanelShard:nth-child(5) { --dx: -108px; --dy: 8px; --rot: -54deg; --spin: -62deg; animation-delay: 70ms; }
+.resultPanelShard:nth-child(6) { --dx: 104px; --dy: 4px; --rot: 50deg; --spin: 58deg; animation-delay: 40ms; }
+.resultPanelShard:nth-child(7) { --dx: -28px; --dy: -28px; --rot: -8deg; --spin: -24deg; animation-delay: 10ms; }
+.resultPanelShard:nth-child(8) { --dx: 32px; --dy: -26px; --rot: 10deg; --spin: 22deg; animation-delay: 60ms; }
+.resultPanelShard:nth-child(9) { --dx: -72px; --dy: 36px; --rot: -40deg; --spin: -18deg; animation-delay: 80ms; }
+.resultPanelShard:nth-child(10) { --dx: 76px; --dy: 34px; --rot: 42deg; --spin: 16deg; animation-delay: 90ms; }
+.resultPanelShard:nth-child(11) { --dx: 0px; --dy: -34px; --rot: 4deg; --spin: 12deg; animation-delay: 15ms; }
+.resultPanelShard:nth-child(12) { --dx: 6px; --dy: 40px; --rot: -6deg; --spin: -14deg; animation-delay: 100ms; }
+
+.resultPanel.isWin .resultPanelBurst.isBurst .resultPanelShard {
+  animation: resultShardBurst 0.72s cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
+}
+
+.resultPanel.isLose .resultPanelShard {
+  opacity: 0.38;
+}
+
+.resultPanel.isLose .resultPanelShard:nth-child(n + 7) {
+  display: none;
+}
+
+@keyframes resultShardBurst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 8px) rotate(var(--rot, 0deg)) scale(0.28);
+  }
+  42% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.94;
+    transform: translate(var(--dx), var(--dy)) rotate(calc(var(--rot, 0deg) + var(--spin, 28deg))) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resultPanel.isWin .resultPanelShard {
+    animation: none;
+    opacity: 0.9;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot, 0deg));
+  }
+}
+
 .resultPanelTitle {
+  position: relative;
+  z-index: 1;
   text-align: center;
   padding-right: 28px;
+  color: var(--ink);
 }
 
 .resultPanelTitle.isWin {
-  color: #9af6f6;
+  color: var(--gold-spear);
+  text-shadow: 0 1px 0 var(--gold-spear-shadow), 0 0 12px var(--gold-spear-highlight);
 }
 
 .resultPanelTitle.isLose {
-  color: #f68a8a;
+  color: var(--team-red);
 }
 
 .resultPanelReason,
 .resultPanelTime {
+  position: relative;
+  z-index: 1;
   margin: 6px 0 0;
   text-align: center;
-  color: #9af6f6;
+  color: var(--ink-muted);
 }
 
 .resultPanelScores {
+  position: relative;
+  z-index: 1;
   margin-top: 14px;
   display: grid;
   gap: 6px;
@@ -517,7 +596,7 @@ canvas {
 }
 
 .resultPanelRow.isHead {
-  color: #9af6f6;
+  color: var(--ink-muted);
   font-size: 13px;
 }
 
@@ -525,34 +604,25 @@ canvas {
   font-size: 20px;
   font-weight: 700;
   margin-bottom: 4px;
+  color: var(--ink);
 }
 
 .resultPanelRed {
-  color: #f68a8a;
+  color: var(--team-red);
   text-align: right;
 }
 
 .resultPanelBlue {
-  color: #8ab4f6;
+  color: var(--team-blue);
   text-align: right;
 }
 
 .resultPanelAgain {
+  position: relative;
+  z-index: 1;
   display: block;
-  width: 100%;
   margin-top: 16px;
-  padding: 10px 12px;
-  border: 1px solid #9af6f688;
-  border-radius: 10px;
-  background: #164848;
-  color: #e8ffff;
-  font: 700 16px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  cursor: pointer;
-}
-
-.resultPanelAgain:hover {
-  border-color: #ffe08a;
-  color: #ffe08a;
+  font-size: 16px;
 }
 
 .settingsHead {
@@ -598,7 +668,8 @@ canvas {
 }
 
 .settingsWide,
-.settingsGmBtn {
+.settingsGmBtn,
+.resultPanelAgain {
   width: 100%;
   min-height: 44px;
   padding: 8px 10px;
@@ -614,7 +685,9 @@ canvas {
 .settingsWide:hover,
 .settingsWide:active,
 .settingsGmBtn:hover:not(:disabled),
-.settingsGmBtn:active:not(:disabled) {
+.settingsGmBtn:active:not(:disabled),
+.resultPanelAgain:hover,
+.resultPanelAgain:active {
   background: var(--button-pressed);
   border-color: var(--wood-frame-dark);
   color: var(--ink);

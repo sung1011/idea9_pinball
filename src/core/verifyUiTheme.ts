@@ -12,6 +12,7 @@ import {
   cssColorHasGold,
   sameCssColor,
 } from '../ui/uiTheme';
+import type { MatchSnapshot } from './matchSession';
 
 function assert(cond: boolean, message: string): void {
   if (!cond) {
@@ -45,7 +46,32 @@ function borderPx(el: HTMLElement): number {
   return Number.parseFloat(getComputedStyle(el).borderTopWidth);
 }
 
-/** 局内 HUD chrome + 说明卡/设置浮层：羊皮纸+木框，金只在计时，技能/浮层无金闪。 */
+function dummyResultSnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
+  return {
+    phase: 'result',
+    timeLeft: 0,
+    suddenDeath: false,
+    redScore: 100,
+    blueScore: 42,
+    redBreakScore: 60,
+    blueBreakScore: 30,
+    redHoldScore: 40,
+    blueHoldScore: 12,
+    elapsedSec: 118,
+    finishReason: '先到分',
+    midpoint: 'none',
+    winner: 'red',
+    events: [],
+    respawns: {},
+    stallsOn: false,
+    stalls: [],
+    openingChargeRemain: 0,
+    skillsLocked: false,
+    ...partial,
+  };
+}
+
+/** 局内 HUD chrome + 说明卡/设置浮层：羊皮纸+木框，金只在计时；结算板同族并可热闹金。 */
 export function verifyUiTheme(): void {
   assert(UI_THEME.parchmentBase === '#F3E6C8', '色板：parchment_base');
   assert(UI_THEME.parchmentShadow === '#D4C19A', '色板：parchment_shadow');
@@ -86,7 +112,7 @@ export function verifyUiTheme(): void {
     onForceRespawn: () => {},
     versions: dummyVersions(),
   });
-  createResultPanel(host, () => {});
+  const resultUi = createResultPanel(host, () => {});
   document.body.appendChild(host);
 
   const cluster = host.querySelector<HTMLElement>('.matchHudCluster');
@@ -282,19 +308,49 @@ export function verifyUiTheme(): void {
   assert(sameCssColor(color(gmSwitch, 'color'), UI_THEME.ink), 'GM 开关文：ink');
   settings.close();
 
+  resultUi.sync(dummyResultSnap({ winner: 'red' }));
   const resultPanel = host.querySelector<HTMLElement>('.resultPanel');
   const resultTitle = host.querySelector<HTMLElement>('.resultPanelTitle');
   const resultClose = host.querySelector<HTMLElement>('.resultPanelClose');
   const resultAgain = host.querySelector<HTMLElement>('.resultPanelAgain');
-  if (!resultPanel || !resultTitle || !resultClose || !resultAgain) {
+  const resultReason = host.querySelector<HTMLElement>('.resultPanelReason');
+  const resultRed = host.querySelector<HTMLElement>('.resultPanelRed');
+  const resultBlue = host.querySelector<HTMLElement>('.resultPanelBlue');
+  const resultShard = host.querySelector<HTMLElement>('.resultPanelShard');
+  if (!resultPanel || !resultTitle || !resultClose || !resultAgain || !resultReason || !resultRed || !resultBlue || !resultShard) {
     host.remove();
-    throw new Error('浮层换皮：结算板应仍在且未被拆掉');
+    throw new Error('结算板换皮：应有标题、关闭、再来一局、比分与金矛碎片');
   }
   const resultCs = getComputedStyle(resultPanel);
-  assert(!sameCssColor(resultCs.backgroundColor, UI_THEME.parchmentBase), '结算板：本枪不换羊皮纸');
-  assert(borderPx(resultPanel) < 2, '结算板：本枪不改成 2px 木框');
-  assert(!sameCssColor(resultCs.borderTopColor, UI_THEME.woodFrame), '结算板：边框仍非 wood_frame');
-  assert(!sameCssColor(color(resultClose, 'backgroundColor'), UI_THEME.buttonIdle), '结算板关闭：仍非 HUD 木钮');
-  assert(!sameCssColor(color(resultAgain, 'backgroundColor'), UI_THEME.buttonIdle), '结算板再来一局：仍非 HUD 木钮');
+  assert(sameCssColor(resultCs.backgroundColor, UI_THEME.parchmentBase), `结算板：羊皮纸底（实际 ${resultCs.backgroundColor}）`);
+  assert(resultCs.borderTopStyle === 'solid', '结算板：实线木框');
+  assert(borderPx(resultPanel) >= 1, `结算板：木框可见（实际 ${resultCs.borderTopWidth}）`);
+  assert(
+    Math.abs(borderPx(resultPanel) - borderPx(cluster)) < 0.2,
+    `结算板：木框应与 HUD 胶囊同宽（板 ${resultCs.borderTopWidth} / 胶囊 ${clusterCs.borderTopWidth}）`,
+  );
+  assert(sameCssColor(resultCs.borderTopColor, UI_THEME.woodFrame), `结算板：wood_frame（实际 ${resultCs.borderTopColor}）`);
+  assert(sameCssColor(color(resultTitle, 'color'), UI_THEME.goldSpear), '胜利标题：gold_spear 热闹金');
+  assert(cssColorHasGold(color(resultTitle, 'color')), '结算板：允许热闹金矛');
+  assert(sameCssColor(color(resultReason, 'color'), UI_THEME.inkMuted), '结算板副文：ink_muted');
+  assert(sameCssColor(color(resultRed, 'color'), UI_THEME.teamRed), '结算板红分：team_red');
+  assert(sameCssColor(color(resultBlue, 'color'), UI_THEME.teamBlue), '结算板蓝分：team_blue');
+  const shardCs = getComputedStyle(resultShard);
+  assert(
+    sameCssColor(shardCs.backgroundColor, UI_THEME.goldSpear) ||
+      sameCssColor(shardCs.backgroundColor, UI_THEME.goldSpearHighlight),
+    `结算板碎片：gold_spear（实际 ${shardCs.backgroundColor}）`,
+  );
+  const resultCloseCs = getComputedStyle(resultClose);
+  assert(sameCssColor(resultCloseCs.backgroundColor, UI_THEME.buttonIdle), '结算板关闭：button_idle');
+  assert(sameCssColor(resultCloseCs.color, UI_THEME.ink), '结算板关闭：ink');
+  assert(sameCssColor(resultCloseCs.borderTopColor, UI_THEME.woodFrame), '结算板关闭：木框');
+  assert(sameCssColor(color(resultAgain, 'backgroundColor'), UI_THEME.buttonIdle), '结算板再来一局：button_idle');
+  assert(sameCssColor(getComputedStyle(resultAgain).borderTopColor, UI_THEME.woodFrame), '结算板再来一局：木框');
+  assert(sameCssColor(color(resultAgain, 'color'), UI_THEME.ink), '结算板再来一局：ink');
+
+  resultUi.sync(dummyResultSnap({ winner: 'blue', redScore: 42, blueScore: 100 }));
+  assert(sameCssColor(color(resultTitle, 'color'), UI_THEME.teamRed), '失败标题：team_red');
+  assert(sameCssColor(color(resultPanel, 'backgroundColor'), UI_THEME.parchmentBase), '失败结算板：仍羊皮纸');
   host.remove();
 }
