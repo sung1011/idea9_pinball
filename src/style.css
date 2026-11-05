@@ -127,17 +127,36 @@ canvas {
   box-shadow: inset 0 0 0 1px #8ab4f666;
 }
 
-.matchHudHero {
+.matchHudHeroRow {
   position: absolute;
   left: calc(var(--stage-left) + var(--hud-pad));
   top: calc(var(--stage-bottom) - var(--hud-pad));
   transform: translateY(-100%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.matchHudHeroWrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   pointer-events: auto;
+}
+
+.matchHudHeroTag {
+  color: #e8ffffaa;
+  font: 700 10px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.matchHudHero {
   appearance: none;
   -webkit-appearance: none;
   min-height: 28px;
-  min-width: 4.4em;
-  padding: 3px 22px 3px 10px;
+  min-width: 4.2em;
+  padding: 3px 20px 3px 8px;
   border: 1px solid #ffffff28;
   border-radius: 999px;
   background-color: #0b1014cc;
@@ -945,6 +964,15 @@ canvas {
   .matchHudHero {
     min-height: 24px;
     font-size: 12px;
+  }
+
+  .matchHudHeroTag {
+    font-size: 9px;
+  }
+
+  .matchHudHero {
+    min-width: 3.8em;
+    padding: 2px 18px 2px 6px;
   }
 
   .matchHudScoreVal {

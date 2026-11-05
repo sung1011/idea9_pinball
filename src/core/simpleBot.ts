@@ -1,4 +1,4 @@
-import { skillsBlocked, type BallBody } from './ballBody';
+import { clearKitAuras, skillsBlocked, type BallBody } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import {
   BOT_AIM_JITTER_RAD,
@@ -33,6 +33,7 @@ export type SimpleBot = {
   reset: () => void;
   getCds: () => SkillCds;
   getCaster: () => SkillCaster;
+  setHero: (ball: BallBody, hero: HeroId) => void;
 };
 
 export type SimpleBotOpts = {
@@ -286,14 +287,13 @@ function pickArcAction(
 }
 
 /**
- * 简化 AI：钩刺保底冲靠近 + 急停 + 偶勾；磁环推波 / 困圈 / 磁场 / 近壁粘壁；链生扰锋 / 愈链 / 援勾；钉壳定锚 / 短冲顶 / 叠甲；闪弧标记 / 擦伤 / 侧闪；井绳桩 / 收索 / 换位 / 索爆。
+ * 简化 AI（红2 / 两蓝共用）：钩刺保底冲靠近 + 急停 + 偶勾；磁环推波 / 困圈 / 磁场 / 近壁粘壁；链生扰锋 / 愈链 / 援勾；钉壳定锚 / 短冲顶 / 叠甲；闪弧标记 / 擦伤 / 侧闪；井绳桩 / 收索 / 换位 / 索爆。
  */
 export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): SimpleBot {
   const random = opts.random ?? Math.random;
   const hookChance = opts.hookChance ?? 0.35;
-  const hero = opts.hero ?? bot.hero ?? 'hook';
-  bot.hero = hero;
-  const caster = createSkillCaster(hero);
+  bot.hero = opts.hero ?? bot.hero ?? 'hook';
+  let caster = createSkillCaster(bot.hero);
   let wait = nextWait(random) * 0.35;
 
   return {
@@ -356,15 +356,15 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
         const jx = Math.cos(ang);
         const jy = Math.sin(ang);
         const picked =
-          hero === 'ring'
+          bot.hero === 'ring'
             ? pickRingAction(bot, enemy, approach.enemyD, cds, jx, jy)
-            : hero === 'chain'
+            : bot.hero === 'chain'
               ? pickChainAction(bot, ally, enemy, cds, jx, jy)
-              : hero === 'nail'
+              : bot.hero === 'nail'
                 ? pickNailAction(bot, enemy, approach.enemyD, cds, jx, jy)
-                : hero === 'arc'
+                : bot.hero === 'arc'
                   ? pickArcAction(bot, enemy, approach.enemyD, cds, jx, jy)
-                  : hero === 'well'
+                  : bot.hero === 'well'
                     ? pickWellAction(bot, enemy, approach.enemyD, cds, jx, jy)
             : pickHookAction(
                 cds,
@@ -392,5 +392,12 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
     },
     getCds: () => caster.getCds(),
     getCaster: () => caster,
+    setHero(ball, hero) {
+      caster.reset();
+      clearKitAuras(ball);
+      ball.hero = hero;
+      caster = createSkillCaster(hero);
+      wait = nextWait(random) * 0.35;
+    },
   };
 }

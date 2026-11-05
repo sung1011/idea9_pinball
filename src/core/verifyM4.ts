@@ -60,11 +60,35 @@ export function verifyM4(): void {
   assert(CONTROL_POINT.x === 10 && CONTROL_POINT.y === 6, 'M4：领地应在地图中心');
   assert(midpointHold(2, 1) === 'red' && midpointHold(1, 1) === 'none', 'M4：领地须严格多数');
   const roster = createMatchRoster();
-  assert(roster.length === 3 && roster[0].team === 'red' && roster[2].team === 'blue', 'M4：默认 1 红 vs 2 蓝 bot');
-  assert(roster[0].teamSlot === 1, 'M4：红队第一人编号应为 1');
-  assert(roster[1].teamSlot === 1 && roster[2].teamSlot === 2, 'M4：蓝队各自从 1 起编号');
-  const oneVOne = createMatchRoster(1);
-  assert(oneVOne[0].teamSlot === 1 && oneVOne[1].teamSlot === 1, 'M4：1v1 红蓝各自为 1');
+  assert(roster.length === 4, 'M4：本机固定 2v2，场上应为 4 球');
+  assert(roster[0].team === 'red' && roster[0].teamSlot === 1 && roster[0].hero === 'hook', 'M4：红1 应为玩家钩刺');
+  assert(roster[1].team === 'red' && roster[1].teamSlot === 2 && roster[1].hero === 'chain', 'M4：红2 默认链生');
+  assert(roster[2].team === 'blue' && roster[2].teamSlot === 1 && roster[2].hero === 'ring', 'M4：蓝1 默认磁环');
+  assert(roster[3].team === 'blue' && roster[3].teamSlot === 2 && roster[3].hero === 'hook', 'M4：蓝2 默认钩刺');
+  assert(
+    roster[0].label === '红1' && roster[1].label === '红2' && roster[2].label === '蓝1' && roster[3].label === '蓝2',
+    'M4：编号标签应为 红1/红2/蓝1/蓝2',
+  );
+
+  const scored = createMatchRoster();
+  const [scoreRed1, scoreRed2, scoreBlue1, scoreBlue2] = scored;
+  const scoredMatch = createMatchSession(scored, { countdownSec: 0, playSec: 60 });
+  for (const ball of scored) {
+    ball.invincibleRemain = 0;
+  }
+  scoreBlue1.hp = 0;
+  scoredMatch.tick(0, [hit(scoreBlue1, scoreRed2, 20), hit(scoreBlue1, scoreRed1, 8)]);
+  assert(scoredMatch.snapshot().redScore === KNOCKOUT_SCORE + ASSIST_SCORE, 'M4：红2 击破应给分，红1 助攻认队友');
+  assert(scoreRed2.teamSlot === 2 && scoreRed1.teamSlot === 1, 'M4：击破后编号仍为 红1/红2');
+  scoreRed1.x = CONTROL_POINT.x;
+  scoreRed1.y = CONTROL_POINT.y;
+  scoreRed2.x = CONTROL_POINT.x + 0.4;
+  scoreRed2.y = CONTROL_POINT.y;
+  scoreBlue2.x = 2;
+  scoreBlue2.y = 2;
+  const holdBefore = scoredMatch.snapshot().redHoldScore;
+  scoredMatch.tick(1, []);
+  assert(scoredMatch.snapshot().redHoldScore === holdBefore + MIDPOINT_SCORE_PER_SEC, 'M4：红双人占优应刷领地分');
 
   const redA = createBallBody({
     x: 9,
@@ -319,7 +343,11 @@ export function verifyM4(): void {
 
   const ritualRoster = createMatchRoster();
   const ritualRed = ritualRoster[0];
-  const ritualBlue = ritualRoster[1];
+  const ritualAlly = ritualRoster[1];
+  const ritualBlue = ritualRoster.find((ball) => ball.team === 'blue');
+  if (!ritualBlue) {
+    throw new Error('M4：2v2 roster 应有蓝方');
+  }
   const ritual = createMatchSession(ritualRoster);
   const ritualSnap = ritual.snapshot();
   assert(ritualSnap.phase === 'countdown' && ritualSnap.stallsOn, 'M4：默认开局应在 Stall');
@@ -332,6 +360,9 @@ export function verifyM4(): void {
   const blueFence = stallForBall(ritualBlue, ritualStalls);
   if (!redFence || !stallContains(redFence, ritualRed.x, ritualRed.y)) {
     throw new Error('M4：红应困在左底围栏');
+  }
+  if (!stallContains(redFence, ritualAlly.x, ritualAlly.y)) {
+    throw new Error('M4：红2 也应困在左底围栏');
   }
   if (!blueFence || !stallContains(blueFence, ritualBlue.x, ritualBlue.y)) {
     throw new Error('M4：蓝应困在右底围栏');
@@ -358,6 +389,7 @@ export function verifyM4(): void {
     'M4：进入冲锋不应出说明 toast',
   );
   assert(Math.abs(Math.hypot(ritualRed.vx, ritualRed.vy) - OPENING_CHARGE_START_SPEED) < 0.08, 'M4：栏开瞬间应为起步速');
+  assert(Math.abs(Math.hypot(ritualAlly.vx, ritualAlly.vy) - OPENING_CHARGE_START_SPEED) < 0.08, 'M4：红2 栏开也应起步');
   applyOpeningCharge(ritualRed, 0, OPENING_CHARGE_SEC - OPENING_CHARGE_RAMP_SEC);
   assert(Math.abs(Math.hypot(ritualRed.vx, ritualRed.vy) - OPENING_CHARGE_SPEED) < 0.08, 'M4：0.2s 后应拉到峰值 7.5');
   assert(Math.hypot(ritualRed.vx, ritualRed.vy) <= SPEED_CAP + 1e-6, 'M4：冲锋不得超过上限 8');

@@ -152,16 +152,19 @@ export function verifyHudLayout(): void {
   const red = host.querySelector<HTMLElement>('.matchHudRed .matchHudScoreVal');
   const blue = host.querySelector<HTMLElement>('.matchHudBlue .matchHudScoreVal');
   const clock = host.querySelector<HTMLElement>('.matchHudClock');
-  const hero = host.querySelector<HTMLSelectElement>('select.matchHudHero');
-  if (!cluster || !red || !blue || !clock || !hero) {
-    throw new Error('HUD：应有顶中比分计时胶囊与英雄下拉');
+  const hero = host.querySelector<HTMLSelectElement>('select.matchHudHero:not(.matchHudAllyHero)');
+  const allyHero = host.querySelector<HTMLSelectElement>('select.matchHudAllyHero');
+  const heroRow = host.querySelector<HTMLElement>('.matchHudHeroRow');
+  if (!cluster || !red || !blue || !clock || !hero || !allyHero || !heroRow) {
+    throw new Error('HUD：应有顶中比分计时胶囊与自己/队友两个英雄下拉');
   }
   assert(!host.querySelector('.matchHudPill'), 'HUD：不应再有角落独立比分胶囊');
   assert(cluster.contains(red) && cluster.contains(clock) && cluster.contains(blue), 'HUD：红分/计时/蓝分应同在一颗胶囊');
   const sides = [...cluster.querySelectorAll('.matchHudSide')];
   assert(sides[0]?.classList.contains('matchHudRed') && sides[1]?.classList.contains('matchHudBlue'), 'HUD：胶囊顺序应为红 | 计时 | 蓝');
   assert(cluster.querySelectorAll('.matchHudMark').length === 2, 'HUD：红蓝两侧应有小队标');
-  assert(cluster.contains(hero) === false, 'HUD：英雄下拉应留在边缘，不进顶中胶囊');
+  assert(cluster.contains(hero) === false && cluster.contains(allyHero) === false, 'HUD：英雄下拉应留在边缘，不进顶中胶囊');
+  assert(heroRow.contains(hero) && heroRow.contains(allyHero), 'HUD：自己/队友下拉应同在左下');
 
   hud.sync(dummySnap(), []);
   assert(red.textContent === '15' && blue.textContent === '30', 'HUD：胶囊应同步双方分数');

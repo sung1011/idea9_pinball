@@ -5,11 +5,14 @@ import { HERO_IDS, heroZh, isHeroId, type HeroId } from '../heroes/heroIds';
 export type MatchHud = {
   sync: (snap: MatchSnapshot, balls: readonly BallBody[]) => void;
   setHero: (hero: HeroId) => void;
+  setAllyHero: (hero: HeroId) => void;
 };
 
 export type MatchHudOpts = {
   hero?: HeroId;
+  allyHero?: HeroId;
   onPickHero?: (hero: HeroId) => void;
+  onPickAllyHero?: (hero: HeroId) => void;
 };
 
 const HELMET_SVG =
@@ -78,28 +81,57 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   const blue = makeScoreSide('blue');
   cluster.append(red.root, makeSep(), clock, makeSep(), blue.root);
 
-  const pick = document.createElement('select');
-  pick.className = 'matchHudHero';
-  pick.setAttribute('data-touch-control', 'hero');
-  pick.setAttribute('aria-label', '切换英雄');
-  for (const id of HERO_IDS) {
-    const option = document.createElement('option');
-    option.value = id;
-    option.textContent = heroZh(id);
-    pick.appendChild(option);
-  }
-  pick.value = opts.hero ?? 'hook';
-  for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'keydown', 'keyup'] as const) {
-    pick.addEventListener(type, stopHudUi);
-  }
-  pick.addEventListener('change', (ev) => {
-    ev.stopPropagation();
-    if (!isHeroId(pick.value)) {
-      pick.value = opts.hero ?? 'hook';
-      return;
+  const makeHeroPick = (
+    className: string,
+    ariaLabel: string,
+    initial: HeroId,
+    onPick?: (hero: HeroId) => void,
+  ): HTMLSelectElement => {
+    const pick = document.createElement('select');
+    pick.className = className;
+    pick.setAttribute('data-touch-control', 'hero');
+    pick.setAttribute('aria-label', ariaLabel);
+    for (const id of HERO_IDS) {
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = heroZh(id);
+      pick.appendChild(option);
     }
-    opts.onPickHero?.(pick.value);
-  });
+    pick.value = initial;
+    for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'keydown', 'keyup'] as const) {
+      pick.addEventListener(type, stopHudUi);
+    }
+    pick.addEventListener('change', (ev) => {
+      ev.stopPropagation();
+      if (!isHeroId(pick.value)) {
+        pick.value = initial;
+        return;
+      }
+      onPick?.(pick.value);
+    });
+    return pick;
+  };
+
+  const makeHeroWrap = (tag: string, pick: HTMLSelectElement): HTMLLabelElement => {
+    const wrap = document.createElement('label');
+    wrap.className = 'matchHudHeroWrap';
+    const name = document.createElement('span');
+    name.className = 'matchHudHeroTag';
+    name.textContent = tag;
+    wrap.append(name, pick);
+    return wrap;
+  };
+
+  const pick = makeHeroPick('matchHudHero', '切换自己英雄', opts.hero ?? 'hook', opts.onPickHero);
+  const allyPick = makeHeroPick(
+    'matchHudHero matchHudAllyHero',
+    '切换队友英雄',
+    opts.allyHero ?? 'chain',
+    opts.onPickAllyHero,
+  );
+  const heroRow = document.createElement('div');
+  heroRow.className = 'matchHudHeroRow';
+  heroRow.append(makeHeroWrap('我', pick), makeHeroWrap('队友', allyPick));
 
   const toast = document.createElement('div');
   toast.className = 'matchHudToast';
@@ -112,12 +144,15 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   openingHint.className = 'openingHudHint';
   opening.append(openingNum, openingHint);
 
-  root.append(cluster, pick, toast);
+  root.append(cluster, heroRow, toast);
   host.append(root, opening);
 
   return {
     setHero(hero) {
       pick.value = hero;
+    },
+    setAllyHero(hero) {
+      allyPick.value = hero;
     },
     sync(snap, balls) {
       red.value.textContent = String(snap.redScore);

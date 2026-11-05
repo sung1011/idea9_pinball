@@ -4,7 +4,6 @@ import type { CollisionHit } from './collisionDamage';
 import {
   ASSIST_SCORE,
   ASSIST_WINDOW_SEC,
-  BLUE_BOT_COUNT,
   BLUE_SPAWNS,
   CONTROL_POINT,
   DEBUG_CLOCK_SCALE,
@@ -124,41 +123,35 @@ export function findAssistSource(
   return best ? (balls.find((ball) => ball.id === best.sourceId) ?? null) : null;
 }
 
-function clampBotCount(n: number): number {
-  return Math.max(1, Math.min(2, Math.floor(n)));
-}
-
-export function createMatchRoster(botCount = BLUE_BOT_COUNT): BallBody[] {
-  const redSpawn = RED_SPAWNS[0];
-  const red = createRosterBall({
-    x: redSpawn.x,
-    y: redSpawn.y,
-    facingX: redSpawn.facingX,
-    facingY: redSpawn.facingY,
-    color: 0xe24a4a,
-    label: '红',
-    team: 'red',
-    teamSlot: 1,
-  });
-  const blues: BallBody[] = [];
-  const n = clampBotCount(botCount);
-  for (let i = 0; i < n; i += 1) {
-    const spawn = BLUE_SPAWNS[i] ?? BLUE_SPAWNS[0];
-    blues.push(
-      createRosterBall({
-        x: spawn.x,
-        y: spawn.y,
-        facingX: spawn.facingX,
-        facingY: spawn.facingY,
-        color: i === 0 ? 0x3d7cf0 : 0x4f9bff,
-        label: n === 1 ? '蓝' : `蓝${i + 1}`,
-        team: 'blue',
-        teamSlot: i + 1,
-        hero: i === 0 ? 'ring' : 'hook',
-      }),
-    );
-  }
-  return [red, ...blues];
+/** 本机固定 2v2：红1 玩家钩刺、红2 链生简 bot，蓝1 磁环、蓝2 钩刺。 */
+export function createMatchRoster(): BallBody[] {
+  const reds = RED_SPAWNS.map((spawn, i) =>
+    createRosterBall({
+      x: spawn.x,
+      y: spawn.y,
+      facingX: spawn.facingX,
+      facingY: spawn.facingY,
+      color: i === 0 ? 0xe24a4a : 0xc43d3d,
+      label: `红${i + 1}`,
+      team: 'red',
+      teamSlot: i + 1,
+      hero: i === 0 ? 'hook' : 'chain',
+    }),
+  );
+  const blues = BLUE_SPAWNS.map((spawn, i) =>
+    createRosterBall({
+      x: spawn.x,
+      y: spawn.y,
+      facingX: spawn.facingX,
+      facingY: spawn.facingY,
+      color: i === 0 ? 0x3d7cf0 : 0x4f9bff,
+      label: `蓝${i + 1}`,
+      team: 'blue',
+      teamSlot: i + 1,
+      hero: i === 0 ? 'ring' : 'hook',
+    }),
+  );
+  return [...reds, ...blues];
 }
 
 function createRosterBall(init: {

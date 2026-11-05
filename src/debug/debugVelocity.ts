@@ -50,9 +50,9 @@ function impart(ball: BallBody, dx: number, dy: number, speed = SPEED_CAP, ram =
 }
 
 function debugPair(balls: BallBody[]): [BallBody, BallBody] | null {
-  const a = balls[0];
-  const b = balls[1];
-  return a && b ? [a, b] : null;
+  const a = balls.find((ball) => ball.team === 'red') ?? balls[0];
+  const b = balls.find((ball) => ball.team === 'blue' || ball !== a);
+  return a && b && a !== b ? [a, b] : null;
 }
 
 /** 碰撞测：Z 背刺 / X 侧身圆蹭不掉血 / C 枪尖对戳 / V 轻蹭。双方在场才生效。 */

@@ -4,6 +4,7 @@ import type { ActionSample } from '../input/actionTypes';
 import { HERO_IDS, heroZh, isHeroId, nextHero, type HeroId } from '../heroes/heroIds';
 import { createMatchHud } from '../ui/matchHud';
 import { createBallBody } from './ballBody';
+import { createSimpleBot } from './simpleBot';
 
 function assert(cond: boolean, message: string): void {
   if (!cond) {
@@ -24,7 +25,7 @@ function sample(partial: Partial<ActionSample> = {}): ActionSample {
   };
 }
 
-/** 左下角下拉指定英雄；H 循环后选中值跟随；换 kit 不清血量/位置。 */
+/** 左下角下拉指定自己/队友英雄；H 循环只跟自己；换 kit 不清血量/位置/编号。 */
 export function verifyHeroPick(): void {
   assert(HERO_IDS.length === 7, '换英雄：池应为 7 人');
   assert(HERO_IDS.every((id) => isHeroId(id)), '换英雄：池内 id 应全部合法');
@@ -34,10 +35,12 @@ export function verifyHeroPick(): void {
   );
 
   const host = document.createElement('div');
-  const state = { hero: 'hook' as HeroId };
+  const state = { hero: 'hook' as HeroId, ally: 'chain' as HeroId };
   let picks = 0;
+  let allyPicks = 0;
   const hud = createMatchHud(host, {
     hero: state.hero,
+    allyHero: state.ally,
     onPickHero: (next) => {
       picks += 1;
       if (state.hero === next) {
@@ -45,20 +48,29 @@ export function verifyHeroPick(): void {
       }
       state.hero = next;
     },
+    onPickAllyHero: (next) => {
+      allyPicks += 1;
+      if (state.ally === next) {
+        return;
+      }
+      state.ally = next;
+    },
   });
-  const pick = host.querySelector<HTMLSelectElement>('select.matchHudHero');
-  if (!pick) {
-    throw new Error('换英雄：战场应有英雄下拉');
+  const pick = host.querySelector<HTMLSelectElement>('select.matchHudHero:not(.matchHudAllyHero)');
+  const allyPick = host.querySelector<HTMLSelectElement>('select.matchHudAllyHero');
+  if (!pick || !allyPick) {
+    throw new Error('换英雄：战场应有自己与队友两个下拉');
   }
   assert(pick.getAttribute('data-touch-control') === 'hero', '换英雄：下拉应标 data-touch-control');
-  assert(isAimUiTarget(pick), '换英雄：点下拉不应抢 Aim');
-  assert(pick.options.length === 7, '换英雄：下拉应列出 7 人');
-  assert(pick.value === 'hook', '换英雄：默认应选钩刺');
+  assert(isAimUiTarget(pick) && isAimUiTarget(allyPick), '换英雄：点下拉不应抢 Aim');
+  assert(pick.options.length === 7 && allyPick.options.length === 7, '换英雄：下拉应列出 7 人');
+  assert(pick.value === 'hook', '换英雄：自己默认应选钩刺');
+  assert(allyPick.value === 'chain', '换英雄：队友默认应选链生');
 
   pick.value = 'nail';
   pick.dispatchEvent(new Event('change', { bubbles: true }));
   assert(picks === 1 && state.hero === 'nail', '换英雄：改下拉应指定钉壳');
-  assert(pick.value === 'nail', '换英雄：指定后选中应为钉壳');
+  assert(pick.value === 'nail' && allyPick.value === 'chain' && state.ally === 'chain', '换英雄：换自己不应改队友');
 
   const before = picks;
   pick.value = 'nail';
@@ -68,6 +80,14 @@ export function verifyHeroPick(): void {
   state.hero = nextHero(state.hero);
   hud.setHero(state.hero);
   assert(state.hero === 'arc' && pick.value === 'arc', '换英雄：H 循环后下拉应跟到闪弧');
+  assert(allyPick.value === 'chain' && state.ally === 'chain', '换英雄：H 循环只跟自己');
+
+  allyPick.value = 'nail';
+  allyPick.dispatchEvent(new Event('change', { bubbles: true }));
+  assert(allyPicks === 1 && state.ally === 'nail', '换英雄：队友下拉应指定钉壳');
+  assert(state.hero === 'arc' && pick.value === 'arc', '换英雄：换队友不应改自己');
+  hud.setAllyHero(state.ally);
+  assert(allyPick.value === 'nail', '换英雄：队友下拉选中应保持钉壳');
 
   const ball = createBallBody({
     x: 4.2,
@@ -90,4 +110,22 @@ export function verifyHeroPick(): void {
   assert(ball.teamSlot === 2, '换英雄：不换队内编号');
   assert(control.getAimingSlot() === 0, '换英雄：换 kit 应清掉旧瞄准');
   assert(control.getWindup() === null, '换英雄：换 kit 应清掉前摇');
+
+  const ally = createBallBody({
+    x: 1.2,
+    y: 8.6,
+    color: 0xc43d3d,
+    vx: 2.1,
+    vy: 0.4,
+    hp: 188,
+    team: 'red',
+    teamSlot: 2,
+    hero: 'chain',
+  });
+  const bot = createSimpleBot(ally);
+  bot.setHero(ally, 'nail');
+  assert(ally.hero === 'nail', '换英雄：队友 setHero 应写成钉壳');
+  assert(ally.teamSlot === 2 && ally.team === 'red', '换英雄：换队友不换号');
+  assert(ally.hp === 188 && ally.x === 1.2 && ally.y === 8.6, '换英雄：换队友应保留血量与位置');
+  assert(ally.vx === 2.1 && ally.vy === 0.4, '换英雄：换队友应保留速度');
 }

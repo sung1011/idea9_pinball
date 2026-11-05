@@ -107,7 +107,7 @@ export const HARD_CC_DIMINISH_WINDOW = 1.5;
 /** 任意碰撞（含轻蹭）后的强拧窗口（秒） */
 export const FINE_TUNE_WINDOW = 0.3;
 
-/** 本机蓝方简 bot 数量；1～2，默认 2 */
+/** 本机固定 2v2：蓝方简 bot 数量 */
 export const BLUE_BOT_COUNT = 2;
 
 /** 一局：Stall 倒计时 / 正赛 / 加时（秒） */
@@ -151,8 +151,11 @@ export const MIDPOINT_TICK_SEC = 1;
 /** 调试：仅加速一局时钟（倒计时/回场/领地），物理仍按真实 dt。默认 1 */
 export const DEBUG_CLOCK_SCALE = 1;
 
-/** 半场底线出生：红左底、蓝右底，上下错开避开矮柱 */
-export const RED_SPAWNS = [{ x: 1.2, y: 3.4, facingX: 1, facingY: 0 }] as const;
+/** 半场底线出生：红左底、蓝右底，上下错开避开矮柱；本机固定 2v2 */
+export const RED_SPAWNS = [
+  { x: 1.2, y: 3.4, facingX: 1, facingY: 0 },
+  { x: 1.2, y: 8.6, facingX: 1, facingY: 0 },
+] as const;
 
 export const BLUE_SPAWNS = [
   { x: 18.8, y: 3.4, facingX: -1, facingY: 0 },

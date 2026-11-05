@@ -91,8 +91,11 @@ async function boot(): Promise<void> {
   world.addChild(arena.root);
 
   const balls = createMatchRoster();
-  const player = balls[0];
-  const bots = balls.slice(1).map((ball) => createSimpleBot(ball));
+  const player = balls.find((ball) => ball.team === 'red' && ball.teamSlot === 1) ?? balls[0];
+  const ally = balls.find((ball) => ball.team === 'red' && ball.teamSlot === 2) ?? null;
+  const botHandles = balls
+    .filter((ball) => ball !== player)
+    .map((ball) => ({ ball, ai: createSimpleBot(ball) }));
   const match = createMatchSession(balls);
   const views = balls.map((ball) => createBallView(ball));
   for (const view of views) {
@@ -153,13 +156,23 @@ async function boot(): Promise<void> {
     syncHeroUi();
   };
 
+  const applyAllyHero = (hero: HeroId): void => {
+    if (ally && ally.hero !== hero) {
+      const handle = botHandles.find((item) => item.ball === ally);
+      handle?.ai.setHero(ally, hero);
+    }
+    syncHeroUi();
+  };
+
   const swapPlayerHero = (): void => {
     applyPlayerHero(nextHero(player.hero));
   };
 
   const matchHud = createMatchHud(host, {
     hero: player.hero,
+    allyHero: ally?.hero ?? 'chain',
     onPickHero: applyPlayerHero,
+    onPickAllyHero: applyAllyHero,
   });
   matchHud.sync(match.snapshot(), balls);
   arena.syncStalls(match.snapshot().stalls);
@@ -174,8 +187,8 @@ async function boot(): Promise<void> {
     match.reset();
     control.reset();
     bus.reset();
-    for (const bot of bots) {
-      bot.reset();
+    for (const { ai } of botHandles) {
+      ai.reset();
     }
     syncHeroUi();
   };
@@ -191,8 +204,8 @@ async function boot(): Promise<void> {
     resetCombatFloatAcc();
     combatFloats.clear();
     control.reset();
-    for (const bot of bots) {
-      bot.reset();
+    for (const { ai } of botHandles) {
+      ai.reset();
     }
   };
 
@@ -210,6 +223,9 @@ async function boot(): Promise<void> {
   syncHeroUi = () => {
     help.setHero(player.hero);
     matchHud.setHero(player.hero);
+    if (ally) {
+      matchHud.setAllyHero(ally.hero);
+    }
   };
   syncHeroUi();
   const appVersions = createAppVersions();
@@ -293,8 +309,8 @@ async function boot(): Promise<void> {
     if (charging) {
       applyOpeningCharge(player, dt, snap.openingChargeRemain);
     }
-    for (const bot of bots) {
-      skillHits.push(...bot.tick(dt, balls, snap.phase, snap.openingChargeRemain));
+    for (const { ai } of botHandles) {
+      skillHits.push(...ai.tick(dt, balls, snap.phase, snap.openingChargeRemain));
     }
     const step = stepPhysics(balls, dt, { stalls: snap.stallsOn ? snap.stalls : [] });
     if (charging) {
@@ -306,10 +322,8 @@ async function boot(): Promise<void> {
       }
     }
     skillHits.push(...control.afterPhysics(player, dt, balls, step.wallHitIds.includes(player.id)));
-    for (let i = 0; i < bots.length; i += 1) {
-      skillHits.push(
-        ...bots[i].afterPhysics(dt, balls, step.wallHitIds.includes(balls[i + 1].id)),
-      );
+    for (const { ball, ai } of botHandles) {
+      skillHits.push(...ai.afterPhysics(dt, balls, step.wallHitIds.includes(ball.id)));
     }
     const frameHits = [...step.hits, ...skillHits];
     combatFloats.spawn([...floatsFromHits(frameHits, balls), ...takeHealFloats(step.heals)]);
