@@ -18,17 +18,16 @@ body,
 
 #app {
   --hud-pad: 8px;
+  --hud-safe-top: env(safe-area-inset-top, 0px);
+  --hud-safe-right: env(safe-area-inset-right, 0px);
+  --hud-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --hud-safe-left: env(safe-area-inset-left, 0px);
   --stage-left: 8px;
   --stage-top: 8px;
   --stage-right: calc(100% - 8px);
   --stage-bottom: calc(100% - 8px);
   --stage-center-x: 50%;
   --stage-center-y: 42%;
-}
-
-#app.isLandscapeFlip {
-  transform-origin: top left;
-  transform: translate(100dvw, 100dvh) rotate(180deg);
 }
 
 canvas {
@@ -47,8 +46,8 @@ canvas {
 
 .matchHudCluster {
   position: absolute;
-  top: calc(var(--stage-top) + var(--hud-pad));
-  left: var(--stage-center-x);
+  top: calc(var(--hud-safe-top) + var(--hud-pad));
+  left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
@@ -129,13 +128,18 @@ canvas {
 
 .matchHudHeroRow {
   position: absolute;
-  left: calc(var(--stage-left) + var(--hud-pad));
-  top: calc(var(--stage-bottom) - var(--hud-pad));
-  transform: translateY(-100%);
+  left: calc(var(--hud-safe-left) + var(--hud-pad));
+  bottom: calc(var(--hud-safe-bottom) + var(--hud-pad));
   display: flex;
   align-items: center;
   gap: 6px;
   pointer-events: none;
+}
+
+.isPortrait .matchHudHeroRow {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .matchHudHeroWrap {
@@ -188,8 +192,8 @@ canvas {
 
 .matchHudToast {
   position: absolute;
-  top: calc(var(--stage-top) + var(--hud-pad) + 34px);
-  left: var(--stage-center-x);
+  top: calc(var(--hud-safe-top) + var(--hud-pad) + 34px);
+  left: 50%;
   transform: translateX(-50%);
   color: #ffe08a;
   min-height: 0;
@@ -234,9 +238,8 @@ canvas {
 
 .settingsFab {
   position: absolute;
-  top: calc(var(--stage-top) + var(--hud-pad));
-  left: calc(var(--stage-right) - var(--hud-pad));
-  transform: translateX(-100%);
+  top: calc(var(--hud-safe-top) + var(--hud-pad));
+  right: calc(var(--hud-safe-right) + var(--hud-pad));
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -576,9 +579,8 @@ canvas {
 .updatePrompt {
   display: none;
   position: absolute;
-  top: calc(var(--stage-top) + var(--hud-pad) + 36px);
-  left: calc(var(--stage-right) - var(--hud-pad));
-  transform: translateX(-100%);
+  top: calc(var(--hud-safe-top) + var(--hud-pad) + 36px);
+  right: calc(var(--hud-safe-right) + var(--hud-pad));
   z-index: 29;
   width: min(280px, 42vw);
   max-height: min(50vh, 360px);
@@ -817,9 +819,8 @@ canvas {
 
 .touchSkills {
   position: absolute;
-  left: calc(var(--stage-right) - var(--hud-pad));
-  top: calc(var(--stage-bottom) - var(--hud-pad));
-  transform: translate(-100%, -100%);
+  right: calc(var(--hud-safe-right) + var(--hud-pad));
+  bottom: calc(var(--hud-safe-bottom) + var(--hud-pad));
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
@@ -940,9 +941,8 @@ canvas {
 
 .touchCancel {
   position: absolute;
-  left: calc(var(--stage-right) - var(--hud-pad));
-  top: calc(var(--stage-bottom) - var(--hud-pad) - 116px);
-  transform: translate(-100%, -100%);
+  right: calc(var(--hud-safe-right) + var(--hud-pad));
+  bottom: calc(var(--hud-safe-bottom) + var(--hud-pad) + 116px);
   min-width: 56px;
   height: 32px;
   border-radius: 999px;

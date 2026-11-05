@@ -44,13 +44,7 @@ import { createResultPanel } from './ui/resultPanel';
 import { createAppVersions } from './ui/appVersion';
 import { createSettingsPanel } from './ui/settingsPanel';
 import { createUpdatePrompt } from './ui/updatePrompt';
-import {
-  applyStageVars,
-  computeLandscapeStage,
-  readSafeInsets,
-  remapInsetsForLandscapeFlip,
-  syncLandscapeFlip,
-} from './ui/stageLayout';
+import { applyStageVars, computeLandscapeStage, readSafeInsets } from './ui/stageLayout';
 import './style.css';
 
 async function boot(): Promise<void> {
@@ -112,13 +106,11 @@ async function boot(): Promise<void> {
   const layoutWorld = (): WorldTransform => {
     const viewW = window.innerWidth;
     const viewH = window.innerHeight;
-    const flip = syncLandscapeFlip(host, viewW, viewH);
     const frame = { width: host.clientWidth || viewW, height: host.clientHeight || viewH };
     if (Math.abs(app.screen.width - frame.width) > 1 || Math.abs(app.screen.height - frame.height) > 1) {
       app.renderer.resize(frame.width, frame.height);
     }
-    const insets = flip ? remapInsetsForLandscapeFlip(readSafeInsets()) : readSafeInsets();
-    const stage = computeLandscapeStage(app.screen.width, app.screen.height, insets);
+    const stage = computeLandscapeStage(app.screen.width, app.screen.height, readSafeInsets());
     applyStageVars(host, stage);
     return fitWorldToBox(stage.x, stage.y, stage.width, stage.height, MAP_WIDTH, MAP_HEIGHT);
   };

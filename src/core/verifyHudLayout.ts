@@ -1,11 +1,9 @@
 import { createMatchHud } from '../ui/matchHud';
 import {
+  applyStageVars,
   clientToHostLocal,
   computeLandscapeStage,
   isPortraitViewport,
-  remapInsetsForLandscapeFlip,
-  shouldFlipLandscape,
-  wantsLandscapeFlip,
 } from '../ui/stageLayout';
 import type { MatchSnapshot } from './matchSession';
 
@@ -40,7 +38,7 @@ function dummySnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
   };
 }
 
-/** Layout B：横构图舞台、竖窗 letterbox、仅横屏翻转扶正；顶中红|计时|蓝一颗胶囊。 */
+/** 竖窗 HUD：20×12 letterbox、无翻转；顶中红|计时|蓝一颗胶囊，底左我/队友。 */
 export function verifyHudLayout(): void {
   const none = { top: 0, right: 0, bottom: 0, left: 0 };
   const landscape = computeLandscapeStage(1600, 900, none);
@@ -56,95 +54,36 @@ export function verifyHudLayout(): void {
   assert(phonePortrait.width > phonePortrait.height, 'HUD：竖持仍按横构图 letterbox，不互换宽高');
   assert(phonePortrait.y > 10, 'HUD：竖持应上下留黑边');
 
+  const phoneLand = computeLandscapeStage(667, 375, none);
+  assert(phoneLand.width > phoneLand.height, 'HUD：横持仍保持 20×12');
+  assert(Math.abs(phoneLand.width / phoneLand.height - 20 / 12) < 1e-6, 'HUD：横持舞台比例应为 20×12');
+  assert(phoneLand.x > 1, 'HUD：横持应左右留 letterbox');
+
+  const pcWide = computeLandscapeStage(1920, 1080, none);
+  assert(pcWide.width > pcWide.height, 'HUD：PC 宽窗仍保持横构图');
+  assert(Math.abs(pcWide.width / pcWide.height - 20 / 12) < 1e-6, 'HUD：PC 任意窗舞台比例应为 20×12');
+
   const notch = computeLandscapeStage(1600, 900, { top: 0, right: 44, bottom: 0, left: 44 });
   assert(notch.x >= 44, 'HUD：舞台应避开左侧安全区');
   assert(notch.x + notch.width <= 1600 - 44 + 1e-6, 'HUD：舞台应避开右侧安全区');
 
-  const remapped = remapInsetsForLandscapeFlip({ top: 10, right: 1, bottom: 20, left: 2 });
-  assert(
-    remapped.top === 20 && remapped.right === 2 && remapped.bottom === 10 && remapped.left === 1,
-    'HUD：横屏翻转应上下、左右对调安全区',
-  );
-
   assert(isPortraitViewport(800, 1200) && !isPortraitViewport(1600, 900), 'HUD：竖/横判定');
-  assert(!wantsLandscapeFlip(1600, 900), 'HUD：普通横屏窗口不应翻转');
-  assert(
-    !shouldFlipLandscape({
-      viewW: 375,
-      viewH: 667,
-      orientationType: 'portrait-primary',
-      orientationAngle: 0,
-    }),
-    'HUD：竖持不应再转画面',
-  );
-  assert(
-    !shouldFlipLandscape({
-      viewW: 800,
-      viewH: 1200,
-      orientationType: 'landscape-secondary',
-      orientationAngle: 180,
-    }),
-    'HUD：PC 窄窗即使 secondary 也不因竖去转',
-  );
-  assert(
-    !shouldFlipLandscape({
-      viewW: 667,
-      viewH: 375,
-      orientationType: 'landscape-primary',
-      orientationAngle: 0,
-    }),
-    'HUD：横持 primary / 0° 不应翻转',
-  );
-  assert(
-    shouldFlipLandscape({
-      viewW: 667,
-      viewH: 375,
-      orientationType: 'landscape-secondary',
-      orientationAngle: 270,
-    }),
-    'HUD：横持 secondary 应扶正',
-  );
-  assert(
-    shouldFlipLandscape({
-      viewW: 667,
-      viewH: 375,
-      orientationAngle: 180,
-    }),
-    'HUD：横持 angle ≈ 180 应扶正',
-  );
-  assert(
-    !shouldFlipLandscape({
-      viewW: 667,
-      viewH: 375,
-      orientationType: 'portrait-secondary',
-      orientationAngle: 180,
-    }),
-    'HUD：orientation 仍标竖屏时不翻转',
-  );
 
-  const probe = document.createElement('div');
-  probe.className = 'isLandscapeFlip';
-  probe.style.cssText =
-    'position:fixed;left:0;top:0;width:400px;height:200px;transform-origin:top left;transform:translate(400px,200px) rotate(180deg)';
-  document.body.appendChild(probe);
-  const mapped = clientToHostLocal(probe, 150, 100);
-  const child = document.createElement('div');
-  child.style.cssText = 'position:absolute;inset:0';
-  probe.appendChild(child);
-  const mappedChild = clientToHostLocal(child, 150, 100);
-  probe.remove();
-  assert(Math.abs(mapped.x - 250) < 2 && Math.abs(mapped.y - 100) < 2, 'HUD：横屏翻转应反解点按坐标');
-  assert(
-    Math.abs(mappedChild.x - 250) < 2 && Math.abs(mappedChild.y - 100) < 2,
-    'HUD：翻转后子层（技能 tip）坐标应与画面一致',
-  );
+  const stageHost = document.createElement('div');
+  stageHost.style.cssText = 'position:fixed;left:0;top:0;width:375px;height:667px';
+  document.body.appendChild(stageHost);
+  applyStageVars(stageHost, computeLandscapeStage(375, 667, none));
+  assert(stageHost.classList.contains('isPortrait'), 'HUD：竖窗应标 isPortrait');
+  assert(!stageHost.classList.contains('isLandscapeFlip'), 'HUD：不应再标横屏翻转');
+  assert(!stageHost.style.transform, 'HUD：#app 不应再写旋转 transform');
+  stageHost.remove();
 
   const plain = document.createElement('div');
   plain.style.cssText = 'position:fixed;left:40px;top:30px;width:100px;height:80px';
   document.body.appendChild(plain);
-  const unrotated = clientToHostLocal(plain, 60, 50);
+  const local = clientToHostLocal(plain, 60, 50);
   plain.remove();
-  assert(Math.abs(unrotated.x - 20) < 2 && Math.abs(unrotated.y - 20) < 2, 'HUD：未旋转时应按视口差值取本地坐标');
+  assert(Math.abs(local.x - 20) < 2 && Math.abs(local.y - 20) < 2, 'HUD：点应按视口差值取本地坐标，不反解');
 
   const host = document.createElement('div');
   const hud = createMatchHud(host);
@@ -165,6 +104,23 @@ export function verifyHudLayout(): void {
   assert(cluster.querySelectorAll('.matchHudMark').length === 2, 'HUD：红蓝两侧应有小队标');
   assert(cluster.contains(hero) === false && cluster.contains(allyHero) === false, 'HUD：英雄下拉应留在边缘，不进顶中胶囊');
   assert(heroRow.contains(hero) && heroRow.contains(allyHero), 'HUD：自己/队友下拉应同在左下');
+  const tags = [...heroRow.querySelectorAll('.matchHudHeroTag')].map((el) => el.textContent);
+  assert(tags[0] === '我' && tags[1] === '队友', 'HUD：双下拉标签应为我/队友');
+
+  host.style.cssText =
+    'position:relative;width:375px;height:667px;--hud-pad:8px;--hud-safe-top:0px;--hud-safe-right:0px;--hud-safe-bottom:0px;--hud-safe-left:0px';
+  document.body.appendChild(host);
+  applyStageVars(host, computeLandscapeStage(375, 667, none));
+  const clusterTop = parseFloat(getComputedStyle(cluster).top);
+  const heroBottom = parseFloat(getComputedStyle(heroRow).bottom);
+  const stageTop = parseFloat(getComputedStyle(host).getPropertyValue('--stage-top'));
+  const heroDir = getComputedStyle(heroRow).flexDirection;
+  host.remove();
+  assert(Number.isFinite(clusterTop) && clusterTop < 40, 'HUD：顶中胶囊应贴竖窗顶');
+  assert(Number.isFinite(heroBottom) && heroBottom < 40, 'HUD：双下拉应贴竖窗底');
+  assert(stageTop > 80, 'HUD：竖窗舞台顶应落在 letterbox');
+  assert(clusterTop < stageTop - 40, 'HUD：胶囊应在上黑边，不贴舞台边');
+  assert(heroDir === 'column', 'HUD：竖窗我/队友应竖排，避免和技能挤一行');
 
   hud.sync(dummySnap(), []);
   assert(red.textContent === '15' && blue.textContent === '30', 'HUD：胶囊应同步双方分数');

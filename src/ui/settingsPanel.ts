@@ -146,7 +146,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     body.appendChild(helpBtn);
     addHint(body, kitSettingsHint(actions.getHero?.() ?? 'hook'));
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。右键 / Esc 取消瞄准。');
-    addHint(body, '本机固定 2v2。左下角可换自己或队友英雄（只换技能组）。红2 默认链生，蓝1 默认磁环。GM 开时按 H 只循环红1：钩刺 → 磁环 → 链生 → 钉壳 → 闪弧 → 井绳 → 镜卫。');
+    addHint(body, '本机固定 2v2。左下角可换自己或队友英雄（只换技能组）。红2 默认链生，蓝1 默认磁环。竖持为主；横持或 PC 任意窗 letterbox 可玩，不转屏。GM 开时按 H 只循环红1：钩刺 → 磁环 → 链生 → 钉壳 → 闪弧 → 井绳 → 镜卫。');
   };
 
   const renderVersion = (): void => {
