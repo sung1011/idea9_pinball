@@ -18,6 +18,8 @@ body,
 
 #app {
   --hud-pad: 8px;
+  --hud-fab: 28px;
+  --hud-fab-gap: 4px;
   --hud-safe-top: env(safe-area-inset-top, 0px);
   --hud-safe-right: env(safe-area-inset-right, 0px);
   --hud-safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -53,6 +55,8 @@ canvas {
   align-items: center;
   gap: 8px;
   min-height: 28px;
+  max-width: calc(100% - 2 * (var(--hud-safe-right) + var(--hud-pad) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px)));
+  box-sizing: border-box;
   padding: 3px 12px;
   border-radius: 999px;
   background: #0b1014cc;
@@ -231,12 +235,12 @@ canvas {
   font-weight: 600;
 }
 
+.helpFab,
 .settingsFab {
   position: absolute;
   top: calc(var(--hud-safe-top) + var(--hud-pad));
-  right: calc(var(--hud-safe-right) + var(--hud-pad));
-  width: 28px;
-  height: 28px;
+  width: var(--hud-fab, 28px);
+  height: var(--hud-fab, 28px);
   border-radius: 50%;
   border: 1px solid #ffffff28;
   background: #0b1014cc;
@@ -253,10 +257,20 @@ canvas {
   backdrop-filter: blur(6px);
 }
 
+.settingsFab {
+  right: calc(var(--hud-safe-right) + var(--hud-pad));
+}
+
+.helpFab {
+  right: calc(var(--hud-safe-right) + var(--hud-pad) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px));
+}
+
 .settingsFab svg {
   display: block;
 }
 
+.helpFab.isOn,
+.helpFab:hover,
 .settingsFab.isOn,
 .settingsFab:hover {
   border-color: #ffe08a;
@@ -951,9 +965,8 @@ canvas {
 }
 
 @media (max-height: 430px) {
-  .settingsFab {
-    width: 26px;
-    height: 26px;
+  #app {
+    --hud-fab: 26px;
   }
 
   .matchHudCluster,

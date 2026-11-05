@@ -1,6 +1,9 @@
 import { createActionBus } from '../input/actionBus';
 import { createTouchPad } from '../input/touchPad';
+import type { AppVersions } from '../ui/appVersion';
+import { createHelpCard } from '../ui/helpCard';
 import { createMatchHud } from '../ui/matchHud';
+import { createSettingsPanel } from '../ui/settingsPanel';
 import {
   applyStageVars,
   clientToHostLocal,
@@ -40,7 +43,25 @@ function dummySnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
   };
 }
 
-/** 竖窗 HUD：20×20 正方形 letterbox；顶中红|计时|蓝、顶右齿轮、左上我/队友竖叠、左下 Skill1–4 横排。 */
+function dummyVersions(): AppVersions {
+  return {
+    getState: () => ({
+      entries: [],
+      grouped: [],
+      history: [],
+      installed: null,
+      pending: [],
+      flash: '',
+    }),
+    subscribe: () => () => {},
+    refresh: async () => {},
+    checkUpdate: async () => {},
+    applyUpdate: async () => {},
+    dispose: () => {},
+  };
+}
+
+/** 竖窗 HUD：20×20 正方形 letterbox；顶中红|计时|蓝、顶右 ? 在齿轮左、左上我/队友竖叠、左下 Skill1–4 横排。 */
 export function verifyHudLayout(): void {
   const none = { top: 0, right: 0, bottom: 0, left: 0 };
   const landscape = computeLandscapeStage(1600, 900, none);
@@ -113,9 +134,30 @@ export function verifyHudLayout(): void {
   assert(skillBtns.map((btn) => btn.dataset.slot).join('') === '1234', 'HUD：技能键从左到右应为 Skill1–4');
 
   host.style.cssText =
-    'position:relative;width:375px;height:667px;--hud-pad:8px;--hud-safe-top:0px;--hud-safe-right:0px;--hud-safe-bottom:0px;--hud-safe-left:0px';
+    'position:relative;width:375px;height:667px;--hud-pad:8px;--hud-fab:28px;--hud-fab-gap:4px;--hud-safe-top:0px;--hud-safe-right:0px;--hud-safe-bottom:0px;--hud-safe-left:0px';
   document.body.appendChild(host);
   applyStageVars(host, computeLandscapeStage(375, 667, none));
+  const help = createHelpCard(host);
+  const settings = createSettingsPanel(host, {
+    onOpen: () => help.close(),
+    onOpenHelp: () => help.open(),
+    onRestart: () => {},
+    onCollision: () => {},
+    onScore: () => {},
+    onAdvance: () => {},
+    onJumpClock: () => {},
+    onForceRespawn: () => {},
+    versions: dummyVersions(),
+  });
+  const helpFab = host.querySelector<HTMLButtonElement>('.helpFab');
+  const settingsFab = host.querySelector<HTMLButtonElement>('.settingsFab');
+  if (!helpFab || !settingsFab) {
+    throw new Error('HUD：顶右应有 ? 与齿轮');
+  }
+  assert(helpFab.textContent === '?', 'HUD：说明钮应为 ?');
+  const helpRect = helpFab.getBoundingClientRect();
+  const gearRect = settingsFab.getBoundingClientRect();
+  const clusterRect = cluster.getBoundingClientRect();
   const clusterTop = parseFloat(getComputedStyle(cluster).top);
   const heroTop = parseFloat(getComputedStyle(heroRow).top);
   const heroLeft = parseFloat(getComputedStyle(heroRow).left);
@@ -125,6 +167,16 @@ export function verifyHudLayout(): void {
   const skillsBottom = parseFloat(getComputedStyle(skills).bottom);
   const skillsDisplay = getComputedStyle(skills).display;
   const skillsDir = getComputedStyle(skills).flexDirection;
+  const hostTransform = getComputedStyle(host).transform;
+  helpFab.click();
+  const helpOpenedByFab = help.isOpen();
+  help.close();
+  settings.open();
+  const howTo = [...host.querySelectorAll('button')].find((btn) => btn.textContent === '怎么玩');
+  howTo?.click();
+  const helpOpenedBySettings = help.isOpen();
+  const settingsClosedAfterHowTo = !settings.isOpen();
+  help.close();
   host.remove();
   assert(Number.isFinite(clusterTop) && clusterTop < 40, 'HUD：顶中胶囊应贴竖窗顶');
   assert(Number.isFinite(heroTop) && heroTop < 40, 'HUD：双下拉应贴竖窗顶');
@@ -136,6 +188,13 @@ export function verifyHudLayout(): void {
   assert(Number.isFinite(skillsLeft) && skillsLeft < 40, 'HUD：四键应贴竖窗左');
   assert(Number.isFinite(skillsBottom) && skillsBottom < 40, 'HUD：四键应贴竖窗底');
   assert(skillsDisplay === 'flex' && skillsDir === 'row', 'HUD：四键应一行横排');
+  assert(helpRect.right <= gearRect.left + 1, 'HUD：? 应在齿轮左侧');
+  assert(Math.abs(helpRect.top - gearRect.top) < 2, 'HUD：? 应与齿轮顶对齐');
+  assert(helpRect.left + 1 >= clusterRect.right, 'HUD：? 不应叠顶中比分');
+  assert(hostTransform === 'none', 'HUD：宿主 transform 无旋转');
+  assert(helpOpenedByFab, 'HUD：点 ? 应打开同一份说明卡');
+  assert(!!howTo, 'HUD：设置常规应仍有怎么玩');
+  assert(helpOpenedBySettings && settingsClosedAfterHowTo, 'HUD：设置怎么玩应打开同一份说明卡');
 
   hud.sync(dummySnap(), []);
   assert(red.textContent === '15' && blue.textContent === '30', 'HUD：胶囊应同步双方分数');

@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '顶右齿轮左侧加 ?，打开同一份玩法说明卡；设置「怎么玩」仍可用' },
   { title: 'HUD：左上竖叠我/队友下拉，左下 Skill1–4 横排；顶中比分与顶右齿轮不动' },
   { title: '战场 20×20；领地半径 2.5；红蓝上下两出生；竖/横窗 letterbox，画面不旋转' },
   { title: '纯竖屏操作：战场 letterbox，HUD 按竖窗重排，画面不旋转' },

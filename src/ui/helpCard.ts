@@ -27,8 +27,17 @@ function addBlock(host: HTMLElement, title: string, lines: readonly string[]): v
   host.appendChild(block);
 }
 
-/** 说明卡：设置「怎么玩」打开；点空白或关闭钮收起。战场不再放 `?` 浮钮。 */
+/** 顶右 `?` 与设置「怎么玩」打开同一份说明卡；点空白或关闭钮收起。 */
 export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard {
+  const fab = document.createElement('button');
+  fab.type = 'button';
+  fab.className = 'helpFab';
+  fab.textContent = '?';
+  fab.setAttribute('data-touch-control', '');
+  fab.setAttribute('aria-label', '怎么玩');
+  fab.setAttribute('aria-haspopup', 'dialog');
+  fab.setAttribute('aria-expanded', 'false');
+
   const overlay = document.createElement('div');
   overlay.className = 'helpOverlay';
   overlay.setAttribute('data-touch-control', '');
@@ -98,10 +107,12 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
 
   card.append(head, body);
   overlay.appendChild(card);
-  host.appendChild(overlay);
+  host.append(fab, overlay);
 
   const setOpen = (open: boolean): void => {
     overlay.classList.toggle('isOn', open);
+    fab.classList.toggle('isOn', open);
+    fab.setAttribute('aria-expanded', open ? 'true' : 'false');
   };
 
   const close = (): void => {
@@ -113,6 +124,16 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
     setOpen(true);
   };
 
+  fab.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const next = !overlay.classList.contains('isOn');
+    if (next) {
+      open();
+      return;
+    }
+    close();
+  });
   closeBtn.addEventListener('click', (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
