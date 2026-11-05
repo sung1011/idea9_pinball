@@ -16,8 +16,8 @@ export const CHAIN_SHIELD = {
   cd: 12,
   windup: 0,
   range: 5,
-  duration: 3.2,
-  mul: 0.45,
+  duration: 3,
+  dps: 8,
 } as const;
 
 export const CHAIN_TOW = {
@@ -28,7 +28,11 @@ export const CHAIN_TOW = {
   flySpeed: 8,
   lowHpRatio: 0.4,
   pullDist: 2,
+  knockback: 10,
 } as const;
+
+/** 愈链 / 盾脉 / 援勾无合法目标：2s 短 CD，不进满 CD。 */
+export const CHAIN_FAIL_CD = 2;
 
 /** 扰锋 / CHAOS：身周范围沉默（orientation scramble） */
 export const CHAIN_SCRAMBLE = {
@@ -69,7 +73,7 @@ export function chainSkillCd(slot: SkillSlot): number {
   return CHAIN_CDS[slot - 1];
 }
 
-/** 勾友是位移技；治疗 / 护盾 / 沉默不是。 */
+/** 勾友是位移技；治疗 / 盾脉贴附 / 沉默不是。 */
 export function chainIsDisplace(slot: SkillSlot): boolean {
   return slot === 3;
 }

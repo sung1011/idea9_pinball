@@ -7,6 +7,7 @@ import {
   tickFineTune,
   tickGraze,
   tickHeal,
+  tickBurn,
   tickInvincible,
   tickPin,
   tickReflect,
@@ -185,6 +186,11 @@ export function stepPhysics(
     const healed = tickHeal(ball, stepDt);
     if (healed > 0) {
       heals.push({ unitId: ball.id, amount: healed, x: ball.x, y: ball.y });
+    }
+    const burner = live.find((item) => item.id === ball.burnSourceId);
+    const burned = tickBurn(ball, stepDt, burner);
+    if (burned) {
+      hits.push(burned);
     }
     tickShield(ball, stepDt);
     tickArmor(ball, stepDt, (item) => {

@@ -163,6 +163,8 @@ export function createAimPreview(): AimPreview {
       const shape = arcAimShape(slot);
       if (shape?.kind === 'circle') {
         drawCircle(root, shape.offsetX, shape.offsetY, shape.radius, color, alpha);
+      } else if (shape?.kind === 'cone') {
+        drawCone(root, fx, fy, shape.halfRad, shape.radius, color, alpha);
       }
       drawAimArrow(root, fx, fy, color, slot === 1 ? 2.2 : ARROW_LEN);
       return;

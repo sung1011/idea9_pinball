@@ -1,5 +1,7 @@
 import type { HeroId } from '../heroes/heroIds';
+import type { CollisionHit } from './collisionDamage';
 import { ACTIVE_RAM_WINDOW, BALL_RADIUS, FINE_TUNE_WINDOW, MAX_HP } from './constants';
+import { applyHpLoss } from './hpLoss';
 
 let nextBallId = 1;
 
@@ -55,9 +57,16 @@ export type BallBody = {
   /** 治疗链 HOT 剩余秒数；>0 时每秒回血 */
   healRemain: number;
   healDps: number;
+  /** 愈链对敌 DoT 剩余秒数；>0 时每秒掉血 */
+  burnRemain: number;
+  burnDps: number;
+  burnSourceId: number;
   /** 护盾脉冲剩余秒数；>0 时碰撞伤乘 shieldMul */
   shieldRemain: number;
   shieldMul: number;
+  /** 盾脉贴附吸血剩余秒数 */
+  leechRemain: number;
+  leechTargetId: number;
   /** 打断短瞄准：施放器下帧清空 */
   aimBreak: boolean;
   /** 沉默剩余秒数；>0 时不能进瞄/放技能，仍可滑/可撞 */
@@ -145,8 +154,13 @@ export function createBallBody(init: {
     fieldRemain: 0,
     healRemain: 0,
     healDps: 0,
+    burnRemain: 0,
+    burnDps: 0,
+    burnSourceId: -1,
     shieldRemain: 0,
     shieldMul: 1,
+    leechRemain: 0,
+    leechTargetId: -1,
     aimBreak: false,
     silenceRemain: 0,
     armorRemain: 0,
@@ -228,6 +242,18 @@ export function applyHealHot(ball: BallBody, dps: number, duration: number): voi
   ball.healRemain = Math.max(ball.healRemain, duration);
 }
 
+export function applyBurn(ball: BallBody, dps: number, duration: number, sourceId: number): void {
+  ball.burnDps = dps;
+  ball.burnRemain = Math.max(ball.burnRemain, duration);
+  ball.burnSourceId = sourceId;
+}
+
+export function clearBurn(ball: BallBody): void {
+  ball.burnRemain = 0;
+  ball.burnDps = 0;
+  ball.burnSourceId = -1;
+}
+
 export function applyShield(ball: BallBody, mul: number, duration: number): void {
   ball.shieldMul = mul;
   ball.shieldRemain = Math.max(ball.shieldRemain, duration);
@@ -252,6 +278,35 @@ export function tickHeal(ball: BallBody, dt: number): number {
     ball.healDps = 0;
   }
   return gained;
+}
+
+export function tickBurn(ball: BallBody, dt: number, source: BallBody | undefined): CollisionHit | null {
+  if (ball.burnRemain <= 0) {
+    clearBurn(ball);
+    return null;
+  }
+  const step = Math.min(Math.max(0, dt), ball.burnRemain);
+  let hit: CollisionHit | null = null;
+  if (ball.inPlay && ball.burnDps > 0 && source && source.inPlay) {
+    const applied = applyHpLoss(ball, ball.burnDps * step);
+    if (applied > 0) {
+      hit = {
+        victimId: ball.id,
+        sourceId: source.id,
+        victimLabel: ball.label,
+        sourceLabel: source.label,
+        damage: applied,
+        knockback: 0,
+        relSpeed: 0,
+        threshold: 0,
+      };
+    }
+  }
+  ball.burnRemain = Math.max(0, ball.burnRemain - step);
+  if (ball.burnRemain <= 0) {
+    clearBurn(ball);
+  }
+  return hit;
 }
 
 export function tickShield(ball: BallBody, dt: number): void {
@@ -455,8 +510,11 @@ export function clearKitAuras(ball: BallBody): void {
   ball.fieldRemain = 0;
   ball.healRemain = 0;
   ball.healDps = 0;
+  clearBurn(ball);
   ball.shieldRemain = 0;
   ball.shieldMul = 1;
+  ball.leechRemain = 0;
+  ball.leechTargetId = -1;
   ball.aimBreak = false;
   ball.silenceRemain = 0;
   clearArmor(ball);

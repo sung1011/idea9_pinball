@@ -5,15 +5,16 @@ import {
   ARC_GRAZE,
   ARC_MARK,
   ARC_PHASE,
+  ARC_SIDESTEP,
   arcIsDisplace,
   arcSkillCd,
   arcWindup,
-  sideStepOffset,
+  behindEnemyPos,
 } from '../heroes/arcKit';
 import { RING_TRAP } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import type { SkillCaster, SkillCds, WindupInfo } from './skillCaster';
-import { pickNearestEnemy, unitVec } from './skillQuery';
+import { pickFanEnemy, pickNearestEnemy, unitVec } from './skillQuery';
 import { setFacingFrom } from './skillStub';
 import { isInEnemyTrap } from './trapZones';
 import { resolveArenaObstacles } from './wallBounce';
@@ -26,8 +27,7 @@ type Effect = {
   remain: number;
   aimX: number;
   aimY: number;
-  dirX: number;
-  dirY: number;
+  targetId?: number;
 };
 
 function emptyCds(): SkillCds {
@@ -45,6 +45,25 @@ function aimOf(ball: BallBody, sample: ActionSample): { x: number; y: number } {
   return face ?? { x: 1, y: 0 };
 }
 
+function pickSidestepEnemy(
+  ball: BallBody,
+  aimX: number,
+  aimY: number,
+  roster: readonly BallBody[],
+): BallBody | null {
+  const dir = unitVec(aimX, aimY) ?? { x: ball.facingX, y: ball.facingY };
+  const picked = pickFanEnemy(
+    ball,
+    roster,
+    dir.x,
+    dir.y,
+    (ARC_SIDESTEP.fanDeg * Math.PI) / 360,
+    ARC_SIDESTEP.range,
+    false,
+  );
+  return picked?.target ?? null;
+}
+
 /** 闪弧施放：按下进瞄可无限持有；释放后才走前摇，再出效果。 */
 export function createArcCaster(): SkillCaster {
   let aimingSlot: SkillSlot | 0 = 0;
@@ -54,6 +73,12 @@ export function createArcCaster(): SkillCaster {
 
   const startCd = (slot: SkillSlot): void => {
     cds[slot - 1] = arcSkillCd(slot);
+  };
+
+  const failShort = (slot: SkillSlot): void => {
+    cds[slot - 1] = ARC_SIDESTEP.failCd;
+    aimingSlot = 0;
+    effect = null;
   };
 
   const punishDisplace = (slot: SkillSlot): void => {
@@ -73,9 +98,23 @@ export function createArcCaster(): SkillCaster {
     }
   };
 
-  const resolveSidestep = (ball: BallBody, dirX: number, dirY: number): void => {
-    ball.x += dirX;
-    ball.y += dirY;
+  const resolveSidestep = (ball: BallBody, target: BallBody): void => {
+    const behind = behindEnemyPos(
+      target.x,
+      target.y,
+      target.facingX,
+      target.facingY,
+      ball.radius,
+      target.radius,
+    );
+    ball.x = behind.x;
+    ball.y = behind.y;
+    ball.facingX = behind.faceX;
+    ball.facingY = behind.faceY;
+    const speed = Math.hypot(ball.vx, ball.vy);
+    const keep = speed > 1e-6 ? speed : 2.5;
+    ball.vx = behind.faceX * keep;
+    ball.vy = behind.faceY * keep;
     resolveArenaObstacles(ball);
   };
 
@@ -99,10 +138,9 @@ export function createArcCaster(): SkillCaster {
   const finishWindup = (
     ball: BallBody,
     slot: SkillSlot,
-    _aimX: number,
-    _aimY: number,
-    dirX: number,
-    dirY: number,
+    aimX: number,
+    aimY: number,
+    targetId: number | undefined,
     roster: readonly BallBody[],
   ): CollisionHit[] => {
     if (blockedByTrap(ball, slot)) {
@@ -110,7 +148,14 @@ export function createArcCaster(): SkillCaster {
       return [];
     }
     if (slot === 1) {
-      resolveSidestep(ball, dirX, dirY);
+      const locked = targetId != null ? roster.find((item) => item.id === targetId) : undefined;
+      const target =
+        locked && locked.inPlay ? locked : pickSidestepEnemy(ball, aimX, aimY, roster);
+      if (!target) {
+        failShort(slot);
+        return [];
+      }
+      resolveSidestep(ball, target);
       return [];
     }
     if (slot === 2) {
@@ -133,20 +178,28 @@ export function createArcCaster(): SkillCaster {
     if (cds[slot - 1] > 0) {
       return;
     }
-    const aim = aimOf(ball, sample);
-    const side = sideStepOffset(ball.facingX, ball.facingY, aim.x, aim.y);
-    if (slot !== 1 && !setFacingFrom(ball, aim.x, aim.y)) {
-      return;
-    }
     if (blockedByTrap(ball, slot)) {
       punishDisplace(slot);
       return;
+    }
+    const aim = aimOf(ball, sample);
+    if (!setFacingFrom(ball, aim.x, aim.y)) {
+      return;
+    }
+    let targetId: number | undefined;
+    if (slot === 1) {
+      const target = pickSidestepEnemy(ball, ball.facingX, ball.facingY, roster);
+      if (!target) {
+        failShort(slot);
+        return;
+      }
+      targetId = target.id;
     }
     startCd(slot);
     aimingSlot = 0;
     const delay = arcWindup(slot);
     if (delay <= 0) {
-      finishWindup(ball, slot, ball.facingX, ball.facingY, side.x, side.y, roster);
+      finishWindup(ball, slot, ball.facingX, ball.facingY, targetId, roster);
       return;
     }
     effect = {
@@ -155,8 +208,7 @@ export function createArcCaster(): SkillCaster {
       remain: delay,
       aimX: ball.facingX,
       aimY: ball.facingY,
-      dirX: side.x,
-      dirY: side.y,
+      targetId,
     };
   };
 
@@ -223,9 +275,9 @@ export function createArcCaster(): SkillCaster {
     if (effect?.kind === 'windup') {
       effect.remain -= step;
       if (effect.remain <= TIME_EPS) {
-        const { slot, aimX, aimY, dirX, dirY } = effect;
+        const { slot, aimX, aimY, targetId } = effect;
         effect = null;
-        hits.push(...finishWindup(ball, slot, aimX, aimY, dirX, dirY, roster));
+        hits.push(...finishWindup(ball, slot, aimX, aimY, targetId, roster));
       }
     }
 

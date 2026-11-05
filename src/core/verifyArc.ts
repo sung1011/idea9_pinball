@@ -1,9 +1,8 @@
 import { applyEchoMark, createBallBody, type BallBody } from './ballBody';
 import { applyCollisionCombat, collisionDamage } from './collisionDamage';
-import { grazeContactAngleDeg, isGrazeAngle, tryGrazeBlade } from './arcCombat';
-import { FLOOR_SPEED, MAX_HP } from './constants';
-import { ARC_GRAZE, ARC_MARK, ARC_PHASE, ARC_SIDESTEP, sideStepOffset } from '../heroes/arcKit';
-import { CHAIN_HEAL } from '../heroes/chainKit';
+import { FLOOR_SPEED, MAX_HP, SPEAR_TIP_CD } from './constants';
+import { ARC_GRAZE, ARC_MARK, ARC_PHASE, ARC_SIDESTEP, behindEnemyPos } from '../heroes/arcKit';
+import { CHAIN_FAIL_CD, CHAIN_HEAL, CHAIN_SHIELD } from '../heroes/chainKit';
 import { nextHero } from '../heroes/heroIds';
 import { HOOK_PULL } from '../heroes/hookKit';
 import { NAIL_ARMOR } from '../heroes/nailKit';
@@ -109,12 +108,13 @@ function dropTrapOn(ball: BallBody): void {
   });
 }
 
-/** 闪弧四技能：侧移闪、擦伤窗/夹角/限频、标记额外伤、虚晃无碰撞与速度门、困圈禁位移。 */
+/** 闪弧四技能：侧闪贴背、掠刃荼毒枪尖+6、标记额外伤、虚晃无碰撞与速度门、困圈禁位移。 */
 export function verifyArc(): void {
   resetTrapZones();
-  assert(ARC_SIDESTEP.cd === 7 && ARC_SIDESTEP.windup === 0.15 && ARC_SIDESTEP.dist === 2, '闪弧：侧移闪应为 CD7 / 前摇0.15 / 横移2');
-  assert(ARC_GRAZE.cd === 9 && ARC_GRAZE.duration === 4 && ARC_GRAZE.damage === 11, '闪弧：擦伤刃应为 CD9 / 窗4s / 伤11');
-  assert(ARC_GRAZE.minDeg === 60 && ARC_GRAZE.maxDeg === 120 && ARC_GRAZE.targetCd === 1, '闪弧：擦伤夹角 60–120、同目标 1s');
+  assert(ARC_SIDESTEP.cd === 7 && ARC_SIDESTEP.windup === 0.15, '闪弧：侧闪应为 CD7 / 前摇0.15');
+  assert(ARC_SIDESTEP.fanDeg === 40 && ARC_SIDESTEP.range === 6, '闪弧：侧闪应为扇 40° / 距 6');
+  assert(ARC_SIDESTEP.failCd === 2, '闪弧：侧闪无目标短 CD 应为 2s');
+  assert(ARC_GRAZE.cd === 9 && ARC_GRAZE.duration === 8 && ARC_GRAZE.extra === 6, '闪弧：掠刃应为 CD9 / 荼毒 8s / +6');
   assert(ARC_MARK.cd === 11 && ARC_MARK.windup === 0.25 && ARC_MARK.range === 5, '闪弧：标记应为 CD11 / 前摇0.25 / 距5');
   assert(ARC_MARK.duration === 6 && ARC_MARK.extra === 14, '闪弧：标记应为 6s / 额外14');
   assert(ARC_PHASE.cd === 14 && ARC_PHASE.duration === 2.4 && ARC_PHASE.minSpeed === 6, '闪弧：虚晃应为 CD14 / 2.4s / 结束速≥6');
@@ -122,73 +122,65 @@ export function verifyArc(): void {
   assert(nextHero('hook') === 'ring' && nextHero('ring') === 'chain', '闪弧：H 循环前段钩刺→磁环→链生');
   assert(nextHero('chain') === 'nail' && nextHero('nail') === 'arc', '闪弧：H 循环应接到钉壳再接到闪弧');
   assert(nextHero('arc') === 'well', '闪弧：H 循环闪弧后接到井绳');
-  assert(Math.abs(grazeContactAngleDeg(8, 0, 1, 0)) < 1e-6, '闪弧：对撞夹角应为 0');
-  assert(Math.abs(grazeContactAngleDeg(0, 8, 1, 0) - 90) < 1e-6, '闪弧：垂直相对速夹角应为 90');
-  assert(isGrazeAngle(60) && isGrazeAngle(90) && isGrazeAngle(120), '闪弧：60/90/120 应算擦肩');
-  assert(!isGrazeAngle(0) && !isGrazeAngle(45) && !isGrazeAngle(135), '闪弧：对撞/过斜不应算擦肩');
 
-  const left = sideStepOffset(1, 0, 0, 1);
-  const right = sideStepOffset(1, 0, 0, -1);
-  assert(left.side === 'left' && Math.abs(left.y - ARC_SIDESTEP.dist) < 1e-6, '闪弧：朝右瞄上应左移 +y');
-  assert(right.side === 'right' && Math.abs(right.y + ARC_SIDESTEP.dist) < 1e-6, '闪弧：朝右瞄下应右移 -y');
+  const behind = behindEnemyPos(12, 6, -1, 0, 0.5, 0.5);
+  assert(Math.abs(behind.x - (12 + 0.5 + 0.5 + ARC_SIDESTEP.behindPad)) < 1e-6, '闪弧：贴背应在敌朝向反侧短距');
+  assert(behind.faceX < 0 && Math.abs(behind.faceY) < 1e-6, '闪弧：贴背后应朝向敌人');
 
   resetTrapZones();
   const step = createSkillCaster('arc');
-  const [stepRed] = redBlue(10, 6, 16, 6);
-  fire(step, stepRed, 1, [stepRed], { aimX: 0, aimY: 1 });
-  assert(step.getWindup()?.slot === 1, '闪弧：侧移闪应走 0.15s 前摇');
-  assert(step.isDisplacing(), '闪弧：侧移闪前摇期间应为位移技');
-  assert(Math.abs(step.getCds()[0] - ARC_SIDESTEP.cd) < 1e-6, '闪弧：侧移闪应进 7s CD');
-  assert(Math.abs(stepRed.y - 6) < 1e-6, '闪弧：前摇未结束不应横移');
-  advance(step, stepRed, [stepRed], ARC_SIDESTEP.windup + 0.02);
-  assert(Math.abs(stepRed.y - 8) < 0.12, '闪弧：瞄上应向左横移约 2 格');
-  assert(!step.isDisplacing(), '闪弧：侧移结束后应解除位移');
+  const [stepRed, stepBlue] = redBlue(10, 6, 13, 6);
+  stepBlue.facingX = -1;
+  stepBlue.facingY = 0;
+  fire(step, stepRed, 1, [stepRed, stepBlue], { aimX: 1, aimY: 0 });
+  assert(step.getWindup()?.slot === 1, '闪弧：侧闪应走 0.15s 前摇');
+  assert(step.isDisplacing(), '闪弧：侧闪前摇期间应为位移技');
+  assert(Math.abs(step.getCds()[0] - ARC_SIDESTEP.cd) < 1e-6, '闪弧：侧闪应进 7s CD');
+  assert(Math.abs(stepRed.x - 10) < 1e-6, '闪弧：前摇未结束不应瞬移');
+  advance(step, stepRed, [stepRed, stepBlue], ARC_SIDESTEP.windup + 0.02);
+  const expectBehind = behindEnemyPos(stepBlue.x, stepBlue.y, stepBlue.facingX, stepBlue.facingY, stepRed.radius, stepBlue.radius);
+  assert(Math.abs(stepRed.x - expectBehind.x) < 0.2, '闪弧：侧闪应瞬移到敌背后');
+  assert(stepRed.facingX < 0, '闪弧：侧闪落地后应朝向敌人');
+  assert(!step.isDisplacing(), '闪弧：侧闪结束后应解除位移');
 
   resetTrapZones();
-  const stepR = createSkillCaster('arc');
-  const [stepRight] = redBlue(10, 6, 16, 6);
-  fire(stepR, stepRight, 1, [stepRight], { aimX: 0, aimY: -1 });
-  advance(stepR, stepRight, [stepRight], ARC_SIDESTEP.windup + 0.02);
-  assert(Math.abs(stepRight.y - 4) < 0.12, '闪弧：瞄下应向右横移约 2 格');
+  const missStep = createSkillCaster('arc');
+  const [flashMiss] = redBlue(10, 6, 16, 6);
+  const missY = flashMiss.y;
+  fire(missStep, flashMiss, 1, [flashMiss], { aimX: 0, aimY: 1 });
+  assert(Math.abs(missStep.getCds()[0] - ARC_SIDESTEP.failCd) < 1e-6, '闪弧：侧闪无目标应进 2s 短 CD');
+  assert(!missStep.getWindup(), '闪弧：侧闪无目标不应走前摇');
+  assert(Math.abs(flashMiss.y - missY) < 1e-6, '闪弧：侧闪无目标不应位移');
 
   resetTrapZones();
   const graze = createSkillCaster('arc');
-  const [grazeRed, grazeBlue] = redBlue(10, 6, 16, 6);
+  const [grazeRed, grazeBlue] = redBlue(9.2, 6, 10.3, 6);
   fire(graze, grazeRed, 2, [grazeRed, grazeBlue]);
-  assert(Math.abs(graze.getCds()[1] - ARC_GRAZE.cd) < 1e-6, '闪弧：擦伤刃应即放进 9s CD');
-  assert(grazeRed.grazeRemain > ARC_GRAZE.duration - 0.05, '闪弧：擦伤刃应开持续窗');
+  assert(Math.abs(graze.getCds()[1] - ARC_GRAZE.cd) < 1e-6, '闪弧：掠刃应即放进 9s CD');
+  assert(grazeRed.grazeRemain > ARC_GRAZE.duration - 0.05, '闪弧：掠刃应给自己荼毒 8s');
 
-  const headOn = tryGrazeBlade(grazeRed, grazeBlue, 8, 1, 0, 8, 0);
-  assert(!headOn, '闪弧：对撞夹角 0 不应擦伤');
-  const glance = tryGrazeBlade(grazeRed, grazeBlue, 7, 1, 0, 0, 7);
-  assert(Math.abs((glance?.damage ?? 0) - ARC_GRAZE.damage) < 1e-6, '闪弧：夹角 90 且相对速达标应擦伤 11');
-  const again = tryGrazeBlade(grazeRed, grazeBlue, 7, 1, 0, 0, 7);
-  assert(!again, '闪弧：同目标 1s 内不应再擦伤');
-  grazeRed.grazeLocks[0].remain = 0;
-  const afterCd = tryGrazeBlade(grazeRed, grazeBlue, 7, 1, 0, 0, 7);
-  assert(Math.abs((afterCd?.damage ?? 0) - ARC_GRAZE.damage) < 1e-6, '闪弧：间隔 1s 后应可再擦伤');
-
-  resetTrapZones();
-  const slow = createBallBody({ x: 10, y: 6, color: 0xe24a4a, team: 'red', hero: 'arc' });
-  slow.grazeRemain = 2;
-  const slowT = createBallBody({ x: 11, y: 6, color: 0x3d7cf0, team: 'blue' });
-  const tooSlow = tryGrazeBlade(slow, slowT, 3, 1, 0, 0, 3);
-  assert(!tooSlow, '闪弧：相对速度未达标不应擦伤');
+  grazeRed.vx = 8;
+  grazeBlue.vx = -8;
+  const before = grazeBlue.hp;
+  const hits = applyCollisionCombat(grazeRed, grazeBlue, 1, 0, 16);
+  const raw = collisionDamage(16);
+  const spear = hits.find((h) => h.victimId === grazeBlue.id);
+  assert(!!spear, '闪弧：荼毒下枪尖仍应成功掉血');
+  assert(Math.abs((spear?.damage ?? 0) - (raw + ARC_GRAZE.extra)) < 1e-6, '闪弧：成功枪尖应 +6');
+  assert(Math.abs(grazeBlue.hp - (before - raw - ARC_GRAZE.extra)) < 0.08, '闪弧：荼毒加伤应加在那一次戳上');
+  assert(grazeRed.grazeRemain === 0, '闪弧：触发后应清毒');
+  assert(grazeRed.spearCdRemain > SPEAR_TIP_CD - 0.05, '闪弧：荼毒加伤仍走枪尖 1s CD');
 
   resetTrapZones();
-  const [physRed, physBlue] = redBlue(10, 6, 10.15, 7);
-  physRed.vx = 7;
-  physRed.vy = 0;
-  physRed.facingX = 0.148;
-  physRed.facingY = 0.989;
-  physRed.grazeRemain = 2;
-  physBlue.vx = 0;
-  physBlue.vy = 0;
-  const before = physBlue.hp;
-  applyCollisionCombat(physRed, physBlue, 0.148, 0.989, 7, 7, 0);
-  assert(physBlue.hp < before - 10, '闪弧：碰撞路径上擦肩应扣擦伤');
-  const raw = collisionDamage(7);
-  assert(Math.abs(physBlue.hp - (before - raw - ARC_GRAZE.damage)) < 0.08, '闪弧：擦伤应叠在碰撞伤之上');
+  const [cdRed, cdBlue] = redBlue(9.2, 6, 10.3, 6);
+  cdRed.grazeRemain = 8;
+  cdRed.spearCdRemain = 0.5;
+  cdRed.vx = 8;
+  cdBlue.vx = -8;
+  const blockedHp = cdBlue.hp;
+  applyCollisionCombat(cdRed, cdBlue, 1, 0, 16);
+  assert(Math.abs(cdBlue.hp - blockedHp) < 1e-6, '闪弧：枪尖 CD 中不应掉血也不吃荼毒');
+  assert(cdRed.grazeRemain > 7.9, '闪弧：枪尖 CD 中不应消耗荼毒');
 
   resetTrapZones();
   const mark = createSkillCaster('arc');
@@ -215,11 +207,9 @@ export function verifyArc(): void {
   const [markGRed, markGBlue] = redBlue(10, 6, 11.2, 6);
   applyEchoMark(markGBlue, ARC_MARK.duration, markGRed.id);
   markGRed.grazeRemain = 2;
-  const grazeMark = applyCollisionCombat(markGRed, markGBlue, 1, 0, 7, 0, 7);
-  const gHit = grazeMark.find((h) => Math.abs(h.damage - ARC_GRAZE.damage) < 1e-6);
-  const mHit = grazeMark.find((h) => Math.abs(h.damage - ARC_MARK.extra) < 1e-6);
-  assert(!!gHit && !!mHit, '闪弧：擦伤应能触发标记额外 14');
-  assert(markGBlue.echoMarkRemain === 0, '闪弧：擦伤吃印后应清标记');
+  markGRed.activeRamRemain = 0;
+  applyCollisionCombat(markGRed, markGBlue, 1, 0, 7, 0, 7);
+  assert(markGBlue.echoMarkRemain > 0, '闪弧：荼毒本身不应触发回印');
 
   resetTrapZones();
   const miss = createSkillCaster('arc');
@@ -279,8 +269,8 @@ export function verifyArc(): void {
   const [okRed] = redBlue(10, 6, 16, 6);
   dropTrapOn(okRed);
   fire(grazeOk, okRed, 2, [okRed]);
-  assert(Math.abs(grazeOk.getCds()[1] - ARC_GRAZE.cd) < 1e-6, '闪弧：困圈内仍可放擦伤刃');
-  assert(okRed.grazeRemain > 1.9, '闪弧：困圈内擦伤刃仍应开窗');
+  assert(Math.abs(grazeOk.getCds()[1] - ARC_GRAZE.cd) < 1e-6, '闪弧：困圈内仍可放掠刃');
+  assert(okRed.grazeRemain > 7.9, '闪弧：困圈内掠刃仍应上荼毒');
 
   resetTrapZones();
   const hookKeep = createSkillCaster('hook');
@@ -300,10 +290,11 @@ export function verifyArc(): void {
   resetTrapZones();
   const chainKeep = createSkillCaster('chain');
   const chainRed = createBallBody({ x: 8, y: 6, color: 0xe24a4a, team: 'red', facingX: 1, hero: 'chain' });
-  fire(chainKeep, chainRed, 2, [chainRed]);
-  assert(Math.abs(chainKeep.getCds()[1] - 12) < 1e-6, '闪弧：链生 kit 不应被拆坏');
-  assert(chainRed.shieldRemain > 1.15, '闪弧：链生无友时护盾仍应仅罩自己');
-  assert(CHAIN_HEAL.cd === 10, '闪弧：链生治疗链数值不应被改');
+  const chainBlue = createBallBody({ x: 11, y: 6, color: 0x3d7cf0, team: 'blue', facingX: -1, hero: 'hook' });
+  fire(chainKeep, chainRed, 2, [chainRed, chainBlue]);
+  assert(Math.abs(chainKeep.getCds()[1] - CHAIN_SHIELD.cd) < 1e-6, '闪弧：链生 kit 不应被拆坏');
+  assert(chainRed.leechRemain > CHAIN_SHIELD.duration - 0.1, '闪弧：链生盾脉仍应贴敌吸血');
+  assert(CHAIN_HEAL.cd === 10 && CHAIN_FAIL_CD === 2, '闪弧：链生愈链数值不应被改');
 
   resetTrapZones();
   const nailKeep = createSkillCaster('nail');

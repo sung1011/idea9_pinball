@@ -373,10 +373,18 @@ export function verifyNail(): void {
     facingX: 1,
     hero: 'chain',
   });
-  fire(chainKeep, chainRed, 2, [chainRed]);
+  const chainBlue = createBallBody({
+    x: 11,
+    y: 6,
+    color: 0x3d7cf0,
+    team: 'blue',
+    facingX: -1,
+    hero: 'hook',
+  });
+  fire(chainKeep, chainRed, 2, [chainRed, chainBlue]);
   assert(Math.abs(chainKeep.getCds()[1] - 12) < 1e-6, '钉壳：链生 kit 不应被拆坏');
-  assert(chainRed.shieldRemain > 1.15, '钉壳：链生无友时护盾仍应仅罩自己');
-  assert(CHAIN_HEAL.cd === 10, '钉壳：链生治疗链数值不应被改');
+  assert(chainRed.leechRemain > 2.9, '钉壳：链生盾脉仍应贴敌吸血');
+  assert(CHAIN_HEAL.cd === 10, '钉壳：链生愈链数值不应被改');
 
   resetTrapZones();
 }

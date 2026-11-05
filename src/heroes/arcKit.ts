@@ -15,18 +15,19 @@ export const ARC_SIDESTEP = {
   slot: 1,
   cd: 7,
   windup: 0.15,
-  dist: 2,
+  fanDeg: 40,
+  range: 6,
+  behindPad: 0.12,
+  /** 无合法目标：2s 短 CD，不进满 CD。 */
+  failCd: 2,
 } as const;
 
 export const ARC_GRAZE = {
   slot: 2,
   cd: 9,
   windup: 0,
-  duration: 4,
-  damage: 11,
-  minDeg: 60,
-  maxDeg: 120,
-  targetCd: 1,
+  duration: 8,
+  extra: 6,
 } as const;
 
 export const ARC_MARK = {
@@ -56,12 +57,9 @@ export const ARC_KIT_DISPLAY_NAME = '骑士闪弧';
 
 export const ARC_CDS = [ARC_SIDESTEP.cd, ARC_GRAZE.cd, ARC_MARK.cd, ARC_PHASE.cd] as const;
 
-export type ArcAimShape = {
-  kind: 'circle';
-  radius: number;
-  offsetX: number;
-  offsetY: number;
-};
+export type ArcAimShape =
+  | { kind: 'circle'; radius: number; offsetX: number; offsetY: number }
+  | { kind: 'cone'; halfRad: number; radius: number };
 
 export function arcWindup(slot: SkillSlot): number {
   if (slot === 1) {
@@ -80,31 +78,38 @@ export function arcSkillCd(slot: SkillSlot): number {
   return ARC_CDS[slot - 1];
 }
 
-/** 侧移闪 / 虚晃是位移技；擦伤刃 / 标记回响不是。 */
+/** 侧移闪 / 虚晃是位移技；掠刃 / 标记回响不是。 */
 export function arcIsDisplace(slot: SkillSlot): boolean {
   return slot === 1 || slot === 4;
 }
 
-/** 相对朝向选左/右 90°，横向移 dist 格。夹积≥0 走左。 */
-export function sideStepOffset(
+/** 贴在敌人背后短距，朝向对敌（与敌朝向同向）。 */
+export function behindEnemyPos(
+  enemyX: number,
+  enemyY: number,
   facingX: number,
   facingY: number,
-  aimX: number,
-  aimY: number,
-): { x: number; y: number; side: 'left' | 'right' } {
+  casterRadius: number,
+  enemyRadius: number,
+): { x: number; y: number; faceX: number; faceY: number } {
   const face = unit(facingX, facingY);
-  const aim = Math.hypot(aimX, aimY) < EPS ? face : unit(aimX, aimY);
-  const cross = face.x * aim.y - face.y * aim.x;
-  const left = { x: -face.y, y: face.x };
-  const side = cross >= 0 ? 'left' : 'right';
-  const dir = side === 'left' ? left : { x: face.y, y: -face.x };
-  return { x: dir.x * ARC_SIDESTEP.dist, y: dir.y * ARC_SIDESTEP.dist, side };
+  const gap = casterRadius + enemyRadius + ARC_SIDESTEP.behindPad;
+  return {
+    x: enemyX - face.x * gap,
+    y: enemyY - face.y * gap,
+    faceX: face.x,
+    faceY: face.y,
+  };
 }
 
-/** 瞄准预览：侧闪/回印用搜敌圆，掠刃/虚影只画箭头。 */
+/** 瞄准预览：侧闪用搜敌扇，回印用搜敌圆，掠刃/虚影只画箭头。 */
 export function arcAimShape(slot: SkillSlot): ArcAimShape | null {
   if (slot === 1) {
-    return { kind: 'circle', radius: ARC_SIDESTEP.dist, offsetX: 0, offsetY: 0 };
+    return {
+      kind: 'cone',
+      halfRad: (ARC_SIDESTEP.fanDeg * Math.PI) / 360,
+      radius: ARC_SIDESTEP.range,
+    };
   }
   if (slot === 3) {
     return { kind: 'circle', radius: ARC_MARK.range, offsetX: 0, offsetY: 0 };

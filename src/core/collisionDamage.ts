@@ -1,4 +1,4 @@
-import { applyArcOnCollision } from './arcCombat';
+import { applyArcOnCollision, consumeBladeVenom } from './arcCombat';
 import type { BallBody } from './ballBody';
 import { applyHpLoss } from './hpLoss';
 import { applyNailReflect, applyPinRamBonus } from './nailCombat';
@@ -115,6 +115,8 @@ function hitVictim(
     return null;
   }
   source.spearCdRemain = SPEAR_TIP_CD;
+  const venom = consumeBladeVenom(source, victim);
+  const total = damage + venom;
   if (victim.armorRemain > 0) {
     victim.armorBroken = true;
   }
@@ -126,7 +128,7 @@ function hitVictim(
     sourceId: source.id,
     victimLabel: victim.label,
     sourceLabel: source.label,
-    damage,
+    damage: total,
     knockback: kb,
     relSpeed,
     threshold: 0,
@@ -145,8 +147,8 @@ export function applyCollisionCombat(
   nx: number,
   ny: number,
   relSpeed: number,
-  relVx = a.vx - b.vx,
-  relVy = a.vy - b.vy,
+  _relVx = a.vx - b.vx,
+  _relVy = a.vy - b.vy,
 ): CollisionHit[] {
   if (a.invincibleRemain > 0 || b.invincibleRemain > 0) {
     return [];
@@ -189,7 +191,7 @@ export function applyCollisionCombat(
       hits.push(reflect);
     }
   }
-  hits.push(...applyArcOnCollision(a, b, nx, ny, relSpeed, relVx, relVy));
+  hits.push(...applyArcOnCollision(a, b));
   return hits;
 }
 

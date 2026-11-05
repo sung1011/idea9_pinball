@@ -299,7 +299,10 @@ function drawStatusRings(g: Graphics, next: BallBody, fx: number, fy: number): v
   if (next.healRemain > 0) {
     strokeHorseRing(g, 0.2, fx, fy, 0x86efac, 0.05, 0.9);
   }
-  if (next.shieldRemain > 0) {
+  if (next.burnRemain > 0) {
+    strokeHorseRing(g, 0.21, fx, fy, 0xfb7185, 0.05, 0.88);
+  }
+  if (next.shieldRemain > 0 || next.leechRemain > 0) {
     strokeHorseRing(g, 0.26, fx, fy, 0xfde68a, 0.06, 0.92);
   }
   if (next.armorRemain > 0) {

@@ -205,8 +205,14 @@ function pickChainAction(
   if (ally && ally.hp < ally.maxHp * 0.85 && allyD <= CHAIN_HEAL.range && cds[0] <= 0) {
     return castSample(1, (ally.x - bot.x) || jx, (ally.y - bot.y) || jy, px, py);
   }
-  if (((ally && allyD <= CHAIN_SHIELD.range) || !ally) && cds[1] <= 0 && (ally || enemyD < 3.5)) {
-    return castSample(2, jx, jy, px, py);
+  if (enemy && enemyD <= CHAIN_HEAL.range && cds[0] <= 0) {
+    return castSample(1, (enemy.x - bot.x) || jx, (enemy.y - bot.y) || jy, enemy.x, enemy.y);
+  }
+  if (enemy && enemyD <= CHAIN_SHIELD.range && cds[1] <= 0) {
+    return castSample(2, jx, jy, enemy.x, enemy.y);
+  }
+  if (enemy && enemyD <= CHAIN_TOW.range && cds[2] <= 0) {
+    return castSample(3, (enemy.x - bot.x) || jx, (enemy.y - bot.y) || jy, enemy.x, enemy.y);
   }
   if (ally && allyD <= CHAIN_TOW.range && cds[2] <= 0) {
     return castSample(3, jx, jy, px, py);
@@ -277,8 +283,8 @@ function pickArcAction(
   if (enemy && enemyD < 3 && cds[1] <= 0) {
     return castSample(2, jx, jy);
   }
-  if (enemy && enemyD <= ARC_SIDESTEP.dist + 1.2 && cds[0] <= 0) {
-    return castSample(1, jx, jy);
+  if (enemy && enemyD <= ARC_SIDESTEP.range && cds[0] <= 0) {
+    return castSample(1, (enemy.x - bot.x) || jx, (enemy.y - bot.y) || jy);
   }
   if ((bot.hp < bot.maxHp * 0.55 || enemyD < 1.6) && cds[3] <= 0) {
     return castSample(4, jx, jy);
@@ -287,7 +293,7 @@ function pickArcAction(
 }
 
 /**
- * 简化 AI（红2 / 两蓝共用）：钩刺保底冲靠近 + 急停 + 偶勾；磁环推波 / 困圈 / 磁场 / 近壁粘壁；链生扰锋 / 愈链 / 援勾；钉壳定锚 / 短冲顶 / 叠甲；闪弧标记 / 擦伤 / 侧闪；井绳桩 / 收索 / 换位 / 索爆。
+ * 简化 AI（红2 / 两蓝共用）：钩刺保底冲靠近 + 急停 + 偶勾；磁环推波 / 困圈 / 磁场 / 近壁粘壁；链生扰锋 / 愈链 / 盾脉 / 援勾；钉壳定锚 / 短冲顶 / 叠甲；闪弧标记 / 掠刃 / 侧闪；井绳桩 / 收索 / 换位 / 索爆。
  */
 export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): SimpleBot {
   const random = opts.random ?? Math.random;

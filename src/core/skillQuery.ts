@@ -202,6 +202,16 @@ function nearestOf(items: readonly FanPick[]): FanPick | null {
   return best;
 }
 
+function nearer(a: FanPick | null, b: FanPick | null): FanPick | null {
+  if (!a) {
+    return b;
+  }
+  if (!b) {
+    return a;
+  }
+  return a.dist <= b.dist ? a : b;
+}
+
 /** 扇内最近友军（治疗链）。无敌友仍可选。 */
 export function pickFanAlly(
   caster: BallBody,
@@ -214,13 +224,37 @@ export function pickFanAlly(
   return nearestOf(allyCandidates(caster, roster, range, { x: aimX, y: aimY, halfRad }));
 }
 
-/** 距内最近友军（护盾 / 勾友）。无友则空。 */
+/** 扇内最近友或敌（愈链：友愈、敌烧）。无敌友可选，无敌敌不选。 */
+export function pickFanAllyOrEnemy(
+  caster: BallBody,
+  roster: readonly BallBody[],
+  aimX: number,
+  aimY: number,
+  halfRad: number,
+  range: number,
+): FanPick | null {
+  return nearer(
+    pickFanAlly(caster, roster, aimX, aimY, halfRad, range),
+    pickFanEnemy(caster, roster, aimX, aimY, halfRad, range, false),
+  );
+}
+
+/** 距内最近友军（勾友）。无友则空。 */
 export function pickNearestAlly(
   caster: BallBody,
   roster: readonly BallBody[],
   range: number,
 ): FanPick | null {
   return nearestOf(allyCandidates(caster, roster, range));
+}
+
+/** 距内最近友或敌（援勾：友拉、敌弹）。无敌友可选，无敌敌不选。 */
+export function pickNearestAllyOrEnemy(
+  caster: BallBody,
+  roster: readonly BallBody[],
+  range: number,
+): FanPick | null {
+  return nearer(pickNearestAlly(caster, roster, range), pickNearestEnemy(caster, roster, range));
 }
 
 /** 线段走廊上的敌人（收索）。宽=2*halfWidth；无敌不选。 */

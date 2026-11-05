@@ -301,9 +301,10 @@ export function verifyMirror(): void {
   resetMirrorWalls();
   const chainKeep = createSkillCaster('chain');
   const chainRed = createBallBody({ x: 8, y: 6, color: 0xe24a4a, team: 'red', facingX: 1, hero: 'chain' });
-  fire(chainKeep, chainRed, 2, [chainRed]);
-  assert(chainRed.shieldRemain > 1.15, '镜卫：链生无友时护盾仍应仅罩自己');
-  assert(CHAIN_HEAL.cd === 10, '镜卫：链生治疗链数值不应被改');
+  const chainBlue = createBallBody({ x: 11, y: 6, color: 0x3d7cf0, team: 'blue', facingX: -1, hero: 'hook' });
+  fire(chainKeep, chainRed, 2, [chainRed, chainBlue]);
+  assert(chainRed.leechRemain > 2.9, '镜卫：链生盾脉仍应贴敌吸血');
+  assert(CHAIN_HEAL.cd === 10, '镜卫：链生愈链数值不应被改');
 
   resetTrapZones();
   resetMirrorWalls();
@@ -316,10 +317,11 @@ export function verifyMirror(): void {
   resetTrapZones();
   resetMirrorWalls();
   const arcKeep = createSkillCaster('arc');
-  const [arcRed] = redBlue(10, 6, 16, 6, 'arc');
-  fire(arcKeep, arcRed, 1, [arcRed], { aimX: 0, aimY: 1 });
-  advance(arcKeep, arcRed, [arcRed], ARC_SIDESTEP.windup + 0.02);
-  assert(Math.abs(arcRed.y - 8) < 0.12, '镜卫：闪弧侧移闪仍应横移约 2 格');
+  const [arcRed, arcBlue] = redBlue(10, 6, 13, 6, 'arc');
+  arcBlue.facingX = -1;
+  fire(arcKeep, arcRed, 1, [arcRed, arcBlue], { aimX: 1, aimY: 0 });
+  advance(arcKeep, arcRed, [arcRed, arcBlue], ARC_SIDESTEP.windup + 0.02);
+  assert(arcRed.x > 13.4, '镜卫：闪弧侧闪仍应闪到敌背后');
 
   resetTrapZones();
   resetMirrorWalls();
