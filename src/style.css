@@ -132,13 +132,24 @@ canvas {
 
 .matchHudHeroRow {
   position: absolute;
-  left: calc(var(--hud-safe-left) + var(--hud-pad));
-  top: calc(var(--hud-safe-top) + var(--hud-pad));
+  left: var(--stage-left);
+  top: auto;
+  right: auto;
+  bottom: calc(100% - var(--stage-top) + var(--hud-pad));
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
   pointer-events: none;
+  transform: none;
+}
+
+.isLandscape > .matchHud > .matchHudHeroRow {
+  left: auto;
+  right: calc(100% - var(--stage-left) + var(--hud-pad));
+  top: var(--stage-top);
+  bottom: auto;
+  align-items: flex-end;
 }
 
 .matchHudHeroWrap {
@@ -828,14 +839,32 @@ canvas {
 
 .touchSkills {
   position: absolute;
-  left: calc(var(--hud-safe-left) + var(--hud-pad));
-  bottom: calc(var(--hud-safe-bottom) + var(--hud-pad));
+  left: var(--stage-left);
+  top: calc(var(--stage-bottom) + var(--hud-pad));
+  right: auto;
+  bottom: auto;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 8px;
   pointer-events: auto;
   touch-action: none;
+  transform: none;
+}
+
+.isLandscape > .touchLayer > .touchSkills {
+  left: auto;
+  right: calc(100% - var(--stage-left) + var(--hud-pad));
+  top: auto;
+  bottom: calc(100% - var(--stage-bottom));
+  gap: 6px;
+}
+
+.isLandscape .touchSkillBtn {
+  width: min(8vmin, 40px);
+  height: min(8vmin, 40px);
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .touchSkillBtn {
@@ -950,9 +979,10 @@ canvas {
 }
 
 .touchCancel {
-  position: absolute;
-  left: calc(var(--hud-safe-left) + var(--hud-pad));
-  bottom: calc(var(--hud-safe-bottom) + var(--hud-pad) + 58px);
+  position: relative;
+  left: auto;
+  bottom: auto;
+  flex: 0 0 auto;
   min-width: 56px;
   height: 32px;
   border-radius: 999px;

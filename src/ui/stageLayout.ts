@@ -80,5 +80,7 @@ export function applyStageVars(host: HTMLElement, stage: StageRect): void {
   host.style.setProperty('--stage-bottom', `${stage.y + stage.height}px`);
   host.style.setProperty('--stage-center-x', `${stage.x + stage.width / 2}px`);
   host.style.setProperty('--stage-center-y', `${stage.y + stage.height * 0.42}px`);
-  host.classList.toggle('isPortrait', isPortraitViewport(host.clientWidth, host.clientHeight));
+  const portrait = isPortraitViewport(host.clientWidth, host.clientHeight);
+  host.classList.toggle('isPortrait', portrait);
+  host.classList.toggle('isLandscape', !portrait);
 }

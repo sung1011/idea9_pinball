@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '技能贴战场左下外侧、我/队友下拉贴战场左上外侧；顶中比分与顶右齿轮仍贴窗顶' },
   { title: '顶右齿轮左侧加 ?，打开同一份玩法说明卡；设置「怎么玩」仍可用' },
   { title: 'HUD：左上竖叠我/队友下拉，左下 Skill1–4 横排；顶中比分与顶右齿轮不动' },
   { title: '战场 20×20；领地半径 2.5；红蓝上下两出生；竖/横窗 letterbox，画面不旋转' },

@@ -43,6 +43,27 @@ function dummySnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
   };
 }
 
+function localBox(el: HTMLElement, host: HTMLElement): {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+} {
+  const a = el.getBoundingClientRect();
+  const b = host.getBoundingClientRect();
+  return {
+    left: a.left - b.left,
+    top: a.top - b.top,
+    right: a.right - b.left,
+    bottom: a.bottom - b.top,
+  };
+}
+
+function noRotate(el: HTMLElement): boolean {
+  const transform = getComputedStyle(el).transform;
+  return transform === 'none' || transform === 'matrix(1, 0, 0, 1, 0, 0)';
+}
+
 function dummyVersions(): AppVersions {
   return {
     getState: () => ({
@@ -61,7 +82,7 @@ function dummyVersions(): AppVersions {
   };
 }
 
-/** 竖窗 HUD：20×20 正方形 letterbox；顶中红|计时|蓝、顶右 ? 在齿轮左、左上我/队友竖叠、左下 Skill1–4 横排。 */
+/** 竖窗 HUD：20×20 正方形 letterbox；顶中红|计时|蓝、顶右 ? 在齿轮左；技能贴舞台底边外、换英雄贴顶边外。 */
 export function verifyHudLayout(): void {
   const none = { top: 0, right: 0, bottom: 0, left: 0 };
   const landscape = computeLandscapeStage(1600, 900, none);
@@ -94,7 +115,7 @@ export function verifyHudLayout(): void {
   stageHost.style.cssText = 'position:fixed;left:0;top:0;width:375px;height:667px';
   document.body.appendChild(stageHost);
   applyStageVars(stageHost, computeLandscapeStage(375, 667, none));
-  assert(stageHost.classList.contains('isPortrait'), 'HUD：竖窗应标 isPortrait');
+  assert(stageHost.classList.contains('isPortrait') && !stageHost.classList.contains('isLandscape'), 'HUD：竖窗应标 isPortrait');
   assert(!stageHost.style.transform, 'HUD：宿主不应写画面变换');
   stageHost.remove();
 
@@ -118,7 +139,7 @@ export function verifyHudLayout(): void {
   const skills = host.querySelector<HTMLElement>('.touchSkills');
   const skillBtns = [...host.querySelectorAll<HTMLButtonElement>('button.touchSkillBtn')];
   if (!cluster || !red || !blue || !clock || !hero || !allyHero || !heroRow || !skills) {
-    throw new Error('HUD：应有顶中比分计时胶囊、左上自己/队友下拉与左下技能键');
+    throw new Error('HUD：应有顶中比分计时胶囊、自己/队友下拉与技能键');
   }
   assert(!host.querySelector('.matchHudPill'), 'HUD：不应再有角落独立比分胶囊');
   assert(cluster.contains(red) && cluster.contains(clock) && cluster.contains(blue), 'HUD：红分/计时/蓝分应同在一颗胶囊');
@@ -126,17 +147,19 @@ export function verifyHudLayout(): void {
   assert(sides[0]?.classList.contains('matchHudRed') && sides[1]?.classList.contains('matchHudBlue'), 'HUD：胶囊顺序应为红 | 计时 | 蓝');
   assert(cluster.querySelectorAll('.matchHudMark').length === 2, 'HUD：红蓝两侧应有小队标');
   assert(cluster.contains(hero) === false && cluster.contains(allyHero) === false, 'HUD：英雄下拉应留在边缘，不进顶中胶囊');
-  assert(heroRow.contains(hero) && heroRow.contains(allyHero), 'HUD：自己/队友下拉应同在左上');
+  assert(heroRow.contains(hero) && heroRow.contains(allyHero), 'HUD：自己/队友下拉应同组');
   assert(heroRow.dataset.hud === 'heroPicks', 'HUD：双下拉应标 heroPicks');
   const tags = [...heroRow.querySelectorAll('.matchHudHeroTag')].map((el) => el.textContent);
   assert(tags[0] === '我' && tags[1] === '队友', 'HUD：双下拉标签应为我/队友');
-  assert(skillBtns.length === 4, 'HUD：应为左下横排四技能键');
+  assert(skillBtns.length === 4, 'HUD：应为横排四技能键');
   assert(skillBtns.map((btn) => btn.dataset.slot).join('') === '1234', 'HUD：技能键从左到右应为 Skill1–4');
 
-  host.style.cssText =
-    'position:relative;width:375px;height:667px;--hud-pad:8px;--hud-fab:28px;--hud-fab-gap:4px;--hud-safe-top:0px;--hud-safe-right:0px;--hud-safe-bottom:0px;--hud-safe-left:0px';
+  const hudChrome =
+    '--hud-pad:8px;--hud-fab:28px;--hud-fab-gap:4px;--hud-safe-top:0px;--hud-safe-right:0px;--hud-safe-bottom:0px;--hud-safe-left:0px';
+  host.style.cssText = `position:relative;width:375px;height:667px;${hudChrome}`;
   document.body.appendChild(host);
-  applyStageVars(host, computeLandscapeStage(375, 667, none));
+  const portraitStage = computeLandscapeStage(375, 667, none);
+  applyStageVars(host, portraitStage);
   const help = createHelpCard(host);
   const settings = createSettingsPanel(host, {
     onOpen: () => help.close(),
@@ -159,15 +182,15 @@ export function verifyHudLayout(): void {
   const gearRect = settingsFab.getBoundingClientRect();
   const clusterRect = cluster.getBoundingClientRect();
   const clusterTop = parseFloat(getComputedStyle(cluster).top);
-  const heroTop = parseFloat(getComputedStyle(heroRow).top);
-  const heroLeft = parseFloat(getComputedStyle(heroRow).left);
-  const stageTop = parseFloat(getComputedStyle(host).getPropertyValue('--stage-top'));
   const heroDir = getComputedStyle(heroRow).flexDirection;
-  const skillsLeft = parseFloat(getComputedStyle(skills).left);
-  const skillsBottom = parseFloat(getComputedStyle(skills).bottom);
   const skillsDisplay = getComputedStyle(skills).display;
   const skillsDir = getComputedStyle(skills).flexDirection;
   const hostTransform = getComputedStyle(host).transform;
+  const heroBox = localBox(heroRow, host);
+  const skillBox = localBox(skills, host);
+  const clusterBox = localBox(cluster, host);
+  const helpBox = localBox(helpFab, host);
+  const gearBox = localBox(settingsFab, host);
   helpFab.click();
   const helpOpenedByFab = help.isOpen();
   help.close();
@@ -177,24 +200,68 @@ export function verifyHudLayout(): void {
   const helpOpenedBySettings = help.isOpen();
   const settingsClosedAfterHowTo = !settings.isOpen();
   help.close();
-  host.remove();
+  assert(host.classList.contains('isPortrait') && !host.classList.contains('isLandscape'), 'HUD：竖窗宿主应标 isPortrait');
   assert(Number.isFinite(clusterTop) && clusterTop < 40, 'HUD：顶中胶囊应贴竖窗顶');
-  assert(Number.isFinite(heroTop) && heroTop < 40, 'HUD：双下拉应贴竖窗顶');
-  assert(Number.isFinite(heroLeft) && heroLeft < 40, 'HUD：双下拉应贴竖窗左');
-  assert(stageTop > 80, 'HUD：竖窗舞台顶应落在 letterbox');
-  assert(clusterTop < stageTop - 40, 'HUD：胶囊应在上黑边，不贴舞台边');
-  assert(heroTop < stageTop - 40, 'HUD：双下拉应在上黑边，不贴舞台边');
+  assert(portraitStage.y > 80, 'HUD：竖窗舞台顶应落在 letterbox');
+  assert(clusterTop < portraitStage.y - 40, 'HUD：胶囊应在上黑边，不贴舞台边');
+  assert(Math.abs(heroBox.left - portraitStage.x) < 3, 'HUD：竖窗下拉应左对齐舞台');
+  assert(heroBox.bottom <= portraitStage.y + 1, 'HUD：竖窗下拉应在舞台顶边外');
+  assert(portraitStage.y - heroBox.bottom < 16, 'HUD：竖窗下拉应紧挨舞台顶边外');
+  assert(heroBox.top > 40, 'HUD：竖窗下拉不应粘屏幕顶角');
+  assert(clusterBox.bottom <= heroBox.top + 1, 'HUD：下拉不应挡住顶中胶囊');
   assert(heroDir === 'column', 'HUD：我/队友应竖叠');
-  assert(Number.isFinite(skillsLeft) && skillsLeft < 40, 'HUD：四键应贴竖窗左');
-  assert(Number.isFinite(skillsBottom) && skillsBottom < 40, 'HUD：四键应贴竖窗底');
+  assert(Math.abs(skillBox.left - portraitStage.x) < 3, 'HUD：竖窗四键应左对齐舞台');
+  assert(skillBox.top + 1 >= portraitStage.y + portraitStage.height, 'HUD：竖窗四键应在舞台底边外');
+  assert(skillBox.top - (portraitStage.y + portraitStage.height) < 16, 'HUD：竖窗四键应紧挨舞台底边外');
+  assert(667 - skillBox.bottom > 40, 'HUD：竖窗四键不应粘屏幕底角');
+  assert(skillBox.top + 1 >= clusterBox.bottom, 'HUD：四键不应挡住顶中胶囊');
+  assert(helpBox.left + 1 >= clusterBox.right, 'HUD：? 不应叠顶中比分');
+  assert(gearBox.left + 1 >= helpBox.right, 'HUD：齿轮不应叠 ?');
   assert(skillsDisplay === 'flex' && skillsDir === 'row', 'HUD：四键应一行横排');
   assert(helpRect.right <= gearRect.left + 1, 'HUD：? 应在齿轮左侧');
   assert(Math.abs(helpRect.top - gearRect.top) < 2, 'HUD：? 应与齿轮顶对齐');
   assert(helpRect.left + 1 >= clusterRect.right, 'HUD：? 不应叠顶中比分');
   assert(hostTransform === 'none', 'HUD：宿主 transform 无旋转');
+  assert(noRotate(host) && noRotate(heroRow) && noRotate(skills), 'HUD：技能/下拉无旋转');
   assert(helpOpenedByFab, 'HUD：点 ? 应打开同一份说明卡');
   assert(!!howTo, 'HUD：设置常规应仍有怎么玩');
   assert(helpOpenedBySettings && settingsClosedAfterHowTo, 'HUD：设置怎么玩应打开同一份说明卡');
+
+  const landHost = document.createElement('div');
+  landHost.style.cssText = `position:relative;width:1600px;height:900px;${hudChrome}`;
+  createMatchHud(landHost);
+  createTouchPad(landHost, createActionBus());
+  document.body.appendChild(landHost);
+  const landStage = computeLandscapeStage(1600, 900, none);
+  applyStageVars(landHost, landStage);
+  const landHero = landHost.querySelector<HTMLElement>('.matchHudHeroRow');
+  const landSkills = landHost.querySelector<HTMLElement>('.touchSkills');
+  const landCluster = landHost.querySelector<HTMLElement>('.matchHudCluster');
+  if (!landHero || !landSkills || !landCluster) {
+    throw new Error('HUD：横窗应有下拉、技能与胶囊');
+  }
+  const landHeroBox = localBox(landHero, landHost);
+  const landSkillBox = localBox(landSkills, landHost);
+  const landClusterBox = localBox(landCluster, landHost);
+  const landHeroDir = getComputedStyle(landHero).flexDirection;
+  const landSkillsDir = getComputedStyle(landSkills).flexDirection;
+  const landNoRotate = noRotate(landHost) && noRotate(landHero) && noRotate(landSkills);
+  const landIsLandscape = landHost.classList.contains('isLandscape') && !landHost.classList.contains('isPortrait');
+  landHost.remove();
+  assert(landIsLandscape, 'HUD：横窗宿主应标 isLandscape');
+  assert(landStage.x > 80, 'HUD：横窗舞台左应落在 letterbox');
+  assert(landHeroDir === 'column', 'HUD：横窗我/队友仍应竖叠');
+  assert(landSkillsDir === 'row', 'HUD：横窗四键仍应一行横排');
+  assert(landHeroBox.right <= landStage.x + 1, 'HUD：横窗下拉应在舞台左边外');
+  assert(landStage.x - landHeroBox.right < 16, 'HUD：横窗下拉应紧挨舞台左边外');
+  assert(Math.abs(landHeroBox.top - landStage.y) < 4, 'HUD：横窗下拉应对齐舞台顶');
+  assert(landHeroBox.left > 40, 'HUD：横窗下拉不应粘屏幕左上角');
+  assert(landSkillBox.right <= landStage.x + 1, 'HUD：横窗四键应在舞台左边外');
+  assert(landStage.x - landSkillBox.right < 16, 'HUD：横窗四键应紧挨舞台左边外');
+  assert(Math.abs(landSkillBox.bottom - (landStage.y + landStage.height)) < 4, 'HUD：横窗四键应对齐舞台底');
+  assert(landSkillBox.left > 40, 'HUD：横窗四键不应粘屏幕左下角');
+  assert(landHeroBox.right + 1 < landClusterBox.left || landHeroBox.bottom <= landClusterBox.top + 1, 'HUD：横窗下拉不应挡住顶中胶囊');
+  assert(landNoRotate, 'HUD：横窗技能/下拉无旋转');
 
   hud.sync(dummySnap(), []);
   assert(red.textContent === '15' && blue.textContent === '30', 'HUD：胶囊应同步双方分数');
@@ -223,4 +290,5 @@ export function verifyHudLayout(): void {
   assert(!opening.classList.contains('isOn'), 'HUD：冲锋阶段不应出说明板');
   assert(openingNum.textContent === '', 'HUD：冲锋阶段不应写冲锋字');
   assert(toast.textContent !== '冲锋', 'HUD：冲锋阶段 toast 不应解释冲锋');
+  host.remove();
 }
