@@ -3,6 +3,7 @@ import { createTouchPad } from '../input/touchPad';
 import type { AppVersions } from '../ui/appVersion';
 import { createHelpCard } from '../ui/helpCard';
 import { createMatchHud } from '../ui/matchHud';
+import { createResultPanel } from '../ui/resultPanel';
 import { createSettingsPanel } from '../ui/settingsPanel';
 import { createSkillTip } from '../ui/skillTip';
 import {
@@ -44,7 +45,7 @@ function borderPx(el: HTMLElement): number {
   return Number.parseFloat(getComputedStyle(el).borderTopWidth);
 }
 
-/** 局内 HUD chrome 色板：羊皮纸+木框，金只在计时，技能无金闪。 */
+/** 局内 HUD chrome + 说明卡/设置浮层：羊皮纸+木框，金只在计时，技能/浮层无金闪。 */
 export function verifyUiTheme(): void {
   assert(UI_THEME.parchmentBase === '#F3E6C8', '色板：parchment_base');
   assert(UI_THEME.parchmentShadow === '#D4C19A', '色板：parchment_shadow');
@@ -75,8 +76,8 @@ export function verifyUiTheme(): void {
   applyUiTheme(host);
   createMatchHud(host);
   createTouchPad(host, createActionBus(), { holdMs: 0 });
-  createHelpCard(host);
-  createSettingsPanel(host, {
+  const help = createHelpCard(host);
+  const settings = createSettingsPanel(host, {
     onRestart: () => {},
     onCollision: () => {},
     onScore: () => {},
@@ -85,6 +86,7 @@ export function verifyUiTheme(): void {
     onForceRespawn: () => {},
     versions: dummyVersions(),
   });
+  createResultPanel(host, () => {});
   document.body.appendChild(host);
 
   const cluster = host.querySelector<HTMLElement>('.matchHudCluster');
@@ -174,5 +176,125 @@ export function verifyUiTheme(): void {
   assert(sameCssColor(color(tipEffect, 'color'), UI_THEME.inkMuted), '技能 tip：效果 ink_muted');
   assert(!cssColorHasGold(tipCs.borderTopColor) && !cssColorHasGold(color(tipName, 'color')), '技能 tip：无金闪');
   tip.hide();
+
+  help.open();
+  const helpCard = host.querySelector<HTMLElement>('.helpCard');
+  const helpTitle = helpCard?.querySelector<HTMLElement>('h2') ?? null;
+  const helpClose = host.querySelector<HTMLElement>('.helpCardClose');
+  const helpH3 = host.querySelector<HTMLElement>('.helpCardBlock h3');
+  const helpLi = host.querySelector<HTMLElement>('.helpCardBlock li');
+  if (!helpCard || !helpTitle || !helpClose || !helpH3 || !helpLi) {
+    host.remove();
+    throw new Error('浮层换皮：应有说明卡标题、关闭钮与正文');
+  }
+  const helpCs = getComputedStyle(helpCard);
+  assert(sameCssColor(helpCs.backgroundColor, UI_THEME.parchmentBase), `说明卡：羊皮纸底（实际 ${helpCs.backgroundColor}）`);
+  assert(helpCs.borderTopStyle === 'solid', '说明卡：实线木框');
+  assert(borderPx(helpCard) >= 1, `说明卡：木框可见（实际 ${helpCs.borderTopWidth}）`);
+  assert(
+    Math.abs(borderPx(helpCard) - borderPx(cluster)) < 0.2,
+    `说明卡：木框应与 HUD 胶囊同宽（卡 ${helpCs.borderTopWidth} / 胶囊 ${clusterCs.borderTopWidth}）`,
+  );
+  assert(
+    sameCssColor(helpCs.borderTopColor, UI_THEME.woodFrame),
+    `说明卡：wood_frame（实际 ${helpCs.borderTopColor}）`,
+  );
+  assert(sameCssColor(color(helpTitle, 'color'), UI_THEME.ink), '说明卡标题：ink，非金');
+  assert(sameCssColor(color(helpH3, 'color'), UI_THEME.ink), '说明卡小节：ink');
+  assert(sameCssColor(color(helpLi, 'color'), UI_THEME.ink), '说明卡正文：ink');
+  assert(!cssColorHasGold(color(helpTitle, 'color')) && !cssColorHasGold(helpCs.borderTopColor), '说明卡：无金边/金标题');
+  const helpCloseCs = getComputedStyle(helpClose);
+  assert(sameCssColor(helpCloseCs.backgroundColor, UI_THEME.buttonIdle), '说明卡关闭：button_idle');
+  assert(sameCssColor(helpCloseCs.color, UI_THEME.ink), '说明卡关闭：ink');
+  assert(sameCssColor(helpCloseCs.borderTopColor, UI_THEME.woodFrame), '说明卡关闭：木框');
+  assert(!cssColorHasGold(helpCloseCs.boxShadow) && !cssColorHasGold(helpCloseCs.borderTopColor), '说明卡关闭：无金闪');
+  help.close();
+
+  settings.open();
+  const panel = host.querySelector<HTMLElement>('.settingsPanel');
+  const settingsTitle = host.querySelector<HTMLElement>('.settingsTitle');
+  const settingsClose = host.querySelector<HTMLElement>('.settingsClose');
+  const tabOn = host.querySelector<HTMLElement>('.settingsTab.isOn');
+  const tabOff = [...host.querySelectorAll<HTMLElement>('.settingsTab')].find((el) => !el.classList.contains('isOn'));
+  const wide = host.querySelector<HTMLElement>('.settingsWide');
+  const hint = host.querySelector<HTMLElement>('.settingsHint');
+  if (!panel || !settingsTitle || !settingsClose || !tabOn || !tabOff || !wide || !hint) {
+    host.remove();
+    throw new Error('浮层换皮：应有设置标题、页签、按钮与次要文');
+  }
+  const panelCs = getComputedStyle(panel);
+  assert(sameCssColor(panelCs.backgroundColor, UI_THEME.parchmentBase), `设置：羊皮纸底（实际 ${panelCs.backgroundColor}）`);
+  assert(borderPx(panel) >= 1, `设置：木框可见（实际 ${panelCs.borderTopWidth}）`);
+  assert(
+    Math.abs(borderPx(panel) - borderPx(cluster)) < 0.2,
+    `设置：木框应与 HUD 胶囊同宽（面板 ${panelCs.borderTopWidth} / 胶囊 ${clusterCs.borderTopWidth}）`,
+  );
+  assert(sameCssColor(panelCs.borderTopColor, UI_THEME.woodFrame), `设置：wood_frame（实际 ${panelCs.borderTopColor}）`);
+  assert(sameCssColor(color(settingsTitle, 'color'), UI_THEME.ink), '设置标题：ink，非金');
+  assert(!cssColorHasGold(color(settingsTitle, 'color')) && !cssColorHasGold(panelCs.borderTopColor), '设置：无金边/金标题');
+  const closeCs = getComputedStyle(settingsClose);
+  assert(sameCssColor(closeCs.backgroundColor, UI_THEME.buttonIdle), '设置关闭：button_idle');
+  assert(sameCssColor(closeCs.color, UI_THEME.ink), '设置关闭：ink');
+  assert(!cssColorHasGold(closeCs.boxShadow) && !cssColorHasGold(closeCs.borderTopColor), '设置关闭：无金闪');
+  assert(sameCssColor(color(tabOn, 'color'), UI_THEME.ink), '设置页签选中：ink');
+  assert(sameCssColor(color(tabOff, 'color'), UI_THEME.inkMuted), '设置页签未选：ink_muted');
+  assert(sameCssColor(getComputedStyle(tabOn).borderTopColor, UI_THEME.woodFrame), '设置页签选中：木框');
+  assert(sameCssColor(color(wide, 'backgroundColor'), UI_THEME.buttonIdle), '设置按钮：button_idle');
+  assert(sameCssColor(getComputedStyle(wide).borderTopColor, UI_THEME.woodFrame), '设置按钮：木框');
+  assert(sameCssColor(color(wide, 'color'), UI_THEME.ink), '设置按钮：ink');
+  assert(!cssColorHasGold(getComputedStyle(wide).borderTopColor) && !cssColorHasGold(color(wide, 'color')), '设置按钮：无金闪');
+  assert(sameCssColor(color(hint, 'color'), UI_THEME.inkMuted), '设置次要文：ink_muted');
+
+  const versionTab = [...host.querySelectorAll<HTMLElement>('.settingsTab')].find((el) => el.dataset.tab === 'version');
+  const gmTab = [...host.querySelectorAll<HTMLElement>('.settingsTab')].find((el) => el.dataset.tab === 'gm');
+  versionTab?.click();
+  const verCard = host.querySelector<HTMLElement>('.settingsVerCard');
+  const notesTitle = host.querySelector<HTMLElement>('.settingsNotesTitle');
+  const flashProbe = document.createElement('p');
+  flashProbe.className = 'settingsFlash';
+  host.appendChild(flashProbe);
+  if (!verCard) {
+    host.remove();
+    throw new Error('浮层换皮：版本页应有版本卡');
+  }
+  assert(sameCssColor(getComputedStyle(verCard).backgroundColor, UI_THEME.parchmentBase), '版本卡：羊皮纸底');
+  assert(sameCssColor(getComputedStyle(verCard).borderTopColor, UI_THEME.woodFrame), '版本卡：木框');
+  if (notesTitle) {
+    assert(sameCssColor(color(notesTitle, 'color'), UI_THEME.inkMuted), '版本次要标题：ink_muted');
+  }
+  assert(sameCssColor(color(flashProbe, 'color'), UI_THEME.ink), '版本提示：ink，非金');
+  assert(!cssColorHasGold(color(flashProbe, 'color')), '版本提示：无金');
+  flashProbe.remove();
+
+  gmTab?.click();
+  const gmTitle = host.querySelector<HTMLElement>('.settingsGmTitle');
+  const gmBtn = host.querySelector<HTMLElement>('.settingsGmBtn');
+  const gmSwitch = host.querySelector<HTMLElement>('.settingsSwitch');
+  if (!gmTitle || !gmBtn || !gmSwitch) {
+    host.remove();
+    throw new Error('浮层换皮：GM 页应有分组标题、按钮与开关');
+  }
+  assert(sameCssColor(color(gmTitle, 'color'), UI_THEME.inkMuted), 'GM 分组：ink_muted');
+  assert(sameCssColor(color(gmBtn, 'backgroundColor'), UI_THEME.buttonIdle), 'GM 按钮：button_idle');
+  assert(sameCssColor(getComputedStyle(gmBtn).borderTopColor, UI_THEME.woodFrame), 'GM 按钮：木框');
+  assert(sameCssColor(color(gmBtn, 'color'), UI_THEME.ink), 'GM 按钮：ink');
+  assert(!cssColorHasGold(color(gmBtn, 'color')) && !cssColorHasGold(getComputedStyle(gmBtn).borderTopColor), 'GM 按钮：无金闪');
+  assert(sameCssColor(color(gmSwitch, 'color'), UI_THEME.ink), 'GM 开关文：ink');
+  settings.close();
+
+  const resultPanel = host.querySelector<HTMLElement>('.resultPanel');
+  const resultTitle = host.querySelector<HTMLElement>('.resultPanelTitle');
+  const resultClose = host.querySelector<HTMLElement>('.resultPanelClose');
+  const resultAgain = host.querySelector<HTMLElement>('.resultPanelAgain');
+  if (!resultPanel || !resultTitle || !resultClose || !resultAgain) {
+    host.remove();
+    throw new Error('浮层换皮：结算板应仍在且未被拆掉');
+  }
+  const resultCs = getComputedStyle(resultPanel);
+  assert(!sameCssColor(resultCs.backgroundColor, UI_THEME.parchmentBase), '结算板：本枪不换羊皮纸');
+  assert(borderPx(resultPanel) < 2, '结算板：本枪不改成 2px 木框');
+  assert(!sameCssColor(resultCs.borderTopColor, UI_THEME.woodFrame), '结算板：边框仍非 wood_frame');
+  assert(!sameCssColor(color(resultClose, 'backgroundColor'), UI_THEME.buttonIdle), '结算板关闭：仍非 HUD 木钮');
+  assert(!sameCssColor(color(resultAgain, 'backgroundColor'), UI_THEME.buttonIdle), '结算板再来一局：仍非 HUD 木钮');
   host.remove();
 }

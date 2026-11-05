@@ -346,12 +346,20 @@ canvas {
   display: none;
   position: absolute;
   inset: 0;
-  background: #04161699;
   z-index: 20;
   pointer-events: auto;
   align-items: center;
   justify-content: center;
   padding: 16px;
+}
+
+.helpOverlay,
+.settingsOverlay {
+  background: rgba(47, 36, 26, 0.48);
+}
+
+.resultOverlay {
+  background: #04161699;
 }
 
 .helpOverlay.isOn,
@@ -377,10 +385,22 @@ canvas {
   overflow: auto;
   padding: 18px 20px 16px;
   border-radius: 16px;
+  font: 14px/1.5 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+}
+
+.helpCard,
+.settingsPanel {
+  background-color: var(--parchment-base);
+  background-image: linear-gradient(180deg, var(--parchment-highlight) 0%, transparent 42%);
+  border: 2px solid var(--wood-frame);
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 var(--parchment-highlight), var(--hud-shadow);
+}
+
+.resultPanel {
   background: #0c2c2cee;
   border: 1px solid #9af6f655;
   color: #e8ffff;
-  font: 14px/1.5 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   box-shadow: 0 12px 40px #041616aa;
 }
 
@@ -392,14 +412,45 @@ canvas {
 }
 
 .helpCard h2,
+.settingsTitle {
+  margin: 0;
+  font-size: 22px;
+  color: var(--ink);
+}
+
 .resultPanelTitle {
   margin: 0;
   font-size: 22px;
 }
 
 .helpCardClose,
-.resultPanelClose,
 .settingsClose {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--wood-frame);
+  border-radius: 50%;
+  background: var(--button-idle);
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--hud-shadow);
+}
+
+.helpCardClose:hover,
+.helpCardClose:active,
+.settingsClose:hover,
+.settingsClose:active {
+  background: var(--button-pressed);
+  border-color: var(--wood-frame-dark);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(47, 36, 26, 0.22);
+}
+
+.resultPanelClose {
+  position: absolute;
+  right: 12px;
+  top: 12px;
   width: 32px;
   height: 32px;
   border: 0;
@@ -411,21 +462,15 @@ canvas {
   cursor: pointer;
 }
 
-.resultPanelClose {
-  position: absolute;
-  right: 12px;
-  top: 12px;
-}
-
 .helpCardBlock {
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px solid #9af6f633;
+  border-top: 1px solid var(--panel-border);
 }
 
 .helpCardBlock h3 {
   margin: 0 0 6px;
-  color: #9af6f6;
+  color: var(--ink);
   font-size: 15px;
 }
 
@@ -517,37 +562,33 @@ canvas {
   margin-bottom: 8px;
 }
 
-.settingsTitle {
-  margin: 0;
-  font-size: 22px;
-}
-
 .settingsTabs {
   display: flex;
   gap: 6px;
   margin: 4px 0 12px;
   padding: 4px;
   border-radius: 999px;
-  background: #163838;
-  border: 1px solid #9af6f655;
+  background: var(--parchment-shadow);
+  border: 2px solid var(--wood-frame);
 }
 
 .settingsTab {
   flex: 1;
   min-height: 36px;
   padding: 6px 4px;
-  border: 0;
+  border: 2px solid transparent;
   border-radius: 999px;
   background: transparent;
-  color: #9af6f6;
+  color: var(--ink-muted);
   font: 700 14px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   cursor: pointer;
 }
 
 .settingsTab.isOn {
-  background: #1e5a5a;
-  color: #e8ffff;
-  box-shadow: 0 0 0 1px #9af6f688;
+  background: var(--button-idle);
+  color: var(--ink);
+  border-color: var(--wood-frame);
+  box-shadow: inset 0 1px 0 var(--parchment-highlight), var(--hud-shadow);
 }
 
 .settingsBody {
@@ -561,18 +602,23 @@ canvas {
   width: 100%;
   min-height: 44px;
   padding: 8px 10px;
-  border: 1px solid #9af6f688;
+  border: 2px solid var(--wood-frame);
   border-radius: 10px;
-  background: #164848;
-  color: #e8ffff;
+  background: var(--button-idle);
+  color: var(--ink);
   font: 700 15px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   cursor: pointer;
+  box-shadow: var(--hud-shadow);
 }
 
 .settingsWide:hover,
-.settingsGmBtn:hover:not(:disabled) {
-  border-color: #ffe08a;
-  color: #ffe08a;
+.settingsWide:active,
+.settingsGmBtn:hover:not(:disabled),
+.settingsGmBtn:active:not(:disabled) {
+  background: var(--button-pressed);
+  border-color: var(--wood-frame-dark);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(47, 36, 26, 0.22);
 }
 
 .settingsGmBtn:disabled {
@@ -582,7 +628,7 @@ canvas {
 
 .settingsHint {
   margin: 0;
-  color: #9af6f6;
+  color: var(--ink-muted);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -592,19 +638,20 @@ canvas {
   flex-direction: column;
   gap: 2px;
   padding: 10px 12px;
-  border: 1px solid #9af6f655;
+  border: 2px solid var(--wood-frame);
   border-radius: 12px;
-  background: #163838;
+  background: var(--parchment-base);
 }
 
 .settingsVer {
   margin: 0;
   font-weight: 700;
+  color: var(--ink);
 }
 
 .settingsNotesTitle {
   margin: 6px 0 0;
-  color: #9af6f6;
+  color: var(--ink-muted);
   font-size: 13px;
 }
 
@@ -618,7 +665,7 @@ canvas {
 
 .settingsFlash {
   margin: 0;
-  color: #ffe08a;
+  color: var(--ink);
   font-size: 13px;
   font-weight: 700;
 }
@@ -628,9 +675,9 @@ canvas {
   flex-direction: column;
   gap: 4px;
   padding: 8px 10px;
-  border: 1px solid #9af6f655;
+  border: 2px solid var(--wood-frame);
   border-radius: 12px;
-  background: #163838;
+  background: var(--parchment-base);
 }
 
 .settingsVerMeta {
@@ -640,10 +687,11 @@ canvas {
   align-items: baseline;
   gap: 8px;
   font-weight: 700;
+  color: var(--ink);
 }
 
 .settingsVerMeta span {
-  color: #9af6f6;
+  color: var(--ink-muted);
   font-size: 12px;
   font-weight: 500;
 }
@@ -713,6 +761,7 @@ canvas {
   min-height: 44px;
   padding: 6px 2px;
   cursor: pointer;
+  color: var(--ink);
 }
 
 .settingsSwitch input {
@@ -722,9 +771,9 @@ canvas {
   height: 26px;
   margin: 0;
   flex: none;
-  border: 2px solid #9af6f688;
+  border: 2px solid var(--wood-frame);
   border-radius: 999px;
-  background: #163838;
+  background: var(--parchment-shadow);
   position: relative;
   cursor: pointer;
 }
@@ -737,13 +786,13 @@ canvas {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #e8ffff;
+  background: var(--parchment-highlight);
   transition: transform 0.16s ease;
 }
 
 .settingsSwitch input:checked {
-  background: #2a8a6a;
-  border-color: #9af6f6;
+  background: var(--wood-frame);
+  border-color: var(--wood-frame-dark);
 }
 
 .settingsSwitch input:checked::after {
@@ -758,7 +807,7 @@ canvas {
 
 .settingsGmTitle {
   margin: 2px 0 0;
-  color: #9af6f6;
+  color: var(--ink-muted);
   font-size: 13px;
 }
 
