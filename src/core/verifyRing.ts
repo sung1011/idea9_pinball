@@ -207,7 +207,7 @@ export function verifyRing(): void {
   assert(popped, '磁环：粘壁结束后应弹出');
 
   resetTrapZones();
-  const [trapRed, trapBlue] = redBlue(10, 6, 10.4, 6);
+  const [trapRed, trapBlue] = redBlue(10, 6, 12, 6);
   const trap = createSkillCaster('ring');
   const hook = createSkillCaster('hook');
   fire(trap, trapRed, 4, [trapRed, trapBlue]);

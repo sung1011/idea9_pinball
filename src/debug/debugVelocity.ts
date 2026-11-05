@@ -32,6 +32,7 @@ function placeBall(ball: BallBody, x: number, y: number, facingX: number, facing
   ball.facingX = facingX;
   ball.facingY = facingY;
   ball.activeRamRemain = 0;
+  ball.spearCdRemain = 0;
   ball.fineTuneRemain = 0;
   ball.invincibleRemain = 0;
   ball.stunRemain = 0;
@@ -55,7 +56,7 @@ function debugPair(balls: BallBody[]): [BallBody, BallBody] | null {
   return a && b && a !== b ? [a, b] : null;
 }
 
-/** 碰撞测：Z 背刺 / X 侧身圆蹭不掉血 / C 枪尖对戳 / V 轻蹭。双方在场才生效。 */
+/** 碰撞测：Z 背刺 / X 侧身圆蹭不掉血 / C 枪尖对戳 / V 同向轻蹭。双方在场才生效。 */
 export function applyCollisionTest(
   balls: readonly BallBody[],
   kind: CollisionTestKind,
@@ -94,7 +95,7 @@ export function applyCollisionTest(
   return true;
 }
 
-/** 调试：Z 背刺 / X 侧蹭 / C 对戳 / V 轻蹭（GM 开时）；R 只重开，正式也可用。 */
+/** 调试：Z 背刺 / X 侧蹭 / C 对戳 / V 同向轻蹭（GM 开时）；R 只重开，正式也可用。 */
 export function bindDebugVelocity(opts: {
   balls: BallBody[];
   onReset?: () => void;

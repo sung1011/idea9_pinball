@@ -66,15 +66,21 @@ export const WALL_RESTITUTION = 1;
 /** 基础血量（共用 / 英雄；开局与回场满血基线） */
 export const MAX_HP = 300;
 
-/** 碰撞掉血：相对速度阈值（格/秒） */
+/**
+ * 擦伤刃等技能仍用的相对速度门槛（格/秒）。
+ * 枪尖普攻不再用门槛挡掉血。
+ */
 export const COLLISION_SPEED_THRESHOLD = 4;
 
-/** 主动撞窗口内的相对速度阈值（格/秒） */
+/** 主动撞窗口内，技能门槛降到此值（格/秒）；不影响枪尖普攻 */
 export const ACTIVE_RAM_SPEED_THRESHOLD = 2.5;
 
-/** 碰撞伤害 = SCALE × (相对速度 − 阈值)，再 cap；不乘朝向 */
+/** 枪尖普攻伤害 = SCALE × 相对速度标量，再 cap；不乘朝向、无门槛 */
 export const COLLISION_DAMAGE_SCALE = 6;
 export const COLLISION_DAMAGE_CAP = 28;
+
+/** 枪尖普攻 CD（秒）；仅成功掉血后进入 */
+export const SPEAR_TIP_CD = 1;
 
 /**
  * 枪尖距圆心（格），对齐 `ballView.drawTargetSpear` 的 tip（1.12）。
@@ -85,7 +91,7 @@ export const SPEAR_TIP_DIST = 1.12;
 export const SPEAR_TIP_RADIUS = 0.1;
 
 /**
- * 掉血弹开初速 ≈ KNOCKBACK_SCALE × min(1, (相对速度−阈值)/SPAN)
+ * 掉血弹开初速 ≈ KNOCKBACK_SCALE × min(1, 相对速度/SPAN)
  * 单次感上限约 2.5 格当量；满额速度档实际顶在 SCALE=2
  */
 export const KNOCKBACK_SCALE = 2;

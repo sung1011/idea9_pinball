@@ -248,7 +248,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
       gmBtn('背刺 Z', () => actions.onCollision('back')),
       gmBtn('侧蹭 X', () => actions.onCollision('side')),
       gmBtn('对戳 C', () => actions.onCollision('front')),
-      gmBtn('轻蹭 V', () => actions.onCollision('graze')),
+      gmBtn('同向蹭 V', () => actions.onCollision('graze')),
     ]);
     addGmGroup('分数', [
       gmBtn('红 +10 F', () => actions.onScore('red', 10)),

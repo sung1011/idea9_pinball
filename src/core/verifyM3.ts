@@ -171,7 +171,7 @@ export function verifyM3(): void {
     throw new Error('M3：轻蹭也应打开 0.3s 微调窗');
   }
   if (scrapeA.hp !== MAX_HP || scrapeB.hp !== MAX_HP) {
-    throw new Error('M3：轻蹭仍不应掉血');
+    throw new Error('M3：同向相对速度为 0 时仍不应掉血');
   }
 
   const wallBall = createBallBody({

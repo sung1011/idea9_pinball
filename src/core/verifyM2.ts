@@ -1,11 +1,11 @@
-import { createBallBody, openActiveRam } from './ballBody';
+import { createBallBody, tickSpearCd } from './ballBody';
 import {
   applyCollisionCombat,
   collisionDamage,
-  collisionThreshold,
   selfCheckCollisionDamage,
 } from './collisionDamage';
-import { MAX_HP } from './constants';
+import { MAX_HP, SPEAR_TIP_CD } from './constants';
+import { applySkillDamage } from './skillHits';
 import { stepPhysics } from './physicsStep';
 
 function stepUntilHit(
@@ -19,7 +19,7 @@ function stepUntilHit(
   return count;
 }
 
-/** 公式 + 枪尖门闩 / 对撞 / 侧蹭 / 主动撞窗积分自检。 */
+/** 公式 + 枪尖门闩 / 对撞 / 侧蹭 / 无门槛 / 普攻 CD 自检。 */
 export function verifyM2(): void {
   selfCheckCollisionDamage();
 
@@ -70,7 +70,7 @@ export function verifyM2(): void {
   });
   stepUntilHit([scrapeA, scrapeB]);
   if (scrapeA.hp !== MAX_HP || scrapeB.hp !== MAX_HP) {
-    throw new Error('M2：轻蹭（相对速度 < 4）不应掉血');
+    throw new Error('M2：同向相对速度为 0 时伤≤0，不当命中');
   }
 
   const ramA = createBallBody({
@@ -93,10 +93,9 @@ export function verifyM2(): void {
     facingX: -1,
     facingY: 0,
   });
-  openActiveRam(ramA);
   const ramHits = stepUntilHit([ramA, ramB]);
   if (ramHits === 0 || (ramA.hp >= MAX_HP && ramB.hp >= MAX_HP)) {
-    throw new Error('M2：主动撞窗内相对速度 3.2 应掉血');
+    throw new Error('M2：无门槛时相对速度 3.2 的枪尖戳中应掉血');
   }
 
   const sideA = createBallBody({
@@ -212,11 +211,93 @@ export function verifyM2(): void {
   });
   const frontHit = applyCollisionCombat(frontA, frontB, 1, 0, 8).find((hit) => hit.victimId === frontB.id);
   const rearHit = applyCollisionCombat(rearA, rearB, 1, 0, 8).find((hit) => hit.victimId === rearB.id);
-  const expected = collisionDamage(8, collisionThreshold(false));
+  const expected = collisionDamage(8);
   if (!frontHit || !rearHit || Math.abs(frontHit.damage - rearHit.damage) > 1e-6) {
     throw new Error('M2：背刺伤害应与正戳相同，不再乘朝向');
   }
-  if (Math.abs(frontHit.damage - expected) > 1e-6 || expected !== 24) {
-    throw new Error('M2：碰撞伤害应为 6×(相对速度−阈值)');
+  if (Math.abs(frontHit.damage - expected) > 1e-6 || expected !== 28) {
+    throw new Error('M2：碰撞伤害应为 6×相对速度，cap 28');
+  }
+
+  const slowA = createBallBody({
+    x: 9.2,
+    y: 7,
+    color: 0xe24a4a,
+    vx: 1.5,
+    facingX: 1,
+  });
+  const slowB = createBallBody({
+    x: 10.3,
+    y: 7,
+    color: 0x3d7cf0,
+    vx: -1.5,
+    facingX: -1,
+  });
+  const slowHits = applyCollisionCombat(slowA, slowB, 1, 0, 3);
+  const slowHit = slowHits.find((hit) => hit.victimId === slowB.id);
+  if (!slowHit || Math.abs(slowHit.damage - 18) > 1e-6) {
+    throw new Error('M2：相对速度 3 的枪尖戳中应为 18，不再被门槛挡掉');
+  }
+
+  const cdA = createBallBody({
+    x: 9.2,
+    y: 8,
+    color: 0xe24a4a,
+    vx: 4,
+    facingX: 1,
+  });
+  const cdB = createBallBody({
+    x: 10.3,
+    y: 8,
+    color: 0x3d7cf0,
+    vx: -4,
+    facingX: -1,
+  });
+  const firstCd = applyCollisionCombat(cdA, cdB, 1, 0, 8);
+  if (firstCd.length === 0 || cdA.spearCdRemain !== SPEAR_TIP_CD || cdB.spearCdRemain !== SPEAR_TIP_CD) {
+    throw new Error('M2：枪尖成功掉血后应进 1s CD');
+  }
+  const hpA = cdA.hp;
+  const hpB = cdB.hp;
+  const duringCd = applyCollisionCombat(cdA, cdB, 1, 0, 8);
+  const spearDuring = duringCd.filter((hit) => hit.relSpeed > 0);
+  if (spearDuring.length !== 0 || cdA.hp !== hpA || cdB.hp !== hpB) {
+    throw new Error('M2：CD 中枪尖戳中不应掉血');
+  }
+  if (cdA.spearCdRemain !== SPEAR_TIP_CD || cdB.spearCdRemain !== SPEAR_TIP_CD) {
+    throw new Error('M2：CD 中戳中不应刷新 CD');
+  }
+  tickSpearCd(cdA, 0.4);
+  tickSpearCd(cdB, 0.4);
+  applyCollisionCombat(cdA, cdB, 1, 0, 8);
+  if (Math.abs(cdA.spearCdRemain - 0.6) > 1e-6 || Math.abs(cdB.spearCdRemain - 0.6) > 1e-6) {
+    throw new Error('M2：CD 未结束戳中仍不应刷新');
+  }
+  tickSpearCd(cdA, 0.6);
+  tickSpearCd(cdB, 0.6);
+  const afterCd = applyCollisionCombat(cdA, cdB, 1, 0, 8);
+  if (afterCd.length === 0 || cdA.hp === hpA || cdB.hp === hpB) {
+    throw new Error('M2：CD 结束后枪尖应能再掉血');
+  }
+  if (cdA.spearCdRemain !== SPEAR_TIP_CD || cdB.spearCdRemain !== SPEAR_TIP_CD) {
+    throw new Error('M2：再次成功掉血应重新进 CD');
+  }
+
+  const skillSrc = createBallBody({
+    x: 4,
+    y: 4,
+    color: 0xe24a4a,
+    facingX: 1,
+  });
+  const skillVic = createBallBody({
+    x: 6,
+    y: 4,
+    color: 0x3d7cf0,
+    facingX: -1,
+  });
+  skillSrc.spearCdRemain = SPEAR_TIP_CD;
+  const skillHit = applySkillDamage(skillVic, skillSrc, 10);
+  if (!skillHit || Math.abs(skillHit.damage - 10) > 1e-6) {
+    throw new Error('M2：技能直伤不应受枪尖普攻 CD 限制');
   }
 }

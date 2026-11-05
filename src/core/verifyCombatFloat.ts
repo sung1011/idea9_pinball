@@ -72,24 +72,24 @@ export function verifyCombatFloat(): void {
   assert(hitA.hp < MAX_HP && hitB.hp < MAX_HP, '飘字：不应改掉血公式');
 
   const scrapeA = createBallBody({
-    x: 8,
-    y: 4,
+    x: 8.6,
+    y: 5.45,
     color: 0xe24a4a,
     vx: 2,
     facingX: 1,
     team: 'red',
   });
   const scrapeB = createBallBody({
-    x: 9,
-    y: 4.4,
+    x: 10.3,
+    y: 6.2,
     color: 0x3d7cf0,
     vx: 2,
     facingX: 1,
     team: 'blue',
   });
   const scrapeHits = applyCollisionCombat(scrapeA, scrapeB, 1, 0, 2);
-  assert(scrapeHits.length === 0, '飘字：轻蹭无伤害事件');
-  assert(floatsFromHits(scrapeHits, [scrapeA, scrapeB]).length === 0, '飘字：轻蹭不应出字');
+  assert(scrapeHits.length === 0, '飘字：无枪尖命中无伤害事件');
+  assert(floatsFromHits(scrapeHits, [scrapeA, scrapeB]).length === 0, '飘字：无枪尖命中不应出字');
 
   const healBall = createBallBody({ x: 8, y: 6, color: 0xe24a4a, hp: 70 });
   applyHealHot(healBall, 6, 4);

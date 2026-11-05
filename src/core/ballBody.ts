@@ -18,8 +18,10 @@ export type BallBody = {
   color: number;
   hp: number;
   maxHp: number;
-  /** 主动撞窗口剩余秒数；>0 时碰撞按主动撞阈值结算 */
+  /** 主动撞窗口剩余秒数；>0 时技能门槛/钉壳加成等按主动撞结算 */
   activeRamRemain: number;
+  /** 枪尖普攻 CD 剩余秒数；>0 时戳中不掉血、不刷新 CD */
+  spearCdRemain: number;
   /** 碰撞后强拧窗口剩余秒数；窗内 120°/s，否则全程弱拧 45°/s */
   fineTuneRemain: number;
   /** 目标方向（Aim）；矛尖用 */
@@ -122,6 +124,7 @@ export function createBallBody(init: {
     hp: init.hp ?? MAX_HP,
     maxHp: MAX_HP,
     activeRamRemain: 0,
+    spearCdRemain: 0,
     fineTuneRemain: 0,
     aimX: init.facingX ?? 1,
     aimY: init.facingY ?? 0,
@@ -178,6 +181,14 @@ export function tickActiveRam(ball: BallBody, dt: number): void {
     return;
   }
   ball.activeRamRemain = Math.max(0, ball.activeRamRemain - dt);
+}
+
+export function tickSpearCd(ball: BallBody, dt: number): void {
+  if (ball.spearCdRemain <= 0) {
+    ball.spearCdRemain = 0;
+    return;
+  }
+  ball.spearCdRemain = Math.max(0, ball.spearCdRemain - Math.max(0, dt));
 }
 
 export function openFineTune(ball: BallBody): void {

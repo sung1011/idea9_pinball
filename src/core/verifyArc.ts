@@ -1,9 +1,5 @@
 import { applyEchoMark, createBallBody, type BallBody } from './ballBody';
-import {
-  applyCollisionCombat,
-  collisionDamage,
-  collisionThreshold,
-} from './collisionDamage';
+import { applyCollisionCombat, collisionDamage } from './collisionDamage';
 import { grazeContactAngleDeg, isGrazeAngle, tryGrazeBlade } from './arcCombat';
 import { FLOOR_SPEED, MAX_HP } from './constants';
 import { ARC_GRAZE, ARC_MARK, ARC_PHASE, ARC_SIDESTEP, sideStepOffset } from '../heroes/arcKit';
@@ -191,7 +187,7 @@ export function verifyArc(): void {
   const before = physBlue.hp;
   applyCollisionCombat(physRed, physBlue, 0.148, 0.989, 7, 7, 0);
   assert(physBlue.hp < before - 10, '闪弧：碰撞路径上擦肩应扣擦伤');
-  const raw = collisionDamage(7, collisionThreshold(false));
+  const raw = collisionDamage(7);
   assert(Math.abs(physBlue.hp - (before - raw - ARC_GRAZE.damage)) < 0.08, '闪弧：擦伤应叠在碰撞伤之上');
 
   resetTrapZones();

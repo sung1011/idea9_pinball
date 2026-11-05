@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
+import { spearCdFill } from '../core/collisionDamage';
 import { BALL_RADIUS, SPEAR_TIP_DIST } from '../core/constants';
 
 export type BallViewSyncOpts = {
@@ -135,20 +136,33 @@ function drawTargetSpear(g: Graphics, tx: number, ty: number): void {
   g.fill({ color: SPEAR_GOLD });
 }
 
-function drawHpBar(g: Graphics, hp: number, maxHp: number): void {
-  const width = 0.92;
-  const height = 0.1;
-  const x = -width / 2;
-  const y = -0.74;
-  g.rect(x, y, width, height);
+const HP_BAR_WIDTH = 0.92;
+const HP_BAR_HEIGHT = 0.1;
+const HP_BAR_Y = -0.74;
+const SPEAR_CD_HEIGHT = 0.042;
+const SPEAR_CD_GAP = 0.016;
+const SPEAR_CD_TRACK = 0x1a1410;
+const SPEAR_CD_FILL = 0xe8d8b8;
+
+function drawHpBar(g: Graphics, hp: number, maxHp: number, spearCdRemain: number): void {
+  const x = -HP_BAR_WIDTH / 2;
+  g.rect(x, HP_BAR_Y, HP_BAR_WIDTH, HP_BAR_HEIGHT);
   g.fill({ color: 0x102020, alpha: 0.8 });
   const ratio = maxHp > 0 ? Math.max(0, Math.min(1, hp / maxHp)) : 0;
-  if (ratio <= 0) {
-    return;
+  if (ratio > 0) {
+    const color = ratio > 0.5 ? 0x3dcc6f : ratio > 0.25 ? 0xe0b43a : 0xe24a4a;
+    g.rect(x, HP_BAR_Y, HP_BAR_WIDTH * ratio, HP_BAR_HEIGHT);
+    g.fill({ color });
   }
-  const color = ratio > 0.5 ? 0x3dcc6f : ratio > 0.25 ? 0xe0b43a : 0xe24a4a;
-  g.rect(x, y, width * ratio, height);
-  g.fill({ color });
+
+  const cdY = HP_BAR_Y + HP_BAR_HEIGHT + SPEAR_CD_GAP;
+  const fill = spearCdFill(spearCdRemain);
+  g.rect(x, cdY, HP_BAR_WIDTH, SPEAR_CD_HEIGHT);
+  g.fill({ color: SPEAR_CD_TRACK, alpha: 0.82 });
+  if (fill > 0) {
+    g.rect(x, cdY, HP_BAR_WIDTH * fill, SPEAR_CD_HEIGHT);
+    g.fill({ color: SPEAR_CD_FILL, alpha: 0.92 });
+  }
 }
 
 const TRAIL_MAX = 10;
@@ -286,7 +300,7 @@ export function createBallView(ball: BallBody): BallView {
     }
 
     hpBar.clear();
-    drawHpBar(hpBar, next.hp, next.maxHp);
+    drawHpBar(hpBar, next.hp, next.maxHp, next.spearCdRemain);
 
     spear.clear();
     if (next.hasAim) {

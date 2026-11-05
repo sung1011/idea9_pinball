@@ -1,6 +1,7 @@
 import {
   openFineTune,
   tickActiveRam,
+  tickSpearCd,
   tickArmor,
   tickEchoMark,
   tickFineTune,
@@ -77,7 +78,7 @@ export type PhysicsStepResult = {
   wallHitIds: number[];
 };
 
-/** 每帧：积分位移 → 墙/柱/球/困圈夹边 → 达标碰撞掉血弹开 → 摩擦 / 保底 → 速度盖帽。 */
+/** 每帧：积分位移 → 墙/柱/球/困圈夹边 → 枪尖碰撞掉血弹开 → 摩擦 / 保底 → 速度盖帽。 */
 export function stepPhysics(
   balls: readonly BallBody[],
   dt: number,
@@ -176,6 +177,7 @@ export function stepPhysics(
     applyFrictionAndFacing(ball, stepDt);
     capSpeed(ball);
     tickActiveRam(ball, stepDt);
+    tickSpearCd(ball, stepDt);
     tickFineTune(ball, stepDt);
     tickInvincible(ball, stepDt);
     tickStun(ball, stepDt);

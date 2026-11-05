@@ -43,7 +43,7 @@ export function createHpHud(host: HTMLElement): HpHud {
   const fineTune = document.createElement('div');
   fineTune.className = 'hpHudFineTune';
   fineTune.textContent = '弱拧';
-  const hintText = '碰撞：枪尖戳中且相对速度≥4（撞窗 2.5）才掉血；身子蹭只弹开';
+  const hintText = '碰撞：枪尖戳中才掉血，6×相对速度 cap28；成功掉血后 1s CD；身子蹭只弹开';
   const log = document.createElement('div');
   log.className = 'hpHudLog';
   log.textContent = hintText;
@@ -80,6 +80,7 @@ export function createHpHud(host: HTMLElement): HpHud {
           value.textContent = `回场 ${left.toFixed(1)}s`;
         } else {
           const ram = ball.activeRamRemain > 0 ? ` 撞窗${ball.activeRamRemain.toFixed(2)}s` : '';
+          const spearCd = ball.spearCdRemain > 0 ? ` 枪尖${ball.spearCdRemain.toFixed(2)}s` : '';
           const tune = ball.fineTuneRemain > 0 ? ` 强拧${ball.fineTuneRemain.toFixed(2)}s` : '';
           const inv = ball.invincibleRemain > 0 ? ` 无敌${ball.invincibleRemain.toFixed(1)}s` : '';
           const stun = ball.stunRemain > 0 ? ` 硬直${ball.stunRemain.toFixed(2)}s` : '';
@@ -92,7 +93,7 @@ export function createHpHud(host: HTMLElement): HpHud {
           const mark = ball.echoMarkRemain > 0 ? ` 印${ball.echoMarkRemain.toFixed(1)}s` : '';
           const phase = ball.phaseRemain > 0 ? ` 虚${ball.phaseRemain.toFixed(2)}s` : '';
           const charge = status?.charging ? ' 冲锋' : '';
-          value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${charge}${inv}${ram}${tune}${stun}${heal}${shield}${armor}${thorn}${pin}${graze}${mark}${phase}`;
+          value.textContent = `${formatHp(ball.hp)}/${ball.maxHp}${charge}${inv}${ram}${spearCd}${tune}${stun}${heal}${shield}${armor}${thorn}${pin}${graze}${mark}${phase}`;
         }
         row.classList.toggle('isOut', !ball.inPlay);
 

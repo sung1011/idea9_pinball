@@ -1,5 +1,5 @@
 import { applyArmor, applyShield, createBallBody, type BallBody } from './ballBody';
-import { applyCollisionCombat } from './collisionDamage';
+import { applyCollisionCombat, collisionDamage } from './collisionDamage';
 import { FLOOR_SPEED, MAX_HP } from './constants';
 import { ARC_SIDESTEP } from '../heroes/arcKit';
 import { CHAIN_HEAL } from '../heroes/chainKit';
@@ -146,7 +146,7 @@ export function verifyMirror(): void {
   const combatHits = applyCollisionCombat(shRed, shBlue, 1, 0, 8, 8, 0);
   const selfHit = combatHits.find((item) => item.victimId === shRed.id);
   assert(!!selfHit, '镜卫：折光中碰撞仍应结算');
-  const incoming = 24 * 0.45 * 0.4;
+  const incoming = collisionDamage(8) * 0.45 * 0.4;
   const expected = incoming * 0.5;
   assert(Math.abs((selfHit?.damage ?? 0) - expected) < 1e-6, '镜卫：折光应按盾/甲之后的差额入账');
   assert(Math.abs(shRed.mirrorLedger - (incoming - expected)) < 1e-6, '镜卫：账本只记折光减免，不把盾/甲再算一遍');

@@ -231,6 +231,8 @@ export function verifyM5(): void {
   const [stabRed, stabBlue] = redBlue(8, 6, 9.6, 6);
   const stab = createSkillCaster();
   const startX = stabRed.x;
+  stabRed.suppressCombat = true;
+  stabBlue.suppressCombat = true;
   fire(stab, stabRed, 2);
   advance(stab, stabRed, [stabRed, stabBlue], HOOK_STAB.windup + 0.001);
   assert(Math.abs(stabBlue.hp - (MAX_HP - 9)) < 1e-6, 'M5：第一捅应为 9');

@@ -10,6 +10,7 @@ import {
   KNOCKBACK_FEEL_CAP,
   KNOCKBACK_SCALE,
   KNOCKBACK_SPEED_SPAN,
+  SPEAR_TIP_CD,
   SPEAR_TIP_DIST,
   SPEAR_TIP_RADIUS,
 } from './constants';
@@ -30,6 +31,7 @@ const EPS = 1e-8;
 export type SpearAim = Pick<BallBody, 'x' | 'y' | 'facingX' | 'facingY' | 'aimX' | 'aimY' | 'hasAim'>;
 export type SpearVictim = Pick<BallBody, 'x' | 'y' | 'radius'>;
 
+/** 擦伤刃等技能门槛；枪尖普攻不再读这个。 */
 export function collisionThreshold(activeRam: boolean): number {
   return activeRam ? ACTIVE_RAM_SPEED_THRESHOLD : COLLISION_SPEED_THRESHOLD;
 }
@@ -64,20 +66,29 @@ export function spearTipHitsBody(attacker: SpearAim, victim: SpearVictim): boole
   return dist <= victim.radius + SPEAR_TIP_RADIUS + EPS;
 }
 
-export function collisionDamage(relSpeed: number, threshold: number): number {
-  const raw = COLLISION_DAMAGE_SCALE * (relSpeed - threshold);
+/** 枪尖普攻：6 × 相对速度标量，cap 28；伤≤0 不当命中。 */
+export function collisionDamage(relSpeed: number): number {
+  const raw = COLLISION_DAMAGE_SCALE * Math.max(0, relSpeed);
   if (raw <= 0) {
     return 0;
   }
   return Math.min(COLLISION_DAMAGE_CAP, raw);
 }
 
-export function knockbackSpeed(relSpeed: number, threshold: number): number {
-  const t = Math.min(1, (relSpeed - threshold) / KNOCKBACK_SPEED_SPAN);
+export function knockbackSpeed(relSpeed: number): number {
+  const t = Math.min(1, Math.max(0, relSpeed) / KNOCKBACK_SPEED_SPAN);
   if (t <= 0) {
     return 0;
   }
   return Math.min(KNOCKBACK_FEEL_CAP, KNOCKBACK_SCALE * t);
+}
+
+/** 满=可戳；冷却中从空涨到满。 */
+export function spearCdFill(remain: number): number {
+  if (remain <= 0) {
+    return 1;
+  }
+  return Math.max(0, Math.min(1, 1 - remain / SPEAR_TIP_CD));
 }
 
 function hitVictim(
@@ -86,14 +97,16 @@ function hitVictim(
   knockNx: number,
   knockNy: number,
   relSpeed: number,
-  threshold: number,
 ): CollisionHit | null {
   if (!spearTipHitsBody(source, victim)) {
     return null;
   }
+  if (source.spearCdRemain > 0) {
+    return null;
+  }
   const shieldMul = victim.shieldRemain > 0 ? victim.shieldMul : 1;
   const armorMul = victim.armorRemain > 0 ? victim.armorMul : 1;
-  const incoming = collisionDamage(relSpeed, threshold) * shieldMul * armorMul;
+  const incoming = collisionDamage(relSpeed) * shieldMul * armorMul;
   if (incoming <= 0) {
     return null;
   }
@@ -101,10 +114,11 @@ function hitVictim(
   if (damage <= 0) {
     return null;
   }
+  source.spearCdRemain = SPEAR_TIP_CD;
   if (victim.armorRemain > 0) {
     victim.armorBroken = true;
   }
-  const kb = knockbackSpeed(relSpeed, threshold);
+  const kb = knockbackSpeed(relSpeed);
   victim.vx += knockNx * kb;
   victim.vy += knockNy * kb;
   return {
@@ -115,13 +129,14 @@ function hitVictim(
     damage,
     knockback: kb,
     relSpeed,
-    threshold,
+    threshold: 0,
   };
 }
 
 /**
- * 达标碰撞：仅枪尖戳中对方身体才掉血（单向，可互戳）；仅掉血时沿法线轻弹。
+ * 枪尖戳中对方身体才掉血（单向，可互戳）；仅掉血时沿法线轻弹。
  * 身子圆碰圆仍由物理分离/弹开，无枪尖命中则不掉血。
+ * 普攻 CD 中戳中不掉血、不进 CD。技能走独立通道，不受此 CD 限制。
  * nx, ny = 由 a 指向 b 的接触法线。
  */
 export function applyCollisionCombat(
@@ -142,15 +157,10 @@ export function applyCollisionCombat(
   if (a.team && b.team && a.team === b.team) {
     return [];
   }
-  const activeRam = a.activeRamRemain > 0 || b.activeRamRemain > 0;
-  const threshold = collisionThreshold(activeRam);
-  if (relSpeed < threshold) {
-    return [];
-  }
 
   const hits: CollisionHit[] = [];
-  const hitA = hitVictim(a, b, -nx, -ny, relSpeed, threshold);
-  const hitB = hitVictim(b, a, nx, ny, relSpeed, threshold);
+  const hitA = hitVictim(a, b, -nx, -ny, relSpeed);
+  const hitB = hitVictim(b, a, nx, ny, relSpeed);
   if (hitA) {
     hits.push(hitA);
   }
@@ -183,20 +193,29 @@ export function applyCollisionCombat(
   return hits;
 }
 
-/** 锁点公式自检：启动时跑一遍，避免枪尖门闩 / 伤害 / 弹开算错。 */
+/** 锁点公式自检：启动时跑一遍，避免枪尖门闩 / 伤害 / 弹开 / CD 算错。 */
 export function selfCheckCollisionDamage(): void {
-  if (collisionDamage(8, COLLISION_SPEED_THRESHOLD) !== 24) {
-    throw new Error('碰撞伤害：相对速度 8 应为 24');
+  if (collisionDamage(8) !== COLLISION_DAMAGE_CAP) {
+    throw new Error('碰撞伤害：相对速度 8 应 cap 28');
   }
-  if (collisionDamage(16, COLLISION_SPEED_THRESHOLD) !== COLLISION_DAMAGE_CAP) {
+  if (collisionDamage(16) !== COLLISION_DAMAGE_CAP) {
     throw new Error('碰撞伤害：应 cap 28');
   }
-  if (collisionDamage(3, COLLISION_SPEED_THRESHOLD) !== 0) {
-    throw new Error('轻蹭：相对速度 3 不应掉血');
+  if (collisionDamage(3) !== 18) {
+    throw new Error('碰撞伤害：相对速度 3 应为 18，无门槛');
   }
-  const kb = knockbackSpeed(16, COLLISION_SPEED_THRESHOLD);
+  if (collisionDamage(0) !== 0 || collisionDamage(-1) !== 0) {
+    throw new Error('碰撞伤害：相对速度≤0 不当命中');
+  }
+  const kb = knockbackSpeed(16);
   if (Math.abs(kb - KNOCKBACK_SCALE) > 1e-6) {
     throw new Error('弹开：满额应只按速度顶在 2.0，不再乘朝向');
+  }
+  if (spearCdFill(0) !== 1 || spearCdFill(SPEAR_TIP_CD) !== 0) {
+    throw new Error('枪尖 CD：满=可戳，刚进 CD 应为空');
+  }
+  if (Math.abs(spearCdFill(SPEAR_TIP_CD * 0.5) - 0.5) > 1e-6) {
+    throw new Error('枪尖 CD：冷却中应从空涨到满');
   }
   const stabber = {
     x: 0,

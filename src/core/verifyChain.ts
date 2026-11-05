@@ -1,9 +1,5 @@
 import { applyShield, createBallBody, tickHeal, tickShield, tickSilence, type BallBody } from './ballBody';
-import {
-  applyCollisionCombat,
-  collisionDamage,
-  collisionThreshold,
-} from './collisionDamage';
+import { applyCollisionCombat, collisionDamage } from './collisionDamage';
 import { FLOOR_SPEED, MAX_HP } from './constants';
 import { CHAIN_HEAL, CHAIN_SCRAMBLE, CHAIN_SHIELD, CHAIN_TOW } from '../heroes/chainKit';
 import { HOOK_PULL } from '../heroes/hookKit';
@@ -178,7 +174,7 @@ export function verifyChain(): void {
   assert(shieldFar.shieldRemain === 0, '链生：护盾不应罩敌人');
 
   const rel = 8;
-  const raw = collisionDamage(rel, collisionThreshold(false));
+  const raw = collisionDamage(rel);
   const expected = raw * CHAIN_SHIELD.mul;
   const hitA = createBallBody({
     x: 9.2,

@@ -6,11 +6,7 @@ import {
   tickStun,
   type BallBody,
 } from './ballBody';
-import {
-  applyCollisionCombat,
-  collisionDamage,
-  collisionThreshold,
-} from './collisionDamage';
+import { applyCollisionCombat, collisionDamage } from './collisionDamage';
 import { ACTIVE_RAM_WINDOW, FLOOR_SPEED, HARD_CC_DIMINISH_WINDOW, MAX_HP } from './constants';
 import { CHAIN_HEAL } from '../heroes/chainKit';
 import { HOOK_PULL } from '../heroes/hookKit';
@@ -161,7 +157,7 @@ export function verifyNail(): void {
   assert(armorRed.armorRemain === 0, '钉壳：叠甲结束后应变层应掉');
 
   resetTrapZones();
-  const raw = collisionDamage(8, collisionThreshold(false));
+  const raw = collisionDamage(8);
   const expected = raw * NAIL_ARMOR.mul;
   const hitA = createBallBody({
     x: 9.2,
