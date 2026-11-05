@@ -55,7 +55,7 @@ function debugPair(balls: BallBody[]): [BallBody, BallBody] | null {
   return a && b ? [a, b] : null;
 }
 
-/** 碰撞测：Z 背后×1.35 / X 侧面×0.7 / C 正面×1.0 / V 轻蹭。双方在场才生效。 */
+/** 碰撞测：Z 背刺 / X 侧身圆蹭不掉血 / C 枪尖对戳 / V 轻蹭。双方在场才生效。 */
 export function applyCollisionTest(
   balls: readonly BallBody[],
   kind: CollisionTestKind,
@@ -80,9 +80,10 @@ export function applyCollisionTest(
     return true;
   }
   if (kind === 'side') {
-    placeBall(pair[0], 10, 5.15, 0, 1);
-    placeBall(pair[1], 10, 6.85, 1, 0);
-    impart(pair[0], 0, 1);
+    placeBall(pair[0], 8.5, 5.45, 1, 0);
+    placeBall(pair[1], 10.4, 6.2, 1, 0);
+    impart(pair[0], 1, 0);
+    impart(pair[1], 1, 0, 2.5, false);
     return true;
   }
   placeBall(pair[0], 9.5, 6, 1, 0);
@@ -92,7 +93,7 @@ export function applyCollisionTest(
   return true;
 }
 
-/** 调试：Z/X/C/V 碰撞测（GM 开时）；R 只重开，正式也可用。 */
+/** 调试：Z 背刺 / X 侧蹭 / C 对戳 / V 轻蹭（GM 开时）；R 只重开，正式也可用。 */
 export function bindDebugVelocity(opts: {
   balls: BallBody[];
   onReset?: () => void;

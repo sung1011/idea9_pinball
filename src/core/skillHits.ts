@@ -7,7 +7,7 @@ export type SkillDamageOpts = HpLossOpts & {
   allowSelf?: boolean;
 };
 
-/** 技能直伤：不乘朝向。无敌或同队不结算（自伤除外）。 */
+/** 技能直伤：不走枪尖门闩 / 碰撞公式。无敌或同队不结算（自伤除外）。 */
 export function applySkillDamage(
   victim: BallBody,
   source: BallBody,
@@ -37,8 +37,6 @@ export function applySkillDamage(
     victimLabel: victim.label,
     sourceLabel: source.label,
     damage: applied,
-    zone: 'front',
-    coeff: 1,
     knockback: 0,
     relSpeed: 0,
     threshold: 0,

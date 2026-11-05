@@ -42,8 +42,6 @@ function hit(
     victimLabel: victim.label,
     sourceLabel: source.label,
     damage,
-    zone: 'front',
-    coeff: 1,
     knockback: 0,
     relSpeed: 8,
     threshold: 4,

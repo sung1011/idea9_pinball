@@ -10,7 +10,6 @@ import {
   applyCollisionCombat,
   collisionDamage,
   collisionThreshold,
-  incomingFacing,
 } from './collisionDamage';
 import { ACTIVE_RAM_WINDOW, FLOOR_SPEED, HARD_CC_DIMINISH_WINDOW, MAX_HP } from './constants';
 import { CHAIN_HEAL } from '../heroes/chainKit';
@@ -162,8 +161,7 @@ export function verifyNail(): void {
   assert(armorRed.armorRemain === 0, '钉壳：叠甲结束后应变层应掉');
 
   resetTrapZones();
-  const facing = incomingFacing(1, 0, 1, 0);
-  const raw = collisionDamage(8, collisionThreshold(false), facing.coeff);
+  const raw = collisionDamage(8, collisionThreshold(false));
   const expected = raw * NAIL_ARMOR.mul;
   const hitA = createBallBody({
     x: 9.2,

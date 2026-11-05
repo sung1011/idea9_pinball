@@ -72,20 +72,21 @@ export const COLLISION_SPEED_THRESHOLD = 4;
 /** 主动撞窗口内的相对速度阈值（格/秒） */
 export const ACTIVE_RAM_SPEED_THRESHOLD = 2.5;
 
-/** 碰撞伤害 = SCALE × (相对速度 − 阈值) × 朝向系数，先乘再 cap */
+/** 碰撞伤害 = SCALE × (相对速度 − 阈值)，再 cap；不乘朝向 */
 export const COLLISION_DAMAGE_SCALE = 6;
 export const COLLISION_DAMAGE_CAP = 28;
 
-/** 朝向乘区：相对撞入角相对受击方朝向 */
-export const FACING_FRONT_DEG = 45;
-export const FACING_SIDE_DEG = 135;
-export const FACING_FRONT_COEFF = 1;
-export const FACING_SIDE_COEFF = 0.7;
-export const FACING_REAR_COEFF = 1.35;
+/**
+ * 枪尖距圆心（格），对齐 `ballView.drawTargetSpear` 的 tip（1.12）。
+ * 有瞄准跟 aim，否则跟 facing。
+ */
+export const SPEAR_TIP_DIST = 1.12;
+/** 枪尖相交检测小圆半径（格） */
+export const SPEAR_TIP_RADIUS = 0.1;
 
 /**
- * 掉血弹开初速 ≈ KNOCKBACK_SCALE × 朝向系数 × min(1, (相对速度−阈值)/SPAN)
- * 单次感上限约 2.5 格当量
+ * 掉血弹开初速 ≈ KNOCKBACK_SCALE × min(1, (相对速度−阈值)/SPAN)
+ * 单次感上限约 2.5 格当量；满额速度档实际顶在 SCALE=2
  */
 export const KNOCKBACK_SCALE = 2;
 export const KNOCKBACK_SPEED_SPAN = 8;

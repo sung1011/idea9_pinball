@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
-import { BALL_RADIUS } from '../core/constants';
+import { BALL_RADIUS, SPEAR_TIP_DIST } from '../core/constants';
 
 export type BallViewSyncOpts = {
   charging?: boolean;
@@ -90,8 +90,8 @@ function drawTargetSpear(g: Graphics, tx: number, ty: number): void {
   const rootY = fy * 0.48;
   const guardX = fx * 0.78;
   const guardY = fy * 0.78;
-  const tipX = fx * 1.12;
-  const tipY = fy * 1.12;
+  const tipX = fx * SPEAR_TIP_DIST;
+  const tipY = fy * SPEAR_TIP_DIST;
 
   g.moveTo(rootX, rootY);
   g.lineTo(guardX, guardY);

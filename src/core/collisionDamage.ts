@@ -7,17 +7,12 @@ import {
   COLLISION_DAMAGE_CAP,
   COLLISION_DAMAGE_SCALE,
   COLLISION_SPEED_THRESHOLD,
-  FACING_FRONT_COEFF,
-  FACING_FRONT_DEG,
-  FACING_REAR_COEFF,
-  FACING_SIDE_COEFF,
-  FACING_SIDE_DEG,
   KNOCKBACK_FEEL_CAP,
   KNOCKBACK_SCALE,
   KNOCKBACK_SPEED_SPAN,
+  SPEAR_TIP_DIST,
+  SPEAR_TIP_RADIUS,
 } from './constants';
-
-export type FacingZone = 'front' | 'side' | 'rear';
 
 export type CollisionHit = {
   victimId: number;
@@ -25,8 +20,6 @@ export type CollisionHit = {
   victimLabel: string;
   sourceLabel: string;
   damage: number;
-  zone: FacingZone;
-  coeff: number;
   knockback: number;
   relSpeed: number;
   threshold: number;
@@ -34,89 +27,73 @@ export type CollisionHit = {
 
 const EPS = 1e-8;
 
-function clamp(n: number, lo: number, hi: number): number {
-  return Math.min(hi, Math.max(lo, n));
-}
+export type SpearAim = Pick<BallBody, 'x' | 'y' | 'facingX' | 'facingY' | 'aimX' | 'aimY' | 'hasAim'>;
+export type SpearVictim = Pick<BallBody, 'x' | 'y' | 'radius'>;
 
 export function collisionThreshold(activeRam: boolean): number {
   return activeRam ? ACTIVE_RAM_SPEED_THRESHOLD : COLLISION_SPEED_THRESHOLD;
 }
 
-export function facingZone(angleDeg: number): FacingZone {
-  if (angleDeg <= FACING_FRONT_DEG) {
-    return 'front';
+/** 枪尖方向：有瞄准跟 aim，否则跟 facing。与视觉矛尖一致。 */
+export function spearAimDir(ball: SpearAim): { x: number; y: number } {
+  if (ball.hasAim) {
+    const len = Math.hypot(ball.aimX, ball.aimY);
+    if (len >= EPS) {
+      return { x: ball.aimX / len, y: ball.aimY / len };
+    }
   }
-  if (angleDeg <= FACING_SIDE_DEG) {
-    return 'side';
+  const facingLen = Math.hypot(ball.facingX, ball.facingY);
+  if (facingLen < EPS) {
+    return { x: 1, y: 0 };
   }
-  return 'rear';
+  return { x: ball.facingX / facingLen, y: ball.facingY / facingLen };
 }
 
-export function facingCoeff(zone: FacingZone): number {
-  if (zone === 'front') {
-    return FACING_FRONT_COEFF;
-  }
-  if (zone === 'side') {
-    return FACING_SIDE_COEFF;
-  }
-  return FACING_REAR_COEFF;
+export function spearTipPos(ball: SpearAim): { x: number; y: number } {
+  const dir = spearAimDir(ball);
+  return {
+    x: ball.x + dir.x * SPEAR_TIP_DIST,
+    y: ball.y + dir.y * SPEAR_TIP_DIST,
+  };
 }
 
-/**
- * 撞入方向相对受击方朝向。incomingFrom = 对方相对自己的位置方向。
- * 对齐朝向 = 正面；反向 = 背面。速度档 0 时沿用上一帧朝向。
- */
-export function incomingFacing(
-  facingX: number,
-  facingY: number,
-  incomingFromX: number,
-  incomingFromY: number,
-): { zone: FacingZone; coeff: number; angleDeg: number } {
-  const facingLen = Math.hypot(facingX, facingY);
-  const incomingLen = Math.hypot(incomingFromX, incomingFromY);
-  if (facingLen < EPS || incomingLen < EPS) {
-    return { zone: 'front', coeff: FACING_FRONT_COEFF, angleDeg: 0 };
-  }
-  const dot = clamp(
-    (facingX * incomingFromX + facingY * incomingFromY) / (facingLen * incomingLen),
-    -1,
-    1,
-  );
-  const angleDeg = (Math.acos(dot) * 180) / Math.PI;
-  const zone = facingZone(angleDeg);
-  return { zone, coeff: facingCoeff(zone), angleDeg };
+/** 攻击方枪尖小圆是否碰到受击方身体圆。 */
+export function spearTipHitsBody(attacker: SpearAim, victim: SpearVictim): boolean {
+  const tip = spearTipPos(attacker);
+  const dist = Math.hypot(tip.x - victim.x, tip.y - victim.y);
+  return dist <= victim.radius + SPEAR_TIP_RADIUS + EPS;
 }
 
-export function collisionDamage(relSpeed: number, threshold: number, coeff: number): number {
-  const raw = COLLISION_DAMAGE_SCALE * (relSpeed - threshold) * coeff;
+export function collisionDamage(relSpeed: number, threshold: number): number {
+  const raw = COLLISION_DAMAGE_SCALE * (relSpeed - threshold);
   if (raw <= 0) {
     return 0;
   }
   return Math.min(COLLISION_DAMAGE_CAP, raw);
 }
 
-export function knockbackSpeed(relSpeed: number, threshold: number, coeff: number): number {
+export function knockbackSpeed(relSpeed: number, threshold: number): number {
   const t = Math.min(1, (relSpeed - threshold) / KNOCKBACK_SPEED_SPAN);
   if (t <= 0) {
     return 0;
   }
-  return Math.min(KNOCKBACK_FEEL_CAP, KNOCKBACK_SCALE * coeff * t);
+  return Math.min(KNOCKBACK_FEEL_CAP, KNOCKBACK_SCALE * t);
 }
 
 function hitVictim(
   victim: BallBody,
   source: BallBody,
-  incomingX: number,
-  incomingY: number,
   knockNx: number,
   knockNy: number,
   relSpeed: number,
   threshold: number,
 ): CollisionHit | null {
-  const facing = incomingFacing(victim.facingX, victim.facingY, incomingX, incomingY);
+  if (!spearTipHitsBody(source, victim)) {
+    return null;
+  }
   const shieldMul = victim.shieldRemain > 0 ? victim.shieldMul : 1;
   const armorMul = victim.armorRemain > 0 ? victim.armorMul : 1;
-  const incoming = collisionDamage(relSpeed, threshold, facing.coeff) * shieldMul * armorMul;
+  const incoming = collisionDamage(relSpeed, threshold) * shieldMul * armorMul;
   if (incoming <= 0) {
     return null;
   }
@@ -127,7 +104,7 @@ function hitVictim(
   if (victim.armorRemain > 0) {
     victim.armorBroken = true;
   }
-  const kb = knockbackSpeed(relSpeed, threshold, facing.coeff);
+  const kb = knockbackSpeed(relSpeed, threshold);
   victim.vx += knockNx * kb;
   victim.vy += knockNy * kb;
   return {
@@ -136,8 +113,6 @@ function hitVictim(
     victimLabel: victim.label,
     sourceLabel: source.label,
     damage,
-    zone: facing.zone,
-    coeff: facing.coeff,
     knockback: kb,
     relSpeed,
     threshold,
@@ -145,7 +120,8 @@ function hitVictim(
 }
 
 /**
- * 达标碰撞：双方各按受击朝向结算伤害；仅掉血时沿法线轻弹。
+ * 达标碰撞：仅枪尖戳中对方身体才掉血（单向，可互戳）；仅掉血时沿法线轻弹。
+ * 身子圆碰圆仍由物理分离/弹开，无枪尖命中则不掉血。
  * nx, ny = 由 a 指向 b 的接触法线。
  */
 export function applyCollisionCombat(
@@ -173,8 +149,8 @@ export function applyCollisionCombat(
   }
 
   const hits: CollisionHit[] = [];
-  const hitA = hitVictim(a, b, nx, ny, -nx, -ny, relSpeed, threshold);
-  const hitB = hitVictim(b, a, -nx, -ny, nx, ny, relSpeed, threshold);
+  const hitA = hitVictim(a, b, -nx, -ny, relSpeed, threshold);
+  const hitB = hitVictim(b, a, nx, ny, relSpeed, threshold);
   if (hitA) {
     hits.push(hitA);
   }
@@ -207,31 +183,40 @@ export function applyCollisionCombat(
   return hits;
 }
 
-/** 锁点公式自检：启动时跑一遍，避免朝向/伤害/弹开算错。 */
+/** 锁点公式自检：启动时跑一遍，避免枪尖门闩 / 伤害 / 弹开算错。 */
 export function selfCheckCollisionDamage(): void {
-  const front = incomingFacing(1, 0, 1, 0);
-  const side = incomingFacing(1, 0, 0, 1);
-  const rear = incomingFacing(1, 0, -1, 0);
-  if (front.zone !== 'front' || front.coeff !== FACING_FRONT_COEFF) {
-    throw new Error('朝向乘区：正面应为 ×1.0');
+  if (collisionDamage(8, COLLISION_SPEED_THRESHOLD) !== 24) {
+    throw new Error('碰撞伤害：相对速度 8 应为 24');
   }
-  if (side.zone !== 'side' || side.coeff !== FACING_SIDE_COEFF) {
-    throw new Error('朝向乘区：侧面应为 ×0.7');
+  if (collisionDamage(16, COLLISION_SPEED_THRESHOLD) !== COLLISION_DAMAGE_CAP) {
+    throw new Error('碰撞伤害：应 cap 28');
   }
-  if (rear.zone !== 'rear' || rear.coeff !== FACING_REAR_COEFF) {
-    throw new Error('朝向乘区：背面应为 ×1.35');
-  }
-  if (collisionDamage(8, COLLISION_SPEED_THRESHOLD, FACING_FRONT_COEFF) !== 24) {
-    throw new Error('碰撞伤害：相对速度 8 正面应为 24');
-  }
-  if (collisionDamage(16, COLLISION_SPEED_THRESHOLD, FACING_REAR_COEFF) !== COLLISION_DAMAGE_CAP) {
-    throw new Error('碰撞伤害：应先乘再 cap 28');
-  }
-  if (collisionDamage(3, COLLISION_SPEED_THRESHOLD, FACING_FRONT_COEFF) !== 0) {
+  if (collisionDamage(3, COLLISION_SPEED_THRESHOLD) !== 0) {
     throw new Error('轻蹭：相对速度 3 不应掉血');
   }
-  const kb = knockbackSpeed(16, COLLISION_SPEED_THRESHOLD, FACING_REAR_COEFF);
-  if (Math.abs(kb - KNOCKBACK_FEEL_CAP) > 1e-6) {
-    throw new Error('弹开：背面满额应顶到 2.5');
+  const kb = knockbackSpeed(16, COLLISION_SPEED_THRESHOLD);
+  if (Math.abs(kb - KNOCKBACK_SCALE) > 1e-6) {
+    throw new Error('弹开：满额应只按速度顶在 2.0，不再乘朝向');
+  }
+  const stabber = {
+    x: 0,
+    y: 0,
+    facingX: 1,
+    facingY: 0,
+    aimX: 1,
+    aimY: 0,
+    hasAim: false,
+  };
+  const frontBody = { x: 1, y: 0, radius: 0.5 };
+  const sideBody = { x: 0, y: 1, radius: 0.5 };
+  if (!spearTipHitsBody(stabber, frontBody)) {
+    throw new Error('枪尖：正对接触应戳中身体');
+  }
+  if (spearTipHitsBody(stabber, sideBody)) {
+    throw new Error('枪尖：侧身圆蹭不应算枪尖命中');
+  }
+  const aimer = { ...stabber, hasAim: true, aimX: 0, aimY: 1 };
+  if (!spearTipHitsBody(aimer, sideBody) || spearTipHitsBody(aimer, frontBody)) {
+    throw new Error('枪尖：有瞄准时应跟 aim，不跟 facing');
   }
 }

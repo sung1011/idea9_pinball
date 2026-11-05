@@ -3,7 +3,6 @@ import {
   applyCollisionCombat,
   collisionDamage,
   collisionThreshold,
-  incomingFacing,
 } from './collisionDamage';
 import { grazeContactAngleDeg, isGrazeAngle, tryGrazeBlade } from './arcCombat';
 import { FLOOR_SPEED, MAX_HP } from './constants';
@@ -184,14 +183,15 @@ export function verifyArc(): void {
   const [physRed, physBlue] = redBlue(10, 6, 10.15, 7);
   physRed.vx = 7;
   physRed.vy = 0;
+  physRed.facingX = 0.148;
+  physRed.facingY = 0.989;
   physRed.grazeRemain = 2;
   physBlue.vx = 0;
   physBlue.vy = 0;
   const before = physBlue.hp;
   applyCollisionCombat(physRed, physBlue, 0.148, 0.989, 7, 7, 0);
   assert(physBlue.hp < before - 10, '闪弧：碰撞路径上擦肩应扣擦伤');
-  const facing = incomingFacing(physBlue.facingX, physBlue.facingY, -0.148, -0.989);
-  const raw = collisionDamage(7, collisionThreshold(false), facing.coeff);
+  const raw = collisionDamage(7, collisionThreshold(false));
   assert(Math.abs(physBlue.hp - (before - raw - ARC_GRAZE.damage)) < 0.08, '闪弧：擦伤应叠在碰撞伤之上');
 
   resetTrapZones();

@@ -1,13 +1,7 @@
 import type { BallBody } from '../core/ballBody';
-import type { CollisionHit, FacingZone } from '../core/collisionDamage';
+import type { CollisionHit } from '../core/collisionDamage';
 import type { AimHint, SkillCds, WindupInfo } from '../core/skillCaster';
 import { kitHudLine, skillShorts } from '../heroes/kitLabels';
-
-const ZONE_LABEL: Record<FacingZone, string> = {
-  front: '正面',
-  side: '侧面',
-  rear: '背面',
-};
 
 const MAX_HIT_LINES = 4;
 
@@ -33,7 +27,7 @@ function formatHp(hp: number): string {
 function formatHit(hit: CollisionHit): string {
   const dmg = hit.damage.toFixed(1);
   const kb = hit.knockback.toFixed(2);
-  return `${hit.sourceLabel}→${hit.victimLabel} ${ZONE_LABEL[hit.zone]}×${hit.coeff.toFixed(2)} 伤${dmg} 弹${kb}`;
+  return `${hit.sourceLabel}→${hit.victimLabel} 枪尖 伤${dmg} 弹${kb}`;
 }
 
 /** 调试血条 / 碰撞日志。Layout B 默认不挂到战场，血量改画在骑士头顶。 */
@@ -49,7 +43,7 @@ export function createHpHud(host: HTMLElement): HpHud {
   const fineTune = document.createElement('div');
   fineTune.className = 'hpHudFineTune';
   fineTune.textContent = '弱拧';
-  const hintText = '碰撞：轻蹭只改方向；相对速度≥4 或主动撞窗才掉血';
+  const hintText = '碰撞：枪尖戳中且相对速度≥4（撞窗 2.5）才掉血；身子蹭只弹开';
   const log = document.createElement('div');
   log.className = 'hpHudLog';
   log.textContent = hintText;

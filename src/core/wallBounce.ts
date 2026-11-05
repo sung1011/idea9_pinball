@@ -156,7 +156,7 @@ export type BallOverlap = {
   relVy: number;
 };
 
-/** 等质量弹性分离；伤害 / 朝向乘区 / 弹开由 collisionDamage 在接触后结算。虚晃中不碰。 */
+/** 等质量弹性分离；伤害 / 枪尖门闩 / 弹开由 collisionDamage 在接触后结算。虚晃中不碰。 */
 export function resolveBallBall(a: BallBody, b: BallBody): BallOverlap | null {
   if (a.phaseRemain > 0 || b.phaseRemain > 0) {
     return null;

@@ -245,9 +245,9 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     addHint(body, gmOn ? '调试键已开：Z/X/C/V · F/G · T/Y · H 循环钩刺/磁环/链生/钉壳/闪弧/井绳/镜卫。' : 'GM 关：调试键无效，R 仍可重开。');
 
     addGmGroup('碰撞测', [
-      gmBtn('背后 Z', () => actions.onCollision('back')),
-      gmBtn('侧面 X', () => actions.onCollision('side')),
-      gmBtn('正面 C', () => actions.onCollision('front')),
+      gmBtn('背刺 Z', () => actions.onCollision('back')),
+      gmBtn('侧蹭 X', () => actions.onCollision('side')),
+      gmBtn('对戳 C', () => actions.onCollision('front')),
       gmBtn('轻蹭 V', () => actions.onCollision('graze')),
     ]);
     addGmGroup('分数', [
