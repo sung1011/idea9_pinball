@@ -38,85 +38,112 @@ export function isPortraitViewport(width = window.innerWidth, height = window.in
   return height > width;
 }
 
-function isScreenPortrait(): boolean {
-  const type = window.screen?.orientation?.type;
-  if (type) {
-    return type.startsWith('portrait');
-  }
-  const width = window.screen?.width ?? 0;
-  const height = window.screen?.height ?? 0;
-  return height > width;
-}
-
-export type ForceLandscapeInput = {
+export type LandscapeFlipInput = {
   viewW: number;
   viewH: number;
-  screenPortrait: boolean;
-  hoverNone: boolean;
-  coarsePointer: boolean;
+  orientationType?: string;
+  orientationAngle?: number;
 };
 
-/** 触屏竖持才强制横屏。PC 把窗口拉窄只 letterbox，不转画面。 */
-export function shouldForceLandscape(input: ForceLandscapeInput): boolean {
-  if (!isPortraitViewport(input.viewW, input.viewH)) {
-    return false;
-  }
-  if (!input.screenPortrait) {
-    return false;
-  }
-  return input.hoverNone && input.coarsePointer;
+function normalizeAngle(angle: number): number {
+  return ((angle % 360) + 360) % 360;
 }
 
-export function wantsForceLandscape(width = window.innerWidth, height = window.innerHeight): boolean {
-  return shouldForceLandscape({
+function angleNear180(angle: number, eps = 1): boolean {
+  const delta = Math.abs(normalizeAngle(angle) - 180);
+  return Math.min(delta, 360 - delta) <= eps;
+}
+
+type ScreenOrientationLike = {
+  type?: string;
+  angle?: number;
+};
+
+function readScreenOrientation(): { type: string; angle: number | undefined } {
+  const ori = (window.screen as Screen & { orientation?: ScreenOrientationLike } | undefined)?.orientation;
+  if (ori?.type) {
+    return { type: ori.type, angle: typeof ori.angle === 'number' ? ori.angle : undefined };
+  }
+  const legacy = (window as Window & { orientation?: number }).orientation;
+  if (typeof legacy === 'number') {
+    if (legacy === -90 || legacy === 270) {
+      return { type: 'landscape-secondary', angle: legacy };
+    }
+    if (legacy === 90) {
+      return { type: 'landscape-primary', angle: legacy };
+    }
+    return { type: '', angle: legacy };
+  }
+  return { type: ori?.type ?? '', angle: typeof ori?.angle === 'number' ? ori.angle : undefined };
+}
+
+/**
+ * 只判定横屏翻转：已是横屏且 `landscape-secondary`（或 angle ≈ 180）才扶正。
+ * 竖持 / PC 窄窗只 letterbox，不因「竖」去转；`landscape-primary` / 0° 不转。
+ */
+export function shouldFlipLandscape(input: LandscapeFlipInput): boolean {
+  if (isPortraitViewport(input.viewW, input.viewH)) {
+    return false;
+  }
+  const type = input.orientationType ?? '';
+  if (type === 'landscape-primary' || type.startsWith('portrait')) {
+    return false;
+  }
+  if (type === 'landscape-secondary') {
+    return true;
+  }
+  return typeof input.orientationAngle === 'number' && angleNear180(input.orientationAngle);
+}
+
+export function wantsLandscapeFlip(width = window.innerWidth, height = window.innerHeight): boolean {
+  const { type, angle } = readScreenOrientation();
+  return shouldFlipLandscape({
     viewW: width,
     viewH: height,
-    screenPortrait: isScreenPortrait(),
-    hoverNone: window.matchMedia('(hover: none)').matches,
-    coarsePointer: window.matchMedia('(pointer: coarse)').matches,
+    orientationType: type,
+    orientationAngle: angle,
   });
 }
 
-/** 竖持时 #app 按横屏盒子排，再 90° CW 铺满竖屏。尺寸用视口像素，避免 dvh 与 innerHeight 对不齐。 */
-export function syncForceLandscape(
+/** 横屏翻转时 #app 原地 180° 扶正。尺寸用视口像素，避免 dvh 与 innerHeight 对不齐。 */
+export function syncLandscapeFlip(
   host: HTMLElement,
   viewW = window.innerWidth,
   viewH = window.innerHeight,
 ): boolean {
-  const force = wantsForceLandscape(viewW, viewH);
-  host.classList.toggle('isForceLandscape', force);
-  if (force) {
-    host.style.width = `${viewH}px`;
-    host.style.height = `${viewW}px`;
+  const flip = wantsLandscapeFlip(viewW, viewH);
+  host.classList.toggle('isLandscapeFlip', flip);
+  if (flip) {
+    host.style.width = `${viewW}px`;
+    host.style.height = `${viewH}px`;
     host.style.transformOrigin = 'top left';
-    host.style.transform = `translate(${viewW}px, 0) rotate(90deg)`;
+    host.style.transform = `translate(${viewW}px, ${viewH}px) rotate(180deg)`;
   } else {
     host.style.width = '';
     host.style.height = '';
     host.style.transform = '';
     host.style.transformOrigin = '';
   }
-  return force;
+  return flip;
 }
 
-/** 强制横屏后的舞台尺寸：宽=视口高，高=视口宽。 */
-export function forceLandscapeViewSize(viewW: number, viewH: number): { width: number; height: number } {
-  return { width: viewH, height: viewW };
-}
-
-/** 90° CW 后安全区：物理上/右/下/左 → 舞台右/下/左/上。 */
-export function remapInsetsForForceLandscape(insets: SafeInsets): SafeInsets {
+/** 180° 扶正后安全区：物理上/右/下/左 → 舞台下/左/上/右。 */
+export function remapInsetsForLandscapeFlip(insets: SafeInsets): SafeInsets {
   return {
-    top: insets.left,
-    right: insets.top,
-    bottom: insets.right,
-    left: insets.bottom,
+    top: insets.bottom,
+    right: insets.left,
+    bottom: insets.top,
+    left: insets.right,
   };
+}
+
+function hostHasLandscapeFlip(host: HTMLElement): boolean {
+  return host.classList.contains('isLandscapeFlip') || !!host.closest('.isLandscapeFlip');
 }
 
 /**
  * 视口 client 坐标 → 宿主本地（未旋转）坐标。
- * 强制横屏：`translate(100dvw,0) rotate(90deg)` 原点左上，(x,y)→(W-y,x)。
+ * 横屏翻转：`translate(W,H) rotate(180deg)` 原点左上，(x,y)→(W-x,H-y)。
  */
 export function clientToHostLocal(
   host: HTMLElement,
@@ -126,11 +153,10 @@ export function clientToHostLocal(
   const rect = host.getBoundingClientRect();
   const vx = clientX - rect.left;
   const vy = clientY - rect.top;
-  const rotated = host.classList.contains('isForceLandscape') || !!host.closest('.isForceLandscape');
-  if (!rotated) {
+  if (!hostHasLandscapeFlip(host)) {
     return { x: vx, y: vy };
   }
-  return { x: vy, y: rect.width - vx };
+  return { x: rect.width - vx, y: rect.height - vy };
 }
 
 /** 始终按 20×12 横构图取最大舞台；竖窗上下留黑边，不改成竖 HUD。 */

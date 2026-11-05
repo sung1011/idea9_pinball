@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '竖持 letterbox；仅横屏翻转扶正' },
   { title: '镜卫四技能落地：折光 / 反照 / 裂镜 / 镜壁；7 人池，同局可重复选' },
   { title: '竖持强制横屏显示，去掉转屏提示' },
   { title: '战斗飘字仅数字：伤害红橙、治疗绿、护盾青；从结算点上浮淡出' },

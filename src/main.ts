@@ -47,10 +47,9 @@ import { createUpdatePrompt } from './ui/updatePrompt';
 import {
   applyStageVars,
   computeLandscapeStage,
-  forceLandscapeViewSize,
   readSafeInsets,
-  remapInsetsForForceLandscape,
-  syncForceLandscape,
+  remapInsetsForLandscapeFlip,
+  syncLandscapeFlip,
 } from './ui/stageLayout';
 import './style.css';
 
@@ -110,14 +109,12 @@ async function boot(): Promise<void> {
   const layoutWorld = (): WorldTransform => {
     const viewW = window.innerWidth;
     const viewH = window.innerHeight;
-    const force = syncForceLandscape(host, viewW, viewH);
-    const frame = force
-      ? forceLandscapeViewSize(viewW, viewH)
-      : { width: host.clientWidth || viewW, height: host.clientHeight || viewH };
+    const flip = syncLandscapeFlip(host, viewW, viewH);
+    const frame = { width: host.clientWidth || viewW, height: host.clientHeight || viewH };
     if (Math.abs(app.screen.width - frame.width) > 1 || Math.abs(app.screen.height - frame.height) > 1) {
       app.renderer.resize(frame.width, frame.height);
     }
-    const insets = force ? remapInsetsForForceLandscape(readSafeInsets()) : readSafeInsets();
+    const insets = flip ? remapInsetsForLandscapeFlip(readSafeInsets()) : readSafeInsets();
     const stage = computeLandscapeStage(app.screen.width, app.screen.height, insets);
     applyStageVars(host, stage);
     return fitWorldToBox(stage.x, stage.y, stage.width, stage.height, MAP_WIDTH, MAP_HEIGHT);

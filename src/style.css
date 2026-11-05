@@ -26,11 +26,9 @@ body,
   --stage-center-y: 42%;
 }
 
-#app.isForceLandscape {
-  width: 100dvh;
-  height: 100dvw;
+#app.isLandscapeFlip {
   transform-origin: top left;
-  transform: translate(100dvw, 0) rotate(90deg);
+  transform: translate(100dvw, 100dvh) rotate(180deg);
 }
 
 canvas {

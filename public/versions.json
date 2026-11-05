@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.5-landscape-flip",
+    "version": "0.0.5",
+    "date": "2026-11-04",
+    "summary": "竖持 letterbox；仅横屏翻转扶正"
+  },
+  {
     "id": "v0.0.4-mirror",
     "version": "0.0.4",
     "date": "2026-11-04",

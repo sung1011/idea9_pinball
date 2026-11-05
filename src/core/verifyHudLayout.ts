@@ -2,11 +2,10 @@ import { createMatchHud } from '../ui/matchHud';
 import {
   clientToHostLocal,
   computeLandscapeStage,
-  forceLandscapeViewSize,
   isPortraitViewport,
-  remapInsetsForForceLandscape,
-  shouldForceLandscape,
-  wantsForceLandscape,
+  remapInsetsForLandscapeFlip,
+  shouldFlipLandscape,
+  wantsLandscapeFlip,
 } from '../ui/stageLayout';
 import type { MatchSnapshot } from './matchSession';
 
@@ -41,7 +40,7 @@ function dummySnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
   };
 }
 
-/** Layout B：横构图舞台、竖窗 letterbox、触屏竖持强制横屏；顶中红|计时|蓝一颗胶囊。 */
+/** Layout B：横构图舞台、竖窗 letterbox、仅横屏翻转扶正；顶中红|计时|蓝一颗胶囊。 */
 export function verifyHudLayout(): void {
   const none = { top: 0, right: 0, bottom: 0, left: 0 };
   const landscape = computeLandscapeStage(1600, 900, none);
@@ -53,62 +52,92 @@ export function verifyHudLayout(): void {
   assert(portrait.x + portrait.width <= 800 + 1e-6, 'HUD：竖窗舞台不应超出宽度');
   assert(portrait.y > 10, 'HUD：竖窗应上下留 letterbox');
 
-  const forced = forceLandscapeViewSize(375, 667);
-  const forcedStage = computeLandscapeStage(forced.width, forced.height, none);
-  assert(forced.width === 667 && forced.height === 375, 'HUD：竖持强制横屏应互换宽高');
-  assert(forcedStage.width > forcedStage.height, 'HUD：强制横屏舞台仍为横构图');
+  const phonePortrait = computeLandscapeStage(375, 667, none);
+  assert(phonePortrait.width > phonePortrait.height, 'HUD：竖持仍按横构图 letterbox，不互换宽高');
+  assert(phonePortrait.y > 10, 'HUD：竖持应上下留黑边');
 
   const notch = computeLandscapeStage(1600, 900, { top: 0, right: 44, bottom: 0, left: 44 });
   assert(notch.x >= 44, 'HUD：舞台应避开左侧安全区');
   assert(notch.x + notch.width <= 1600 - 44 + 1e-6, 'HUD：舞台应避开右侧安全区');
 
-  const remapped = remapInsetsForForceLandscape({ top: 10, right: 1, bottom: 20, left: 2 });
+  const remapped = remapInsetsForLandscapeFlip({ top: 10, right: 1, bottom: 20, left: 2 });
   assert(
-    remapped.top === 2 && remapped.right === 10 && remapped.bottom === 1 && remapped.left === 20,
-    'HUD：强制横屏应旋转安全区',
+    remapped.top === 20 && remapped.right === 2 && remapped.bottom === 10 && remapped.left === 1,
+    'HUD：横屏翻转应上下、左右对调安全区',
   );
 
   assert(isPortraitViewport(800, 1200) && !isPortraitViewport(1600, 900), 'HUD：竖/横判定');
-  assert(!wantsForceLandscape(1600, 900), 'HUD：横屏窗口不应强制旋转');
+  assert(!wantsLandscapeFlip(1600, 900), 'HUD：普通横屏窗口不应翻转');
   assert(
-    !shouldForceLandscape({
-      viewW: 800,
-      viewH: 1200,
-      screenPortrait: false,
-      hoverNone: true,
-      coarsePointer: true,
-    }),
-    'HUD：PC 竖窗（屏幕仍横）不应强制旋转',
-  );
-  assert(
-    shouldForceLandscape({
+    !shouldFlipLandscape({
       viewW: 375,
       viewH: 667,
-      screenPortrait: true,
-      hoverNone: true,
-      coarsePointer: true,
+      orientationType: 'portrait-primary',
+      orientationAngle: 0,
     }),
-    'HUD：手机竖持应强制横屏',
+    'HUD：竖持不应再转画面',
   );
   assert(
-    !shouldForceLandscape({
+    !shouldFlipLandscape({
+      viewW: 800,
+      viewH: 1200,
+      orientationType: 'landscape-secondary',
+      orientationAngle: 180,
+    }),
+    'HUD：PC 窄窗即使 secondary 也不因竖去转',
+  );
+  assert(
+    !shouldFlipLandscape({
       viewW: 667,
       viewH: 375,
-      screenPortrait: false,
-      hoverNone: true,
-      coarsePointer: true,
+      orientationType: 'landscape-primary',
+      orientationAngle: 0,
     }),
-    'HUD：手机横持不应再旋转',
+    'HUD：横持 primary / 0° 不应翻转',
+  );
+  assert(
+    shouldFlipLandscape({
+      viewW: 667,
+      viewH: 375,
+      orientationType: 'landscape-secondary',
+      orientationAngle: 270,
+    }),
+    'HUD：横持 secondary 应扶正',
+  );
+  assert(
+    shouldFlipLandscape({
+      viewW: 667,
+      viewH: 375,
+      orientationAngle: 180,
+    }),
+    'HUD：横持 angle ≈ 180 应扶正',
+  );
+  assert(
+    !shouldFlipLandscape({
+      viewW: 667,
+      viewH: 375,
+      orientationType: 'portrait-secondary',
+      orientationAngle: 180,
+    }),
+    'HUD：orientation 仍标竖屏时不翻转',
   );
 
   const probe = document.createElement('div');
-  probe.className = 'isForceLandscape';
+  probe.className = 'isLandscapeFlip';
   probe.style.cssText =
-    'position:fixed;left:0;top:0;width:400px;height:200px;transform-origin:top left;transform:translate(200px,0) rotate(90deg)';
+    'position:fixed;left:0;top:0;width:400px;height:200px;transform-origin:top left;transform:translate(400px,200px) rotate(180deg)';
   document.body.appendChild(probe);
   const mapped = clientToHostLocal(probe, 150, 100);
+  const child = document.createElement('div');
+  child.style.cssText = 'position:absolute;inset:0';
+  probe.appendChild(child);
+  const mappedChild = clientToHostLocal(child, 150, 100);
   probe.remove();
-  assert(Math.abs(mapped.x - 100) < 2 && Math.abs(mapped.y - 50) < 2, 'HUD：强制横屏应反解点按坐标');
+  assert(Math.abs(mapped.x - 250) < 2 && Math.abs(mapped.y - 100) < 2, 'HUD：横屏翻转应反解点按坐标');
+  assert(
+    Math.abs(mappedChild.x - 250) < 2 && Math.abs(mappedChild.y - 100) < 2,
+    'HUD：翻转后子层（技能 tip）坐标应与画面一致',
+  );
 
   const plain = document.createElement('div');
   plain.style.cssText = 'position:fixed;left:40px;top:30px;width:100px;height:80px';
