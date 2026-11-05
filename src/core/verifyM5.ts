@@ -60,9 +60,16 @@ function redBlue(x0: number, y0: number, x1: number, y1: number): [BallBody, Bal
   return [a, b];
 }
 
-function fire(caster: ReturnType<typeof createSkillCaster>, ball: BallBody, slot: SkillSlot, aimX = 1, aimY = 0): void {
-  caster.handleInput(ball, sample({ skillPress: slot, aimX, aimY }));
-  caster.handleInput(ball, sample({ skillPress: slot, aimX, aimY }));
+function fire(
+  caster: ReturnType<typeof createSkillCaster>,
+  ball: BallBody,
+  slot: SkillSlot,
+  aimX = 1,
+  aimY = 0,
+  roster: readonly BallBody[] = [ball],
+): void {
+  caster.handleInput(ball, sample({ skillPress: slot, aimX, aimY }), roster);
+  caster.handleInput(ball, sample({ skillPress: slot, aimX, aimY }), roster);
 }
 
 function play(
@@ -118,7 +125,7 @@ export function verifyM5(): void {
 
   const [windRed, windBlue] = redBlue(8, 6, 12, 6);
   const wind = createSkillCaster();
-  fire(wind, windRed, 1);
+  fire(wind, windRed, 1, 1, 0, [windRed, windBlue]);
   advance(wind, windRed, [windRed, windBlue], 0.39);
   assert(windBlue.hp === MAX_HP, 'M5：释放后 0.4s 前摇未结束不应出勾');
   advance(wind, windRed, [windRed, windBlue], 0.03);
@@ -148,7 +155,7 @@ export function verifyM5(): void {
   );
   const [wallRed, wallBlue] = redBlue(LEFT_PILLAR.x, LEFT_PILLAR.y - 2, LEFT_PILLAR.x, LEFT_PILLAR.y + 2);
   const wall = createSkillCaster();
-  fire(wall, wallRed, 1, 0, 1);
+  fire(wall, wallRed, 1, 0, 1, [wallRed, wallBlue]);
   advance(wall, wallRed, [wallRed, wallBlue], 0.45);
   assert(wallBlue.hp === MAX_HP, 'M5：墙挡勾索不应命中');
   assert(Math.abs(wall.getCds()[0] - HOOK_PULL.missCd) < 0.1, 'M5：墙挡应按未中短 CD');
@@ -156,7 +163,7 @@ export function verifyM5(): void {
   const allyA = createBallBody({ x: 8, y: 6, color: 0xe24a4a, team: 'red', facingX: 1 });
   const allyB = createBallBody({ x: 12, y: 6, color: 0xc43d3d, team: 'red', facingX: -1 });
   const ally = createSkillCaster();
-  fire(ally, allyA, 1);
+  fire(ally, allyA, 1, 1, 0, [allyA, allyB]);
   advance(ally, allyA, [allyA, allyB], 0.45);
   assert(allyB.hp === MAX_HP, 'M5：不勾友军');
   assert(Math.abs(ally.getCds()[0] - HOOK_PULL.missCd) < 0.1, 'M5：勾友军应按未中');
@@ -164,9 +171,62 @@ export function verifyM5(): void {
   const inv = createSkillCaster();
   const [invRed, invBlue] = redBlue(8, 6, 12, 6);
   invBlue.invincibleRemain = 2;
-  fire(inv, invRed, 1);
+  fire(inv, invRed, 1, 1, 0, [invRed, invBlue]);
   advance(inv, invRed, [invRed, invBlue], 0.45);
   assert(invBlue.hp === MAX_HP, 'M5：无敌目标不受勾伤');
+
+  const hookSlide = (
+    label: string,
+    vx: number,
+    dist: number,
+    shouldHit: boolean,
+  ): void => {
+    const caster = createSkillCaster();
+    const [red, blue] = redBlue(8, 6, 8 + dist, 6);
+    red.vx = vx;
+    red.vy = 0;
+    fire(caster, red, 1, 1, 0, [red, blue]);
+    assert(caster.getAimingSlot() === 0 && caster.getWindup()?.slot === 1, `M5：${label} 二次点击应释放进前摇`);
+    advance(caster, red, [red, blue], HOOK_PULL.windup + 0.02);
+    if (shouldHit) {
+      assert(Math.abs(blue.hp - (MAX_HP - HOOK_PULL.damage)) < 1e-6, `M5：${label} 圈内敌应勾中`);
+      assert(caster.isDisplacing() || red.activeRamRemain > 0, `M5：${label} 勾中后应飞向目标或贴脸`);
+    } else {
+      assert(blue.hp === MAX_HP, `M5：${label} 瞄准外不应误放`);
+      assert(caster.getCds()[0] > 3.5 && caster.getCds()[0] <= HOOK_PULL.missCd + 1e-6, `M5：${label} 未中应变短 CD`);
+    }
+  };
+  hookSlide('后退滑动', -8, 5.5, true);
+  hookSlide('前进滑动', 4, 5.2, true);
+  hookSlide('近静止', 0.2, 4, true);
+
+  const outside = createSkillCaster();
+  const [outRed, outBlue] = redBlue(8, 6, 11, 10);
+  outRed.vx = 0;
+  outRed.vy = 0;
+  outBlue.vx = 0;
+  outBlue.vy = -8;
+  fire(outside, outRed, 1, 1, 0, [outRed, outBlue]);
+  assert(outside.getWindup()?.slot === 1, 'M5：瞄准外二次点击仍应释放（可挥空）');
+  advance(outside, outRed, [outRed, outBlue], HOOK_PULL.windup + 0.02);
+  assert(outBlue.hp === MAX_HP, 'M5：确认时不在扇内的敌前摇中走进扇区也不应勾中');
+
+  const backCtl = createPlayerControl();
+  const [backRed, backBlue] = redBlue(8, 6, 13.4, 6);
+  backRed.vx = -8;
+  backRed.vy = 0;
+  backCtl.tick(backRed, sample({ skillPress: 1, aimX: 1, aimY: 0 }), 0, [backRed, backBlue]);
+  backCtl.tick(backRed, sample({ skillPress: 1, aimX: 1, aimY: 0 }), 1 / 60, [backRed, backBlue]);
+  assert(backCtl.getAimingSlot() === 0 && backCtl.getWindup()?.slot === 1, 'M5：拧向后退中同键二次应释放钩爪');
+  let backLeft = HOOK_PULL.windup + 0.05;
+  while (backLeft > 1e-9) {
+    const dt = Math.min(1 / 60, backLeft);
+    backCtl.tick(backRed, sample({ aimX: 1, aimY: 0 }), dt, [backRed, backBlue]);
+    const phys = stepPhysics([backRed, backBlue], dt);
+    backCtl.afterPhysics(backRed, dt, [backRed, backBlue], phys.wallHitIds.includes(backRed.id));
+    backLeft -= dt;
+  }
+  assert(Math.abs(backBlue.hp - (MAX_HP - HOOK_PULL.damage)) < 1e-6, 'M5：拧向后退中圈内敌应勾中');
 
   const [stabRed, stabBlue] = redBlue(8, 6, 9.6, 6);
   const stab = createSkillCaster();
@@ -275,7 +335,7 @@ export function verifyM5(): void {
   const combo = createSkillCaster();
   const [comboRed, comboBlue] = redBlue(8, 6, 12, 6);
   fire(combo, comboRed, 4);
-  fire(combo, comboRed, 1);
+  fire(combo, comboRed, 1, 1, 0, [comboRed, comboBlue]);
   assert(combo.getWindup()?.slot === 1, 'M5：急停后应能接勾前摇');
   advance(combo, comboRed, [comboRed, comboBlue], HOOK_PULL.windup + 0.35);
   fire(combo, comboRed, 2);

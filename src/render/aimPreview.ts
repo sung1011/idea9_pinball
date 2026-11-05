@@ -1,7 +1,7 @@
 import { Graphics } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
 import { getStake } from '../core/ropeStakes';
-import type { AimHint, WindupInfo } from '../core/skillCaster';
+import { aimDirOf, type AimHint, type WindupInfo } from '../core/skillCaster';
 import { arcAimShape } from '../heroes/arcKit';
 import { chainAimShape } from '../heroes/chainKit';
 import { hookAimShape } from '../heroes/hookKit';
@@ -207,10 +207,11 @@ export function createAimPreview(): AimPreview {
       return;
     }
     const shape = hookAimShape(slot);
+    const dir = aimDirOf(player, sample);
     if (shape) {
-      drawCone(root, fx, fy, shape.halfRad, shape.radius, color, alpha);
+      drawCone(root, dir.x, dir.y, shape.halfRad, shape.radius, color, alpha);
     }
-    drawAimArrow(root, fx, fy, color, slot === 3 ? 2.6 : ARROW_LEN);
+    drawAimArrow(root, dir.x, dir.y, color, slot === 3 ? 2.6 : ARROW_LEN);
   };
 
   return { root, sync };

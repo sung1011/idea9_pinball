@@ -8,6 +8,7 @@ import {
   HOOK_PULL,
   HOOK_SHOVE,
   HOOK_STAB,
+  hookAimShape,
   hookIsDisplace,
   hookSkillCd,
   hookWindup,
@@ -22,7 +23,7 @@ import { createMirrorCaster } from './mirrorCaster';
 import { createWellCaster } from './wellCaster';
 import { applyPinRamBonus } from './nailCombat';
 import { applySkillDamage } from './skillHits';
-import { pickFanEnemy, unitVec } from './skillQuery';
+import { pickFanEnemy, segmentBlocked, unitVec } from './skillQuery';
 import { setFacingFrom } from './skillStub';
 import { isInEnemyTrap } from './trapZones';
 import { resolveArenaObstacles } from './wallBounce';
@@ -52,7 +53,7 @@ export type AimHint = {
 };
 
 type Effect =
-  | { kind: 'windup'; slot: SkillSlot; remain: number; aimX: number; aimY: number }
+  | { kind: 'windup'; slot: SkillSlot; remain: number; aimX: number; aimY: number; targetId?: number }
   | { kind: 'hookFly'; targetId: number }
   | { kind: 'stab'; nextIn: number; index: number; aimX: number; aimY: number }
   | { kind: 'dash'; dirX: number; dirY: number; remainTime: number; remainDist: number; speed: number };
@@ -63,7 +64,8 @@ function emptyCds(): SkillCds {
   return [0, 0, 0, 0];
 }
 
-function aimOf(ball: BallBody, sample: ActionSample): { x: number; y: number } {
+/** 瞄准朝向：有指针跟 aim，否则跟 facing。钩爪预览与二次释放共用。 */
+export function aimDirOf(ball: BallBody, sample: ActionSample): { x: number; y: number } {
   if (sample.hasAim) {
     const u = unitVec(sample.aimX, sample.aimY);
     if (u) {
@@ -72,6 +74,39 @@ function aimOf(ball: BallBody, sample: ActionSample): { x: number; y: number } {
   }
   const face = unitVec(ball.facingX, ball.facingY);
   return face ?? { x: 1, y: 0 };
+}
+
+function pickHookPull(
+  ball: BallBody,
+  roster: readonly BallBody[],
+  aimX: number,
+  aimY: number,
+): ReturnType<typeof pickFanEnemy> {
+  const shape = hookAimShape(1);
+  if (!shape) {
+    return null;
+  }
+  return pickFanEnemy(ball, roster, aimX, aimY, shape.halfRad, shape.radius, true);
+}
+
+function lockedPullTarget(ball: BallBody, roster: readonly BallBody[], lockId: number): BallBody | null {
+  if (lockId < 0) {
+    return null;
+  }
+  const target = roster.find((other) => other.id === lockId) ?? null;
+  if (!target || !target.inPlay || target.id === ball.id) {
+    return null;
+  }
+  if (target.team && ball.team && target.team === ball.team) {
+    return null;
+  }
+  if (target.invincibleRemain > 0) {
+    return null;
+  }
+  if (segmentBlocked(ball.x, ball.y, target.x, target.y)) {
+    return null;
+  }
+  return target;
 }
 
 function isHardBusy(effect: Effect | null): boolean {
@@ -148,7 +183,7 @@ export function createHookCaster(): SkillCaster {
     effect = null;
   };
 
-  const tryRelease = (ball: BallBody, sample: ActionSample): void => {
+  const tryRelease = (ball: BallBody, sample: ActionSample, roster: readonly BallBody[]): void => {
     if (aimingSlot === 0 || isHardBusy(effect) || skillsBlocked(ball)) {
       return;
     }
@@ -156,7 +191,7 @@ export function createHookCaster(): SkillCaster {
     if (cds[slot - 1] > 0) {
       return;
     }
-    const aim = aimOf(ball, sample);
+    const aim = aimDirOf(ball, sample);
     if (!setFacingFrom(ball, aim.x, aim.y)) {
       return;
     }
@@ -167,6 +202,7 @@ export function createHookCaster(): SkillCaster {
     startCd(slot);
     aimingSlot = 0;
     const delay = hookWindup(slot);
+    const lockId = slot === 1 ? (pickHookPull(ball, roster, ball.facingX, ball.facingY)?.target.id ?? -1) : -1;
     if (slot === 4 || delay <= 0) {
       if (effect?.kind === 'hookFly') {
         effect = null;
@@ -175,10 +211,17 @@ export function createHookCaster(): SkillCaster {
       brakeArmed = true;
       return;
     }
-    effect = { kind: 'windup', slot, remain: delay, aimX: ball.facingX, aimY: ball.facingY };
+    effect = {
+      kind: 'windup',
+      slot,
+      remain: delay,
+      aimX: ball.facingX,
+      aimY: ball.facingY,
+      targetId: lockId,
+    };
   };
 
-  const handleInput = (ball: BallBody, sample: ActionSample, _roster: readonly BallBody[] = []): void => {
+  const handleInput = (ball: BallBody, sample: ActionSample, roster: readonly BallBody[] = []): void => {
     if (consumeAimBreak(ball)) {
       aimingSlot = 0;
     }
@@ -192,43 +235,35 @@ export function createHookCaster(): SkillCaster {
     }
     if (sample.skillPress) {
       if (aimingSlot === sample.skillPress) {
-        tryRelease(ball, sample);
+        tryRelease(ball, sample, roster);
       } else if (cds[sample.skillPress - 1] <= 0 && !isHardBusy(effect)) {
         aimingSlot = sample.skillPress;
       }
     }
     if (sample.confirmRelease && aimingSlot !== 0) {
-      tryRelease(ball, sample);
+      tryRelease(ball, sample, roster);
     }
   };
 
-  const resolveHook = (ball: BallBody, aimX: number, aimY: number, roster: readonly BallBody[]): CollisionHit[] => {
-    const picked = pickFanEnemy(
-      ball,
-      roster,
-      aimX,
-      aimY,
-      (HOOK_PULL.fanDeg * Math.PI) / 360,
-      HOOK_PULL.range,
-      true,
-    );
-    if (!picked) {
+  const resolveHook = (ball: BallBody, roster: readonly BallBody[], lockId: number): CollisionHit[] => {
+    const target = lockedPullTarget(ball, roster, lockId);
+    if (!target) {
       cds[0] = Math.min(cds[0], HOOK_PULL.missCd);
       return [];
     }
     cancelBrake();
     const hits: CollisionHit[] = [];
-    const dmg = applySkillDamage(picked.target, ball, HOOK_PULL.damage);
+    const dmg = applySkillDamage(target, ball, HOOK_PULL.damage);
     if (dmg) {
       hits.push(dmg);
     }
-    const gap = Math.hypot(picked.target.x - ball.x, picked.target.y - ball.y);
-    const touch = ball.radius + picked.target.radius;
+    const gap = Math.hypot(target.x - ball.x, target.y - ball.y);
+    const touch = ball.radius + target.radius;
     if (gap <= touch + TOUCH_PAD) {
       openActiveRam(ball);
       return hits;
     }
-    effect = { kind: 'hookFly', targetId: picked.target.id };
+    effect = { kind: 'hookFly', targetId: target.id };
     return hits;
   };
 
@@ -288,13 +323,20 @@ export function createHookCaster(): SkillCaster {
     ball.suppressCombat = true;
   };
 
-  const finishWindup = (ball: BallBody, slot: SkillSlot, aimX: number, aimY: number, roster: readonly BallBody[]): CollisionHit[] => {
+  const finishWindup = (
+    ball: BallBody,
+    slot: SkillSlot,
+    aimX: number,
+    aimY: number,
+    roster: readonly BallBody[],
+    lockId: number,
+  ): CollisionHit[] => {
     if (hookIsDisplace(slot) && isInEnemyTrap(ball)) {
       punishDisplace(slot);
       return [];
     }
     if (slot === 1) {
-      return resolveHook(ball, aimX, aimY, roster);
+      return resolveHook(ball, roster, lockId);
     }
     if (slot === 2) {
       cancelBrake();
@@ -383,9 +425,9 @@ export function createHookCaster(): SkillCaster {
       effect.remain -= step;
       if (effect.remain <= TIME_EPS) {
         const slot = effect.slot;
-        const { aimX, aimY } = effect;
+        const { aimX, aimY, targetId } = effect;
         effect = null;
-        hits.push(...finishWindup(ball, slot, aimX, aimY, roster));
+        hits.push(...finishWindup(ball, slot, aimX, aimY, roster, targetId ?? -1));
       }
     } else if (effect?.kind === 'stab') {
       effect.nextIn -= step;
