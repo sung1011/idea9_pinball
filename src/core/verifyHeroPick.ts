@@ -82,10 +82,12 @@ export function verifyHeroPick(): void {
   const control = createPlayerControl('hook');
   control.tick(ball, sample({ skillPress: 1 }), 0);
   assert(control.getAimingSlot() === 1, '换英雄：换前应能进瞄');
+  ball.teamSlot = 2;
   control.setHero(ball, 'well');
   assert(ball.hero === 'well', '换英雄：setHero 应写成井绳');
   assert(ball.hp === 77 && ball.x === 4.2 && ball.y === 5.1, '换英雄：应保留血量与位置');
   assert(ball.vx === 1.4 && ball.vy === -0.6 && ball.team === 'red', '换英雄：应保留速度与队伍');
+  assert(ball.teamSlot === 2, '换英雄：不换队内编号');
   assert(control.getAimingSlot() === 0, '换英雄：换 kit 应清掉旧瞄准');
   assert(control.getWindup() === null, '换英雄：换 kit 应清掉前摇');
 }

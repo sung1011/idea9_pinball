@@ -28,6 +28,8 @@ export type BallBody = {
   hasAim: boolean;
   /** 未设则不算组队（M2 公式球仍可互伤） */
   team?: TeamId;
+  /** 本队第几人（生成序，从 1 起；换英雄不换号） */
+  teamSlot: number;
   inPlay: boolean;
   invincibleRemain: number;
   spawnX: number;
@@ -99,6 +101,7 @@ export function createBallBody(init: {
   facingY?: number;
   hp?: number;
   team?: TeamId;
+  teamSlot?: number;
   spawnX?: number;
   spawnY?: number;
   hero?: HeroId;
@@ -124,6 +127,7 @@ export function createBallBody(init: {
     aimY: init.facingY ?? 0,
     hasAim: false,
     team: init.team,
+    teamSlot: Math.max(1, Math.floor(init.teamSlot ?? 1)),
     inPlay: true,
     invincibleRemain: 0,
     spawnX: init.spawnX ?? init.x,

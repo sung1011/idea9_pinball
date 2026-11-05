@@ -59,6 +59,7 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
     ]);
     addBlock(body, '怎么动', [
       '骑士一直保底冲（约 2.5），点地 / 鼠标只纠偏方向，不加油门。金矛尖跟瞄准。',
+      '盾面大号数字是本队第几人（红 1、蓝 1、蓝 2），换英雄不换号。',
       '只有枪尖戳到对方身体、且相对速度够（≥4，技能后撞窗 2.5）才掉血；身子圆蹭圆只弹开不掉血。背刺不再更高伤。',
       '左下角可随时换英雄，只换技能组，血量 / 位置 / 对局不变。',
       kitHelpSkills(hero),

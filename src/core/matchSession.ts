@@ -138,6 +138,7 @@ export function createMatchRoster(botCount = BLUE_BOT_COUNT): BallBody[] {
     color: 0xe24a4a,
     label: '红',
     team: 'red',
+    teamSlot: 1,
   });
   const blues: BallBody[] = [];
   const n = clampBotCount(botCount);
@@ -152,6 +153,7 @@ export function createMatchRoster(botCount = BLUE_BOT_COUNT): BallBody[] {
         color: i === 0 ? 0x3d7cf0 : 0x4f9bff,
         label: n === 1 ? '蓝' : `蓝${i + 1}`,
         team: 'blue',
+        teamSlot: i + 1,
         hero: i === 0 ? 'ring' : 'hook',
       }),
     );
@@ -167,6 +169,7 @@ function createRosterBall(init: {
   color: number;
   label: string;
   team: TeamId;
+  teamSlot: number;
   hero?: HeroId;
 }): BallBody {
   return createBallBody({
@@ -177,6 +180,7 @@ function createRosterBall(init: {
     color: init.color,
     label: init.label,
     team: init.team,
+    teamSlot: init.teamSlot,
     spawnX: init.x,
     spawnY: init.y,
     hero: init.hero,

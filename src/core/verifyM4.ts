@@ -61,6 +61,10 @@ export function verifyM4(): void {
   assert(midpointHold(2, 1) === 'red' && midpointHold(1, 1) === 'none', 'M4：领地须严格多数');
   const roster = createMatchRoster();
   assert(roster.length === 3 && roster[0].team === 'red' && roster[2].team === 'blue', 'M4：默认 1 红 vs 2 蓝 bot');
+  assert(roster[0].teamSlot === 1, 'M4：红队第一人编号应为 1');
+  assert(roster[1].teamSlot === 1 && roster[2].teamSlot === 2, 'M4：蓝队各自从 1 起编号');
+  const oneVOne = createMatchRoster(1);
+  assert(oneVOne[0].teamSlot === 1 && oneVOne[1].teamSlot === 1, 'M4：1v1 红蓝各自为 1');
 
   const redA = createBallBody({
     x: 9,

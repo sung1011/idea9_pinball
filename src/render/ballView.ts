@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Text } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
 import { BALL_RADIUS, SPEAR_TIP_DIST } from '../core/constants';
 
@@ -13,7 +13,10 @@ export type BallView = {
 
 const SPEAR_GOLD = 0xffe08a;
 const SHIELD_RIM = 0xf4f0e4;
-const BOSS_GOLD = 0xd4c48a;
+const SLOT_FILL = 0xf8f4ea;
+const SLOT_STROKE = 0x1a1410;
+const SLOT_FONT = 72;
+const SLOT_SCALE = 0.009;
 
 function unit(x: number, y: number): { x: number; y: number } {
   const len = Math.hypot(x, y);
@@ -23,7 +26,7 @@ function unit(x: number, y: number): { x: number; y: number } {
   return { x: x / len, y: y / len };
 }
 
-/** 圆盾 + 纹章十字 + 中心铆钉。碰撞半径不变，只改外观。 */
+/** 圆盾 + 本队第几人大号数字。碰撞半径不变，只改外观。 */
 function drawKnightShield(g: Graphics, ball: BallBody): void {
   const alpha = ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
   const rim =
@@ -43,18 +46,37 @@ function drawKnightShield(g: Graphics, ball: BallBody): void {
   g.circle(0, 0, BALL_RADIUS);
   g.fill({ color: ball.color, alpha });
   g.stroke({ color: rim, width: 0.055, alpha: 0.95 });
+}
 
-  const arm = 0.3;
-  const thick = 0.086;
-  g.rect(-arm, -thick / 2, arm * 2, thick);
-  g.fill({ color: 0xffffff, alpha: 0.92 });
-  g.rect(-thick / 2, -arm, thick, arm * 2);
-  g.fill({ color: 0xffffff, alpha: 0.92 });
+function slotDigits(slot: number): string {
+  return String(Math.max(1, Math.floor(slot)));
+}
 
-  g.circle(0, 0, 0.078);
-  g.fill({ color: SHIELD_RIM, alpha: 0.96 });
-  g.circle(0, 0, 0.034);
-  g.fill({ color: BOSS_GOLD, alpha: 0.95 });
+function makeSlotLabel(slot: number): Text {
+  const label = new Text({
+    text: slotDigits(slot),
+    style: {
+      fontFamily: 'ui-rounded, ui-sans-serif, system-ui, sans-serif',
+      fontSize: SLOT_FONT,
+      fontWeight: '800',
+      fill: SLOT_FILL,
+      stroke: { color: SLOT_STROKE, width: 8, join: 'round' },
+      align: 'center',
+    },
+  });
+  label.anchor.set(0.5, 0.52);
+  label.eventMode = 'none';
+  return label;
+}
+
+function syncSlotLabel(label: Text, ball: BallBody): void {
+  const digits = slotDigits(ball.teamSlot);
+  if (label.text !== digits) {
+    label.text = digits;
+  }
+  label.scale.set(digits.length > 1 ? SLOT_SCALE * 0.72 : SLOT_SCALE);
+  label.alpha = ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
+  label.visible = ball.inPlay;
 }
 
 /** 羽冠：在瞄准/朝向反侧，略偏画面上方。 */
@@ -169,9 +191,10 @@ export function createBallView(ball: BallBody): BallView {
   const root = new Container();
   const fx = new Graphics();
   const body = new Graphics();
+  const slotLabel = makeSlotLabel(ball.teamSlot);
   const hpBar = new Graphics();
   const spear = new Graphics();
-  root.addChild(fx, body, hpBar, spear);
+  root.addChild(fx, body, slotLabel, hpBar, spear);
   const trail: Array<{ x: number; y: number }> = [];
 
   const sync = (next: BallBody, opts: BallViewSyncOpts = {}): void => {
@@ -180,6 +203,7 @@ export function createBallView(ball: BallBody): BallView {
     if (!next.inPlay) {
       trail.length = 0;
       fx.clear();
+      slotLabel.visible = false;
       return;
     }
 
@@ -199,6 +223,7 @@ export function createBallView(ball: BallBody): BallView {
 
     body.clear();
     drawKnightShield(body, next);
+    syncSlotLabel(slotLabel, next);
     const dir = next.hasAim ? unit(next.aimX, next.aimY) : unit(next.facingX, next.facingY);
     drawPlume(body, dir.x, dir.y, next.color);
     if (next.invincibleRemain > 0) {
