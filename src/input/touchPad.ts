@@ -42,7 +42,7 @@ function isSkillSlot(slot: number): slot is SkillSlot {
   return slot === 1 || slot === 2 || slot === 3 || slot === 4;
 }
 
-/** 横排技能四键 Skill1–4，锚在舞台左下外侧；无左摇杆。点在键上不抢 Aim（data-touch-control）。 */
+/** 横排技能四键 Skill1–4，锚在视窗右下；无左摇杆。点在键上不抢 Aim（data-touch-control）。 */
 export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPadOpts = {}): TouchPad {
   const holdMs = opts.holdMs ?? SKILL_TIP_HOLD_MS;
   const root = document.createElement('div');

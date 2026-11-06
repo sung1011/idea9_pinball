@@ -69,7 +69,7 @@ function makeScoreSide(team: 'red' | 'blue'): { root: HTMLSpanElement; value: HT
   return { root, value };
 }
 
-/** 顶中比分胶囊仍贴窗顶；我/队友下拉锚在舞台左上外侧。 */
+/** 顶中比分胶囊贴窗顶；我/队友下拉贴视窗左上，略 inset。 */
 export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): MatchHud {
   const root = document.createElement('div');
   root.className = 'matchHud';

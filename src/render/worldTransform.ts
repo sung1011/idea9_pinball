@@ -6,7 +6,7 @@ export type WorldTransform = {
   offsetY: number;
 };
 
-/** 将 20×20 逻辑世界等比适配到屏幕，四周留白并居中。 */
+/** 将 20×20 逻辑世界等比适配到屏幕。 */
 export function fitWorldToScreen(
   screenWidth: number,
   screenHeight: number,
@@ -17,7 +17,7 @@ export function fitWorldToScreen(
   return fitWorldToBox(0, 0, screenWidth, screenHeight, worldWidth, worldHeight, paddingPx);
 }
 
-/** 将逻辑世界等比装进指定舞台盒（横构图 letterbox / pillarbox）。 */
+/** 将逻辑世界等比装进指定舞台盒（cover 盒可超出视口；不拉伸）。 */
 export function fitWorldToBox(
   boxX: number,
   boxY: number,

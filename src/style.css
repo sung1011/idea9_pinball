@@ -84,7 +84,10 @@ canvas {
   align-items: center;
   gap: 8px;
   min-height: 28px;
-  max-width: calc(100% - 2 * (var(--hud-safe-right) + var(--hud-pad) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px)));
+  max-width: calc(100% - 2 * max(
+    calc(var(--hud-safe-right) + var(--hud-pad) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px)),
+    calc(var(--hud-safe-left) + var(--hud-pad) + 6.4em)
+  ));
   box-sizing: border-box;
   padding: 3px 12px;
   border-radius: 999px;
@@ -166,24 +169,17 @@ canvas {
 
 .matchHudHeroRow {
   position: absolute;
-  left: var(--stage-left);
-  top: auto;
+  left: calc(var(--hud-safe-left) + var(--hud-pad));
+  top: calc(var(--hud-safe-top) + var(--hud-pad));
   right: auto;
-  bottom: calc(100% - var(--stage-top) + var(--hud-pad));
+  bottom: auto;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
   pointer-events: none;
   transform: none;
-}
-
-.isLandscape > .matchHud > .matchHudHeroRow {
-  left: auto;
-  right: calc(100% - var(--stage-left) + var(--hud-pad));
-  top: var(--stage-top);
-  bottom: auto;
-  align-items: flex-end;
+  z-index: 8;
 }
 
 .matchHudHeroWrap {
@@ -217,8 +213,8 @@ canvas {
   appearance: none;
   -webkit-appearance: none;
   min-height: 28px;
-  min-width: 4.2em;
-  padding: 3px 20px 3px 6px;
+  min-width: 3.6em;
+  padding: 3px 18px 3px 5px;
   border: 0;
   border-radius: 0;
   background-color: transparent;
@@ -1013,10 +1009,10 @@ canvas {
 
 .touchSkills {
   position: absolute;
-  left: var(--stage-left);
-  top: calc(var(--stage-bottom) + var(--hud-pad));
-  right: auto;
-  bottom: auto;
+  left: auto;
+  right: calc(var(--hud-safe-right) + var(--hud-pad));
+  top: auto;
+  bottom: calc(var(--hud-safe-bottom) + var(--hud-pad));
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -1024,14 +1020,6 @@ canvas {
   pointer-events: auto;
   touch-action: none;
   transform: none;
-}
-
-.isLandscape > .touchLayer > .touchSkills {
-  left: auto;
-  right: calc(100% - var(--stage-left) + var(--hud-pad));
-  top: auto;
-  bottom: calc(100% - var(--stage-bottom));
-  gap: 6px;
 }
 
 .isLandscape .touchSkillBtn {
@@ -1206,5 +1194,31 @@ canvas {
 
   .openingHudNum {
     font-size: clamp(56px, 16vmin, 96px);
+  }
+}
+
+@media (max-width: 420px) {
+  .matchHudCluster {
+    gap: 4px;
+    padding: 3px 8px;
+  }
+
+  .matchHudClock {
+    min-width: 3.8em;
+    font-size: 12px;
+  }
+
+  .matchHudScoreVal {
+    font-size: 14px;
+  }
+
+  .matchHudHero {
+    min-width: 3.4em;
+    padding: 2px 16px 2px 4px;
+  }
+
+  .matchHudHeroTag {
+    font-size: 9px;
+    padding: 0 3px 0 4px;
   }
 }

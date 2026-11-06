@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.18-cover-hud-corners",
+    "version": "0.0.18",
+    "date": "2026-11-06",
+    "summary": "战场 cover 铺满无 letterbox；HUD 四角：换英雄左上、比分顶中、?齿轮顶右、技能右下；任意方向不翻转"
+  },
+  {
     "id": "v0.0.17-round-shield-knight",
     "version": "0.0.17",
     "date": "2026-11-05",

@@ -15,7 +15,6 @@ export type StageRect = {
 };
 
 const WORLD_ASPECT = MAP_WIDTH / MAP_HEIGHT;
-const STAGE_GAP_PX = 6;
 
 /** 读 notch / 圆角安全区，没有则全 0。 */
 export function readSafeInsets(): SafeInsets {
@@ -48,22 +47,27 @@ export function clientToHostLocal(
   return { x: clientX - rect.left, y: clientY - rect.top };
 }
 
-/** 按 20×20 正方形取最大舞台；竖窗上下留黑边，横窗左右留黑边。 */
+/**
+ * 按 20×20 正方形 cover 铺满可用安全区，保持比例不拉伸。
+ * 宽屏：宽度贴齐可用宽，高度按世界比例放大后居中，裁掉上下多出部分（y 可负）。
+ * 竖窗 / 更近正方形：高度贴齐可用高，宽度按世界比例放大后居中，裁掉左右多出部分（x 可负）。
+ * 舞台可超出视口；点击坐标与舞台摆位用同一套矩形。
+ */
 export function computeLandscapeStage(viewW: number, viewH: number, insets: SafeInsets): StageRect {
-  const left = insets.left + STAGE_GAP_PX;
-  const right = insets.right + STAGE_GAP_PX;
-  const top = insets.top + STAGE_GAP_PX;
-  const bottom = insets.bottom + STAGE_GAP_PX;
+  const left = insets.left;
+  const right = insets.right;
+  const top = insets.top;
+  const bottom = insets.bottom;
   const availW = Math.max(1, viewW - left - right);
   const availH = Math.max(1, viewH - top - bottom);
   let width: number;
   let height: number;
   if (availW / availH > WORLD_ASPECT) {
-    height = availH;
-    width = height * WORLD_ASPECT;
-  } else {
     width = availW;
     height = width / WORLD_ASPECT;
+  } else {
+    height = availH;
+    width = height * WORLD_ASPECT;
   }
   return {
     x: left + (availW - width) / 2,
