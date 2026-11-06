@@ -5,18 +5,14 @@ import { createTouchPad } from '../input/touchPad';
 import { fitWorldToBox, screenToLogical } from '../render/worldTransform';
 import type { AppVersions } from '../ui/appVersion';
 import { createHelpCard } from '../ui/helpCard';
-import { lockLandscape } from '../ui/lockLandscape';
+import { landscapeLockType, lockLandscape } from '../ui/lockLandscape';
 import { createMatchHud } from '../ui/matchHud';
 import { createSettingsPanel } from '../ui/settingsPanel';
 import {
   applyStageVars,
   clientToHostLocal,
   computeLandscapeStage,
-  forceLandscapeViewSize,
   isPortraitViewport,
-  remapInsetsForForceLandscape,
-  syncForceLandscape,
-  wantsForceLandscape,
   type SafeInsets,
   type StageRect,
 } from '../ui/stageLayout';
@@ -178,7 +174,7 @@ function hasRotatePromptCopy(text: string): boolean {
   return /请横过来|请旋转设备|请旋转/.test(text);
 }
 
-/** 永远横屏 cover：竖窗先转 90° 再按横屏盒子排；HUD 叠四角。无转屏提示。 */
+/** 永远横屏 cover：系统锁当前横屏侧；不对 #app 转 90°；HUD 叠四角。无转屏提示。 */
 export function verifyHudLayout(): void {
   const none: SafeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
   const targetW = IPHONE_LANDSCAPE_LOGICAL_WIDTH;
@@ -191,16 +187,6 @@ export function verifyHudLayout(): void {
 
   const sixteenNine = computeLandscapeStage(1280, 720, none);
   assertCropSides(sixteenNine, 1280, 720, none, 'HUD：1280×720');
-
-  const forcedSize = forceLandscapeViewSize(800, 1200);
-  assert(forcedSize.width === 1200 && forcedSize.height === 800, 'HUD：竖窗应互换宽高再按横屏排');
-  const forced = computeLandscapeStage(forcedSize.width, forcedSize.height, none);
-  assertCropSides(forced, 1200, 800, none, 'HUD：竖窗转横后');
-
-  const phoneForced = forceLandscapeViewSize(375, 667);
-  assert(phoneForced.width === 667 && phoneForced.height === 375, 'HUD：竖持短边当高、长边当宽');
-  const phoneStage = computeLandscapeStage(phoneForced.width, phoneForced.height, none);
-  assertCropSides(phoneStage, 667, 375, none, 'HUD：竖持转横');
 
   const phoneLand = computeLandscapeStage(667, 375, none);
   assertCropSides(phoneLand, 667, 375, none, 'HUD：横持');
@@ -237,53 +223,38 @@ export function verifyHudLayout(): void {
   );
 
   assert(isPortraitViewport(800, 1200) && !isPortraitViewport(1600, 900), 'HUD：竖/横判定');
-  assert(wantsForceLandscape(375, 667) && !wantsForceLandscape(667, 375), 'HUD：竖持应强制横屏，横持不转');
-  assert(!wantsForceLandscape(1600, 900), 'HUD：横窗不应旋转');
-
-  const remapped = remapInsetsForForceLandscape({ top: 10, right: 1, bottom: 20, left: 2 });
-  assert(
-    remapped.top === 1 && remapped.right === 20 && remapped.bottom === 2 && remapped.left === 10,
-    'HUD：90° CW 安全区应为上←右、右←下、下←左、左←上',
-  );
+  assert(landscapeLockType('landscape-secondary') === 'landscape-secondary', 'HUD：已在 secondary 应锁这一侧');
+  assert(landscapeLockType('landscape-primary') === 'landscape-primary', 'HUD：已在 primary 应锁这一侧');
+  assert(landscapeLockType('portrait-primary') === 'landscape-primary', 'HUD：竖持应锁 landscape-primary');
+  assert(landscapeLockType(undefined) === 'landscape-primary', 'HUD：未知朝向应锁 landscape-primary');
 
   lockLandscape();
-
-  const stageHost = document.createElement('div');
-  stageHost.style.cssText = 'position:fixed;left:0;top:0;';
-  document.body.appendChild(stageHost);
-  const forcedOn = syncForceLandscape(stageHost, 375, 667);
-  const forcedFrame = forceLandscapeViewSize(375, 667);
-  applyStageVars(stageHost, computeLandscapeStage(forcedFrame.width, forcedFrame.height, none));
-  assert(forcedOn, 'HUD：竖窗应打开强制横屏');
-  assert(stageHost.classList.contains('isForceLandscape'), 'HUD：竖窗宿主应标 isForceLandscape');
-  assert(stageHost.classList.contains('isLandscape') && !stageHost.classList.contains('isPortrait'), 'HUD：竖窗转横后应按横屏布局类');
-  assert(stageHost.style.transform.includes('rotate(90deg)'), 'HUD：竖窗应 rotate(90deg)，家庭键在右时正向');
-  assert(stageHost.style.width === '667px' && stageHost.style.height === '375px', 'HUD：竖窗布局盒应为横屏尺寸');
-  stageHost.remove();
 
   const landProbe = document.createElement('div');
   landProbe.style.cssText = 'position:fixed;left:0;top:0;width:667px;height:375px';
   document.body.appendChild(landProbe);
-  const landForce = syncForceLandscape(landProbe, 667, 375);
-  assert(!landForce && !landProbe.classList.contains('isForceLandscape'), 'HUD：横窗不应旋转');
+  applyStageVars(landProbe, computeLandscapeStage(667, 375, none));
+  assert(!landProbe.classList.contains('isForceLandscape'), 'HUD：横窗不应标 isForceLandscape');
   assert(!landProbe.style.transform, 'HUD：横窗宿主不应写画面变换');
+  assert(noRotate(landProbe), 'HUD：横窗不对 #app 转 90°');
   landProbe.remove();
 
-  const probe = document.createElement('div');
-  probe.style.cssText = 'position:fixed;left:0;top:0;';
-  document.body.appendChild(probe);
-  syncForceLandscape(probe, 200, 400);
-  const mapped = clientToHostLocal(probe, 120, 50);
-  probe.remove();
-  assert(Math.abs(mapped.x - 50) < 2 && Math.abs(mapped.y - 80) < 2, 'HUD：强制横屏应反解点按坐标');
+  const tallProbe = document.createElement('div');
+  tallProbe.style.cssText = 'position:fixed;left:0;top:0;width:375px;height:667px';
+  document.body.appendChild(tallProbe);
+  applyStageVars(tallProbe, computeLandscapeStage(375, 667, none));
+  assert(!tallProbe.classList.contains('isForceLandscape'), 'HUD：竖窗不应标 isForceLandscape');
+  assert(!tallProbe.style.transform.includes('rotate'), 'HUD：竖窗宿主不应写 rotate');
+  assert(noRotate(tallProbe), 'HUD：竖窗也不对 #app 转 90°，不另做可玩竖屏布局');
+  assert(tallProbe.classList.contains('isPortrait') && !tallProbe.classList.contains('isLandscape'), 'HUD：竖窗只标 isPortrait');
+  tallProbe.remove();
 
   const aimHost = document.createElement('div');
-  aimHost.style.cssText = 'position:fixed;left:0;top:0;';
+  aimHost.style.cssText = 'position:fixed;left:0;top:0;width:200px;height:120px';
   const aimCanvas = document.createElement('canvas');
   aimCanvas.style.cssText = 'width:100%;height:100%;display:block';
   aimHost.appendChild(aimCanvas);
   document.body.appendChild(aimHost);
-  syncForceLandscape(aimHost, 200, 400);
   const aimBus = createActionBus();
   const unbindAim = bindPcInput({
     canvas: aimCanvas,
@@ -307,8 +278,8 @@ export function verifyHudLayout(): void {
   unbindAim();
   aimHost.remove();
   assert(
-    Math.abs((aimSample.pointerX ?? 0) - 80) < 2 && Math.abs((aimSample.pointerY ?? 0) - 40) < 2,
-    'HUD：旋转后瞄准应反解，不点左打右',
+    Math.abs((aimSample.pointerX ?? 0) - 160) < 2 && Math.abs((aimSample.pointerY ?? 0) - 80) < 2,
+    'HUD：瞄准应按 AABB 取本地坐标，不点左打右',
   );
 
   const plain = document.createElement('div');
@@ -316,7 +287,7 @@ export function verifyHudLayout(): void {
   document.body.appendChild(plain);
   const local = clientToHostLocal(plain, 60, 50);
   plain.remove();
-  assert(Math.abs(local.x - 20) < 2 && Math.abs(local.y - 20) < 2, 'HUD：未旋转时应按视口差值取本地坐标');
+  assert(Math.abs(local.x - 20) < 2 && Math.abs(local.y - 20) < 2, 'HUD：应按视口差值取本地坐标');
 
   const hudChrome =
     '--hud-pad:8px;--hud-fab:28px;--hud-fab-gap:4px;--hud-safe-top:0px;--hud-safe-right:0px;--hud-safe-bottom:0px;--hud-safe-left:0px';
@@ -401,32 +372,16 @@ export function verifyHudLayout(): void {
   assert(helpOpenedBySettings && settingsClosedAfterHowTo, 'HUD：设置怎么玩应打开同一份说明卡');
 
   const tallHost = document.createElement('div');
-  tallHost.style.cssText = `position:fixed;left:0;top:0;${hudChrome}`;
+  tallHost.style.cssText = `position:fixed;left:0;top:0;width:375px;height:667px;${hudChrome}`;
   createMatchHud(tallHost);
   createTouchPad(tallHost, createActionBus());
   createHelpCard(tallHost);
   document.body.appendChild(tallHost);
-  syncForceLandscape(tallHost, 375, 667);
-  const tallStage = computeLandscapeStage(667, 375, none);
-  applyStageVars(tallHost, tallStage);
-  const tallHud = tallHost.querySelector<HTMLElement>('.matchHud');
-  const tallHero = tallHost.querySelector<HTMLElement>('.matchHudHeroRow');
-  const tallSkills = tallHost.querySelector<HTMLElement>('.touchSkills');
-  const tallCluster = tallHost.querySelector<HTMLElement>('.matchHudCluster');
-  const tallHelp = tallHost.querySelector<HTMLElement>('.helpFab');
-  const tallGear = tallHost.querySelector<HTMLElement>('.settingsFab');
-  assert(tallHost.classList.contains('isForceLandscape'), 'HUD：窄高窗应旋转成横屏对局');
-  assert(tallHost.classList.contains('isLandscape') && !tallHost.classList.contains('isPortrait'), 'HUD：窄高窗转横后应按横屏 HUD');
-  assert(tallStage.x < -1 && Math.abs(tallStage.y) < 1e-6, 'HUD：窄高窗转横后 cover 应左右略裁，不是竖着的战场');
-  assert(tallHost.style.transform.includes('rotate(90deg)'), 'HUD：窄高窗应 rotate(90deg)');
+  applyStageVars(tallHost, computeLandscapeStage(375, 667, none));
+  assert(!tallHost.classList.contains('isForceLandscape'), 'HUD：窄高窗不应标 isForceLandscape');
+  assert(noRotate(tallHost), 'HUD：窄高窗不对 #app 转 90°');
   assert(!tallHost.querySelector('.rotatePrompt'), 'HUD：窄高窗不应有转屏遮罩');
   assert(!hasRotatePromptCopy(tallHost.textContent ?? ''), 'HUD：窄高窗不应出现转屏文案');
-  assert(!!tallHud && getComputedStyle(tallHud).display !== 'none', 'HUD：窄高窗不另做竖屏布局，也不藏 HUD');
-  assert(!!tallSkills && getComputedStyle(tallSkills).display !== 'none', 'HUD：窄高窗技能层仍在');
-  assert(noRotate(tallHero!) && noRotate(tallSkills!), 'HUD：技能/下拉自身无旋转，跟着整屏转');
-  if (tallHero && tallSkills && tallCluster) {
-    assertCornerHud(tallHost, tallHero, tallSkills, tallCluster, tallHelp, tallGear, 'HUD：竖窗转横');
-  }
   tallHost.remove();
 
   hud.sync(dummySnap(), []);

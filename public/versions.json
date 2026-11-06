@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.24-lock-current-landscape",
+    "version": "0.0.24",
+    "date": "2026-11-06",
+    "summary": "锁死当前横屏侧：不再 CSS 转 90°，也不允许 180° 对调；无转屏提示"
+  },
+  {
     "id": "v0.0.23-hero-scale-2x",
     "version": "0.0.23",
     "date": "2026-11-06",

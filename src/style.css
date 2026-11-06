@@ -61,18 +61,6 @@ body,
   --stage-center-y: 42%;
 }
 
-/* 竖持：整屏按横屏盒子排，90° CW；家庭键在右时画面正向。安全区随旋转重映射。 */
-#app.isForceLandscape {
-  width: 100dvh;
-  height: 100dvw;
-  transform-origin: top left;
-  transform: translate(100dvw, 0) rotate(90deg);
-  --hud-safe-top: env(safe-area-inset-right, 0px);
-  --hud-safe-right: env(safe-area-inset-bottom, 0px);
-  --hud-safe-bottom: env(safe-area-inset-left, 0px);
-  --hud-safe-left: env(safe-area-inset-top, 0px);
-}
-
 canvas {
   display: block;
 }
