@@ -1,18 +1,29 @@
 import type { MatchSnapshot } from '../core/matchSession';
 import type { BallBody } from '../core/ballBody';
+import {
+  DEFAULT_MATCH_MODE,
+  isEightKill,
+  isMatchModeId,
+  MATCH_MODE_IDS,
+  MATCH_MODE_LABEL,
+  type MatchModeId,
+} from '../core/matchMode';
 import { HERO_IDS, heroZh, isHeroId, type HeroId } from '../heroes/heroIds';
 
 export type MatchHud = {
   sync: (snap: MatchSnapshot, balls: readonly BallBody[]) => void;
   setHero: (hero: HeroId) => void;
   setAllyHero: (hero: HeroId) => void;
+  setMode: (mode: MatchModeId) => void;
 };
 
 export type MatchHudOpts = {
   hero?: HeroId;
   allyHero?: HeroId;
+  mode?: MatchModeId;
   onPickHero?: (hero: HeroId) => void;
   onPickAllyHero?: (hero: HeroId) => void;
+  onPickMode?: (mode: MatchModeId) => void;
 };
 
 const HELMET_SVG =
@@ -139,6 +150,41 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   heroRow.dataset.hud = 'heroPicks';
   heroRow.append(makeHeroWrap('我', pick), makeHeroWrap('队友', allyPick));
 
+  const modePick = document.createElement('select');
+  modePick.className = 'matchHudHero matchHudMode';
+  modePick.setAttribute('data-touch-control', 'mode');
+  modePick.setAttribute('aria-label', '切换对局模式');
+  for (const id of MATCH_MODE_IDS) {
+    const option = document.createElement('option');
+    option.value = id;
+    option.textContent = MATCH_MODE_LABEL[id];
+    modePick.appendChild(option);
+  }
+  const initialMode = opts.mode ?? DEFAULT_MATCH_MODE;
+  modePick.value = initialMode;
+  for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'keydown', 'keyup'] as const) {
+    modePick.addEventListener(type, stopHudUi);
+  }
+  modePick.addEventListener('change', (ev) => {
+    ev.stopPropagation();
+    if (!isMatchModeId(modePick.value)) {
+      modePick.value = initialMode;
+      return;
+    }
+    opts.onPickMode?.(modePick.value);
+  });
+  const modeWrap = document.createElement('label');
+  modeWrap.className = 'matchHudHeroWrap matchHudModeWrap';
+  const modeStripe = document.createElement('span');
+  modeStripe.className = 'matchHudHeroStripe matchHudModeStripe';
+  modeStripe.setAttribute('aria-hidden', 'true');
+  modeWrap.append(modeStripe, modePick);
+
+  const leftStack = document.createElement('div');
+  leftStack.className = 'matchHudLeft';
+  leftStack.dataset.hud = 'modeHero';
+  leftStack.append(modeWrap, heroRow);
+
   const toast = document.createElement('div');
   toast.className = 'matchHudToast';
 
@@ -150,7 +196,7 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   openingHint.className = 'openingHudHint';
   opening.append(openingNum, openingHint);
 
-  root.append(cluster, heroRow, toast);
+  root.append(cluster, leftStack, toast);
   host.append(root, opening);
 
   return {
@@ -160,13 +206,20 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
     setAllyHero(hero) {
       allyPick.value = hero;
     },
+    setMode(mode) {
+      modePick.value = mode;
+    },
     sync(snap, balls) {
-      red.value.textContent = String(snap.redScore);
-      blue.value.textContent = String(snap.blueScore);
+      const redVal = isEightKill(snap.mode) ? snap.redKills : snap.redScore;
+      const blueVal = isEightKill(snap.mode) ? snap.blueKills : snap.blueScore;
+      red.value.textContent = String(redVal);
+      blue.value.textContent = String(blueVal);
       clock.textContent = formatClock(snap);
       clock.classList.toggle('isOvertime', snap.phase === 'overtime');
       clock.classList.toggle('isResult', snap.phase === 'result');
-      cluster.dataset.hold = snap.midpoint;
+      cluster.dataset.hold = isEightKill(snap.mode) ? 'none' : snap.midpoint;
+      cluster.dataset.mode = snap.mode;
+      modePick.value = snap.mode;
 
       const waiting = balls
         .filter((ball) => !ball.inPlay)
@@ -179,6 +232,7 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
         (event) =>
           event.kind === 'knockout' ||
           event.kind === 'assist' ||
+          event.kind === 'potion' ||
           (event.kind === 'phase' && !charging),
       );
       toast.textContent = tip?.text ?? (waiting.length > 0 ? waiting.join(' · ') : '');

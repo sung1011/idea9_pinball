@@ -1,5 +1,5 @@
 # Idea pinball · 工程落地方案 v0
-更新：2026-11-06（技能四键放大到约 60px，横屏不再额外缩小；瞄准中「取消」锚在当前技能正上方，长按 tip 若重叠则再上移）；2026-11-06（锁死当前横屏侧：`orientation.lock` 锁 primary/secondary 当下这一侧，manifest `landscape-primary`；删掉 `#app` `rotate(90deg)` / `isForceLandscape`，无转屏提示）；2026-11-06（英雄放大约 2 倍：半径 0.5→1.0，枪尖距 1.12→2.24 / 检测 0.1→0.2，骑士皮与冲锋残影同步；技能数值与世界宽高不动）；2026-11-06（战场加宽到 iPhone 18 Pro Max 横屏比例：高仍 20、宽 20×956/440；956×440 看全图，更方屏左右略裁无黑边）；2026-11-06（永远横屏对局：竖持 `#app` 按横屏尺寸 `rotate(90deg)`，家庭键在右时正向，坐标反解；锁失败仍旋转，无转屏提示）；2026-11-06（系统锁横屏，删掉请横过来遮罩与说明卡转屏文案；横屏 cover + 四角 HUD，禁止画面翻转）；2026-11-06（战场 cover 铺满无 letterbox；HUD 四角：换英雄左上、比分顶中、?齿轮顶右、技能右下；不翻转）；2026-11-05（撤销骑马主体皮，还原圆盾+羽冠约六成+金矛尖+盾面本队编号，冲锋残影改回圆盾/圆影；胜利结算板换羊皮纸木框 + 热闹金矛碎裂，复用 `uiTheme`；链生愈链友HOT/敌DoT、盾脉贴敌吸血3s、援勾对敌击退；闪弧侧闪贴背、掠刃荼毒下次枪尖+6；枪尖普攻去门槛 + 成功掉血 1s CD + 血条下细进度条；触屏瞄准中点空白=瞄向并立即释放，滑动只改向，再点技能键仍释放，鼠键逻辑不动；玩法说明卡与设置模态换羊皮纸木框皮，复用 `uiTheme`，标题墨色，金仍只在计时；胜利结算板同族换皮并允许热闹金；局内 HUD chrome 换皮：`uiTheme.ts` 色板 + CSS 变量，羊皮纸+木框，金只在计时；开局与每次 R：队友和两名敌方从含镜卫全池均匀随机，同局可重复；玩家英雄 `ks.lastHeroId` 记住上次所选，无记录默认钩刺；局中换自己立刻写入，换队友不写；仍固定 2v2 只改开局 kit 来源；骑士主体羽冠缩短到约六成，冲锋残影不动；技能与换英雄锚到舞台矩形外侧；顶右齿轮左侧 `?` 打开同一份玩法说明卡，设置「怎么玩」仍可用；HUD：左上竖叠我/队友下拉，左下 Skill1–4 横排；战场 20×20；领地半径 2.5；红蓝上下两出生；竖/横窗 letterbox，画面不旋转；HUD 按竖窗重排；本机固定 2v2：玩家控红1 + 简 bot 红2，对 2 蓝简 bot；左上可换自己/队友英雄；盾面去掉十字纹章，改为本队第几人大号数字；换英雄不换号；碰撞掉血改为枪尖戳中身体；去掉朝向乘区）；2026-11-04（竖持 letterbox；仅横屏翻转扶正；镜卫四技能落地，7 人池，同局可重复选；新版只靠轮询 `versions.json` 检测，本地记住已确认版本，设置页展示最近约 10 条，不打 git tag；战斗飘字仅数字：伤害红橙 `-12` / 治疗绿 `+8` / 护盾青预留，从结算点上浮淡出；共用 / 英雄血量 100→300，开局与回场满血基线；技能键 CD：12 点起顺时针径向遮罩 + 剩余秒一位小数，长按提示 CD 中仍可用；井绳 1 改为索爆：身周+桩同步四脉冲；回索改为沿线定身 2s，超出硬控 0.6s 上限；开局冲锋 1s、前 0.2s 拉升，冲锋阶段不再出说明板；Layout B 顶中合并比分计时胶囊；囚环物理关死出不去；持续技能时长 +2s，钉锚硬控 0.6s 不动；长按技能键看对外名+一行效果；战场 HUD Layout B：横屏全屏；站点图标 E：红蓝对撞金矛；对局可随时换英雄；井绳四技能落地；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋峰值 7.5）
+更新：2026-11-06（双模式八杀/占点：`ks.lastModeId` 默认八杀；八杀击杀制+药水+地裂矛阵，占点保持领地百分；左上模式下拉在我/队友之上）；2026-11-06（技能四键放大到约 60px，横屏不再额外缩小；瞄准中「取消」锚在当前技能正上方，长按 tip 若重叠则再上移）；2026-11-06（锁死当前横屏侧：`orientation.lock` 锁 primary/secondary 当下这一侧，manifest `landscape-primary`；删掉 `#app` `rotate(90deg)` / `isForceLandscape`，无转屏提示）；2026-11-06（英雄放大约 2 倍：半径 0.5→1.0，枪尖距 1.12→2.24 / 检测 0.1→0.2，骑士皮与冲锋残影同步；技能数值与世界宽高不动）；2026-11-06（战场加宽到 iPhone 18 Pro Max 横屏比例：高仍 20、宽 20×956/440；956×440 看全图，更方屏左右略裁无黑边）；2026-11-06（永远横屏对局：竖持 `#app` 按横屏尺寸 `rotate(90deg)`，家庭键在右时正向，坐标反解；锁失败仍旋转，无转屏提示）；2026-11-06（系统锁横屏，删掉请横过来遮罩与说明卡转屏文案；横屏 cover + 四角 HUD，禁止画面翻转）；2026-11-06（战场 cover 铺满无 letterbox；HUD 四角：换英雄左上、比分顶中、?齿轮顶右、技能右下；不翻转）；2026-11-05（撤销骑马主体皮，还原圆盾+羽冠约六成+金矛尖+盾面本队编号，冲锋残影改回圆盾/圆影；胜利结算板换羊皮纸木框 + 热闹金矛碎裂，复用 `uiTheme`；链生愈链友HOT/敌DoT、盾脉贴敌吸血3s、援勾对敌击退；闪弧侧闪贴背、掠刃荼毒下次枪尖+6；枪尖普攻去门槛 + 成功掉血 1s CD + 血条下细进度条；触屏瞄准中点空白=瞄向并立即释放，滑动只改向，再点技能键仍释放，鼠键逻辑不动；玩法说明卡与设置模态换羊皮纸木框皮，复用 `uiTheme`，标题墨色，金仍只在计时；胜利结算板同族换皮并允许热闹金；局内 HUD chrome 换皮：`uiTheme.ts` 色板 + CSS 变量，羊皮纸+木框，金只在计时；开局与每次 R：队友和两名敌方从含镜卫全池均匀随机，同局可重复；玩家英雄 `ks.lastHeroId` 记住上次所选，无记录默认钩刺；局中换自己立刻写入，换队友不写；仍固定 2v2 只改开局 kit 来源；骑士主体羽冠缩短到约六成，冲锋残影不动；技能与换英雄锚到舞台矩形外侧；顶右齿轮左侧 `?` 打开同一份玩法说明卡，设置「怎么玩」仍可用；HUD：左上竖叠我/队友下拉，左下 Skill1–4 横排；战场 20×20；领地半径 2.5；红蓝上下两出生；竖/横窗 letterbox，画面不旋转；HUD 按竖窗重排；本机固定 2v2：玩家控红1 + 简 bot 红2，对 2 蓝简 bot；左上可换自己/队友英雄；盾面去掉十字纹章，改为本队第几人大号数字；换英雄不换号；碰撞掉血改为枪尖戳中身体；去掉朝向乘区）；2026-11-04（竖持 letterbox；仅横屏翻转扶正；镜卫四技能落地，7 人池，同局可重复选；新版只靠轮询 `versions.json` 检测，本地记住已确认版本，设置页展示最近约 10 条，不打 git tag；战斗飘字仅数字：伤害红橙 `-12` / 治疗绿 `+8` / 护盾青预留，从结算点上浮淡出；共用 / 英雄血量 100→300，开局与回场满血基线；技能键 CD：12 点起顺时针径向遮罩 + 剩余秒一位小数，长按提示 CD 中仍可用；井绳 1 改为索爆：身周+桩同步四脉冲；回索改为沿线定身 2s，超出硬控 0.6s 上限；开局冲锋 1s、前 0.2s 拉升，冲锋阶段不再出说明板；Layout B 顶中合并比分计时胶囊；囚环物理关死出不去；持续技能时长 +2s，钉锚硬控 0.6s 不动；长按技能键看对外名+一行效果；战场 HUD Layout B：横屏全屏；站点图标 E：红蓝对撞金矛；对局可随时换英雄；井绳四技能落地；闪弧四技能；钉壳四技能；链生四技能；磁环四技能；骑士冲杀换皮；Stall 半场底线；冲锋峰值 7.5）>>>>>>> 70044b4 (feat: 新增八杀模式（先到8杀、药水、地裂矛阵），占点保留旧领地规则)
 
 ## 栈
 - 客户端：TypeScript + PixiJS + Vite
@@ -25,7 +25,9 @@
 - `src/core/ballBody.ts`：圆体状态（队伍 / teamSlot 本队第几人 / 在场 / 无敌 / 出生点 / Aim）
 - `src/core/physicsStep.ts`：每帧积分 / 摩擦 / 保底 / 盖帽；离场球不参与
 - `src/core/wallBounce.ts`：圆角矩形墙 + 矮柱胶囊反弹；球-球弹性分离（伤害在 collisionDamage）
-- `src/core/matchSession.ts`：Countdown（Stall 5s）→ Playing（先冲锋 1s）→ Overtime? → Result；击破/助攻/领地/回场；分项计分 + 用时；`createMatchRoster` / `pickMatchRosterKits`：红1 用玩家缺省，红2/蓝1/蓝2 含镜卫全池均匀随机（可重复）
+- `src/core/matchSession.ts`：Countdown（Stall 5s）→ Playing（先冲锋 1s）→ Overtime? → Result；`mode` 默认 `eightKill`（占点测试显式传 `controlPoint`）；八杀记击杀、关领地；占点击破/助攻/领地/回场；分项计分 + 用时；`createMatchRoster` / `pickMatchRosterKits`：红1 用玩家缺省，红2/蓝1/蓝2 含镜卫全池均匀随机（可重复）
+- `src/core/matchMode.ts` / `lastModeId.ts`：`eightKill` / `controlPoint`，标签「八杀 / 占点」，`ks.lastModeId`
+- `src/core/potionField.ts` / `riftHazard.ts`：八杀药水与地裂矛阵
 - `src/core/stallFences.ts`：开局各队半场底线围栏（红左底 / 蓝右底，开口朝领地，物理四面封死）
 - `src/core/openingCharge.ts`：冲锋朝领地、几乎锁拧、前 0.2s lerp 拉到峰值 7.5（上限仍 8）
 - `src/core/simpleBot.ts`：非玩家简 bot（红2 + 两蓝共用；钩刺：保底冲 + 急停 + 偶勾；磁环：推波 / 困圈 / 磁场 / 近壁粘壁；链生：扰锋 / 愈链 / 援勾；钉壳：定锚 / 短冲顶 / 叠甲；闪弧：标记 / 擦伤 / 侧闪；井绳：桩 / 收索 / 换位 / 索爆）
@@ -65,19 +67,20 @@
 - `src/core/collisionDamage.ts`：枪尖门闩 / 6×相对速度 cap28 / 成功掉血 1s CD / 掉血弹开；无敌或同队不结算伤害
 - `src/ui/hpHud.ts`：调试血条/碰撞日志（默认不挂到战场；骑士头顶仍画血条）
 - `src/ui/uiTheme.ts`：局内 HUD chrome、说明卡/设置浮层与结算板共用色板常量 + CSS 变量（羊皮纸 / 木框 / 队色；局内金矛只给计时，结算板可热闹金）；`applyUiTheme` 写到 `#app`
-- `src/ui/matchHud.ts`：顶中一颗胶囊（红分 | 计时 | 蓝分，带小队标）贴窗顶；「我 / 队友」两个英雄下拉竖叠贴视窗左上（羊皮纸 + 左侧队色条）；短 toast（击破/回场）；Stall 大号倒计时保留，冲锋段不出说明板；指定英雄只换 kit，不换号
-- `src/ui/skillTip.ts`：技能键长按约 0.4s 浮层（骑士对外名 + 一行效果），锚在键上方；若与瞄准中的取消键重叠则再上移；羊皮纸 + ink_muted
+- `src/ui/matchHud.ts`：顶中一颗胶囊（占点红分 | 计时 | 蓝分；八杀显示击杀）贴窗顶；左上竖叠模式下落再「我 / 队友」英雄下拉（羊皮纸 + 木框；英雄左侧队色条）；短 toast（击破/回场/药水）；Stall 大号倒计时保留，冲锋段不出说明板；指定英雄只换 kit，不换号；换模式立刻重开
+- `src/ui/skillTip.ts`：技能键长按约 0.4s 浮层（骑士对外名 + 一行效果），锚在键上方；若与瞄准中的取消键重叠则再上移；羊皮纸 + ink_muted>>>>>>> 70044b4 (feat: 新增八杀模式（先到8杀、药水、地裂矛阵），占点保留旧领地规则)
 - `src/ui/skillCdMask.ts`：技能键 CD 径向遮罩（12 点起顺时针抹开，`cd_mask` @55%）与剩余秒一位小数；本轮总长取该次 CD 起始剩余（含未中/惩罚短 CD）；就绪无金闪
 - `src/ui/stageLayout.ts`：世界比例舞台（高 20、宽 20×956/440）、安全区、CSS 变量（`--stage-*`）；横屏盒子 cover 铺满可用安全区（956:440 恰好看全图；更方的屏左右略裁；更宽的屏裁上下；可超出视口）；`clientToHostLocal` 按 AABB 差值取点按，不对 `#app` 做 90° 旋转
 - `src/ui/lockLandscape.ts`：启动时、首次点击/触摸、`orientationchange` 时 `screen.orientation.lock` 当前横屏侧（已是 primary/secondary 则锁这一侧，否则 `landscape-primary`），失败静默；配合 manifest `orientation: landscape-primary`；不靠 CSS 旋转，不回退竖屏可玩布局
 - `src/core/verifyMirror.ts`：折光入账只记减免差额、裂镜自伤 24 入账溅 12 不入、反照空放不进 CD、镜壁敌弹己开窗
 - `src/core/verifyHeroPick.ts`：自己/队友下拉指定 / H 循环只跟红1 / 换 kit 保留血量位置编号 / 开局随机含镜卫全池 / 玩家缺省持久化
-- `src/core/verifyHudLayout.ts`：舞台保持世界比例 cover（956×440 恰好看全图；16:9 左右略裁；无 letterbox、可负 x/y）、安全区；不对 `#app` 转 90°；点按按 AABB 对准世界坐标；无转屏提示文案；横窗四角 HUD（换英雄左上、比分顶中、?齿轮顶右、技能右下约 60px）；瞄准中取消键在当前技能正上方；Stall 倒计时在、冲锋说明板不在
+- `src/core/verifyHudLayout.ts`：舞台保持世界比例 cover（956×440 恰好看全图；16:9 左右略裁；无 letterbox、可负 x/y）、安全区；不对 `#app` 转 90°；点按按 AABB 对准世界坐标；无转屏提示文案；横窗四角 HUD（左上模式/我/队友、比分或击杀顶中、?齿轮顶右、技能右下约 60px）；瞄准中取消键在当前技能正上方；Stall 倒计时在、冲锋说明板不在
 - `src/core/verifyUiTheme.ts`：HUD chrome 色板锁定；胶囊羊皮纸+木框 2px；金只在计时；技能/`?`/齿轮无金闪；换英雄左侧队色条；tip 羊皮纸 + ink_muted；说明卡/设置三页羊皮纸+木框、标题 ink、次要文 ink_muted、关闭钮无金闪；结算板羊皮纸+2px木框、胜利标题 gold_spear、金矛碎片点缀、关闭/再来一局木钮
 - `src/core/verifySkillTip.ts`：长按阈值、对外名+一行效果、按下立刻进总线、CD 中仍可出提示
 - `src/core/verifySkillCd.ts`：CD 键一位小数、满圈起抹/按本轮比例收缩、短 CD 从实际总长起算、CD 中长按仍可出浮层
 - `src/core/verifyCombatFloat.ts`：飘字仅数字、三色通道、碰撞掉血出红橙、HOT/整段回血出绿、无护盾数值则跳过
-- `src/ui/helpCard.ts`：说明卡（开局 / 怎么动 / 怎么得分 / 怎么赢 / 回场）；顶右 `?` 与设置常规「怎么玩」打开同一份；羊皮纸+2px 木框，标题 ink
+- `src/ui/helpCard.ts`：说明卡（开局 / 怎么动 / 怎么得分 / 怎么赢 / 回场；八杀另有药水与地裂矛阵）；文案跟当前模式；顶右 `?` 与设置常规「怎么玩」打开同一份；羊皮纸+2px 木框，标题 ink
+- `src/core/verifyEightKill.ts`：八杀击杀/加时/血量、药水、地裂、无领地、模式下拉与说明卡
 - `src/ui/settingsPanel.ts`：右上角小齿轮（常规 / 版本 / GM）；点空白关；常规「怎么玩」仍可开说明卡；版本页展示 `versions.json` 最近约 10 条；三页羊皮纸+木框圆角页签/按钮，无金闪
 - `src/ui/appVersion.ts`：版本号 + 构建短 SHA；轮询 `versions.json` 检测新版，本地记住已确认（acked），避免反复弹
 - `src/ui/updatePrompt.ts`：有未确认新版时在齿轮旁提示，点更新后刷新
@@ -123,7 +126,7 @@
 
 ## M4 一局约定
 - 本机固定 2v2：玩家控红1 + 简 bot 红2 vs 蓝方 2 个简 bot（`BLUE_BOT_COUNT`=2）。开局与每次 `R`：红2 / 蓝1 / 蓝2 从含镜卫全池均匀随机（同局可重复）；红1 用 `ks.lastHeroId`，无记录默认钩刺。不做 3v3 切换
-- 状态机：Countdown 5s（各队半场底线 Stall，栏内不可出）→ Playing 240s（先冲锋 1s：朝领地；前 0.2s lerp 拉到峰值 7.5，上限仍 8；禁技能、几乎锁拧、无敌，并入开局无敌）→ 平分则 Overtime 30s（只计领地）→ 再平则下次击破方胜 → Result
+- 状态机：Countdown 5s（各队半场底线 Stall，栏内不可出）→ Playing 240s（先冲锋 1s：朝中；前 0.2s lerp 拉到峰值 7.5，上限仍 8；禁技能、几乎锁拧、无敌，并入开局无敌）→ 占点平分则 Overtime 30s（只计领地）→ 再平则下次击破方胜 → Result。八杀平杀则 Overtime 30s（先超前 1 杀）→ 再平比剩余血
 - 开局仪式：Esc 或点空白跳过 Stall，直接进 Playing 并清栏（仍走 1s 冲锋）；冲锋段不弹出说明板 / toast，帮助只在设置
 - 先到 100 立即结束（须一方严格领先）；到点比总分
 - 击破：HP≤0 离场，敌方击杀队伍 +15；击杀前 3s 内对死者造成过碰撞伤的队友（非击杀者）最近 1 人 +5。红2 击破给分，助攻认红1/红2
@@ -199,7 +202,7 @@
 未改：`NAIL_PIN.duration` 0.6、`HOOK_STAB.thirdStun` 0.25、各 CD / missCd / punishCd / windup / dashTime / ramWindow / `ARC_GRAZE.targetCd`、开局 Stall / 冲锋 / 回场无敌。`WELL_REEL.duration` 2s 定身是后来单独改的硬控例外，不在本表 +2s 之列。
 
 ## M5 自测
-- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35` + `verifyM4` + `verifyM5` + `verifyRing` + `verifyChain` + `verifyNail` + `verifyArc` + `verifyWell` + `verifyMirror` + `verifyHeroPick` + `verifyHudLayout` + `verifySkillTip` + `verifySkillCd` + `verifyCombatFloat`
+- `npx tsc --noEmit` 与 `npx vite build` 通过；启动时 `verifyM2` + `verifyM3` + `verifyM35` + `verifyM4` + `verifyEightKill` + `verifyM5` + `verifyRing` + `verifyChain` + `verifyNail` + `verifyArc` + `verifyWell` + `verifyMirror` + `verifyHeroPick` + `verifyHudLayout` + `verifySkillTip` + `verifySkillCd` + `verifyCombatFloat`
 - 按 `1` 进瞄可一直持有，再按 `1` 或左键后 0.4s 才出勾；未中 CD 约 4s
 - 蓄势→钩矛→连刺→盾冲可依次打出；HUD 分槽显示钩/刺/冲/蓄 CD
 - 蓝简 bot 按开局随机到的 kit 施放（随机到磁环会推波/困圈；随机到钩刺会保底靠近并偶尔勾，不会打捅×3 连招）；每次 `R` 重随队友与敌方

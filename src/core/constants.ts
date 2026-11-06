@@ -201,3 +201,29 @@ export const BLUE_SPAWNS = [
 export const BOT_INTERVAL_SEC = 1.5;
 export const BOT_INTERVAL_JITTER_SEC = 0.7;
 export const BOT_AIM_JITTER_RAD = 0.5;
+
+/** 八杀：先到此击杀数立即获胜 */
+export const EIGHT_KILL_LIMIT = 8;
+
+/** 药水：开战约 20s 首瓶，之后约每 45s 刷新；场上同时 1 瓶 */
+export const POTION_FIRST_SEC = 20;
+export const POTION_INTERVAL_SEC = 45;
+/** 四角距墙内缩（格），避开圆角死区 */
+export const POTION_INSET = 3;
+export const POTION_RADIUS = 0.45;
+export const POTION_DAMAGE_SEC = 8;
+export const POTION_DAMAGE_MUL = 1.5;
+export const POTION_SPEED_SEC = 8;
+export const POTION_SPEED_CAP = 10;
+export const POTION_HEAL = 80;
+export const POTION_SHIELD = 80;
+export const POTION_SHIELD_SEC = 10;
+
+/** 地裂矛阵：开战约 12s 首次预警，之后约每 18s；预警 2s */
+export const RIFT_FIRST_SEC = 12;
+export const RIFT_INTERVAL_SEC = 18;
+export const RIFT_RADIUS = 3.2;
+export const RIFT_WARN_SEC = 2;
+export const RIFT_DAMAGE = 36;
+export const RIFT_STUN_SEC = 0.6;
+export const RIFT_BURST_VISUAL_SEC = 0.28;

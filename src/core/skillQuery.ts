@@ -8,6 +8,7 @@ import {
   PILLAR_WIDTH,
   RIGHT_PILLAR,
 } from './constants';
+import { arenaPillarsEnabled } from './wallBounce';
 
 const EPS = 1e-8;
 const SAMPLE_STEP = 0.08;
@@ -71,6 +72,9 @@ export function distToSegment(px: number, py: number, ax: number, ay: number, bx
 }
 
 function pointHitsPillar(x: number, y: number): boolean {
+  if (!arenaPillarsEnabled()) {
+    return false;
+  }
   const halfLen = (PILLAR_WIDTH - PILLAR_HEIGHT) / 2;
   const radius = PILLAR_HEIGHT / 2;
   for (const pillar of [LEFT_PILLAR, RIGHT_PILLAR]) {

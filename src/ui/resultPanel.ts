@@ -119,13 +119,17 @@ export function createResultPanel(host: HTMLElement, onRestart: () => void): Res
     headBlue.textContent = '蓝';
     head.append(headGap, headRed, headBlue);
     scores.appendChild(head);
-    addScoreRow(scores, '总分', snap.redScore, snap.blueScore, true);
-    addScoreRow(scores, '击破', snap.redBreakScore, snap.blueBreakScore);
-    addScoreRow(scores, '领地', snap.redHoldScore, snap.blueHoldScore);
-    const redOther = snap.redScore - snap.redBreakScore - snap.redHoldScore;
-    const blueOther = snap.blueScore - snap.blueBreakScore - snap.blueHoldScore;
-    if (redOther !== 0 || blueOther !== 0) {
-      addScoreRow(scores, '其他', redOther, blueOther);
+    if (snap.mode === 'eightKill') {
+      addScoreRow(scores, '击杀', snap.redKills, snap.blueKills, true);
+    } else {
+      addScoreRow(scores, '总分', snap.redScore, snap.blueScore, true);
+      addScoreRow(scores, '击破', snap.redBreakScore, snap.blueBreakScore);
+      addScoreRow(scores, '领地', snap.redHoldScore, snap.blueHoldScore);
+      const redOther = snap.redScore - snap.redBreakScore - snap.redHoldScore;
+      const blueOther = snap.blueScore - snap.blueBreakScore - snap.blueHoldScore;
+      if (redOther !== 0 || blueOther !== 0) {
+        addScoreRow(scores, '其他', redOther, blueOther);
+      }
     }
 
     elapsed.textContent = `用时 ${formatElapsed(snap.elapsedSec)}`;

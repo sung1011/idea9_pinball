@@ -1,3 +1,4 @@
+import { DEFAULT_MATCH_MODE, isEightKill, type MatchModeId } from '../core/matchMode';
 import type { HeroId } from '../heroes/heroIds';
 import { kitHelpSkills } from '../heroes/kitLabels';
 
@@ -6,6 +7,7 @@ export type HelpCard = {
   close: () => void;
   isOpen: () => boolean;
   setHero: (hero: HeroId) => void;
+  setMode: (mode: MatchModeId) => void;
 };
 
 export type HelpCardOpts = {
@@ -59,11 +61,17 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
   const body = document.createElement('div');
   body.className = 'helpCardBody';
 
-  const fillBody = (hero: HeroId): void => {
+  let currentHero: HeroId = 'hook';
+  let currentMode: MatchModeId = DEFAULT_MATCH_MODE;
+
+  const fillBody = (hero: HeroId, mode: MatchModeId): void => {
+    currentHero = hero;
+    currentMode = mode;
     body.replaceChildren();
     addBlock(body, '开局', [
       '本机固定 2v2：你控红 1，红 2 与两名蓝简 bot。开局和每次 R：队友与敌方从含镜卫的全英雄池均匀随机，允许同局重复。你的英雄记住上次所选，无记录时默认钩刺。',
-      '地图高 20、宽按 iPhone 18 Pro Max 横屏 956:440。红左半场上下、蓝右半场上下各一出生；木栏 Stall 贴底线开口朝领地，大号倒计时 5 秒，栏内不可出。',
+      '左上最上方可切「八杀 / 占点」，记住上次所选；换模式会立刻重开倒计时。换英雄只换技能组，不重开。',
+      '地图高 20、宽按 iPhone 18 Pro Max 横屏 956:440。红左半场上下、蓝右半场上下各一出生；木栏 Stall 贴底线开口朝中，大号倒计时 5 秒，栏内不可出。',
       '倒计时结束围栏消失，冲锋 1 秒：前 0.2 秒拉到峰值 7.5，禁技能、几乎锁拧、全程无敌。',
       '冲锋结束才点地纠偏、放技能。Esc 或点空白可跳过 Stall，直接开战。',
     ]);
@@ -72,7 +80,7 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
       '盾面大号数字是本队第几人（红 1、红 2、蓝 1、蓝 2），换英雄不换号。',
       '只有枪尖戳到对方身体才掉血；伤害 6×相对速度、单次上限 28。成功掉血后枪尖普攻 1 秒 CD，CD 中再戳不掉血。身子圆蹭圆只弹开不掉血。背刺不再更高伤。',
       '左上可换自己或队友英雄，只换技能组，血量 / 位置 / 编号 / 对局不变。换自己会立刻记住下次缺省，换队友不会。GM H 只循环红 1。',
-      '始终横屏对局。竖持时整屏转 90°（家庭键在右时画面正向），无转屏提示。',
+      '始终横屏对局。系统锁当前横屏侧，不对画面做 90° 旋转，无转屏提示。',
       kitHelpSkills(hero),
       '按下进瞄，再按同键或左键释放。触屏瞄准中点空白即瞄向并释放，滑动只改朝向；点技能键 / 换英雄 / ? / 齿轮 / 取消键不抢成点空白。右键 / Esc 取消。长按技能键约 0.4 秒可看对外名和一行效果（CD 中也可）。CD 中键上从 12 点顺时针遮罩，并显示剩余秒（一位小数）。',
       ...(hero === 'ring'
@@ -89,21 +97,52 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
                   ? ['折光 1.5 秒受伤减半，减免量记入反照账本。反照消耗账本扇形打首个敌人，伤害封顶 60；空账或无目标不进 CD。裂镜自伤 24 入账，周围溅 12 不入账，可把自己打进回场。镜壁身前短墙 2.5 秒，敌弹己开窗。']
                   : []),
     ]);
-    addBlock(body, '怎么得分', [
-      '击破对方 +15。',
-      '助攻 +5（击杀前 3 秒内最近 1 名队友）。',
-      '领地：圈内活人数严格更多一方 +2/秒。',
-    ]);
-    addBlock(body, '怎么赢', [
-      '先到 100 分立即结束。',
-      '240 秒到点，分高者胜。',
-      '平分则 30 秒加时，只计领地分。',
-      '再平则看下一次击破。',
-    ]);
+    if (isEightKill(mode)) {
+      addBlock(body, '怎么得分', [
+        '用枪尖或技能把敌人打到击破，记 1 杀。顶中胶囊显示双方击杀数。',
+        '助攻不计杀，不影响胜负。',
+        '地裂矛阵致死不计任何一方的击杀。',
+        '不计领地分。中央圈与左右矮柱在本模式隐藏，也不挡路。',
+      ]);
+      addBlock(body, '怎么赢', [
+        '先到 8 杀立即获胜。',
+        '240 秒到点，杀数多者胜。',
+        '杀数相同则 30 秒加时，期间先超前 1 杀者胜。',
+        '加时仍平则比双方剩余总血（倒地 / 离场按 0）。',
+      ]);
+      addBlock(body, '药水', [
+        '开战约 20 秒出现第一瓶，之后约每 45 秒刷新。场上同时只有 1 瓶；到点未捡走也会换角换种类。',
+        '四角随机，距墙约 3 格。身体碰到就捡，先碰到的人获得。',
+        '伤害加成：8 秒，枪尖和技能伤害 ×1.5。',
+        '加速：8 秒，移速上限 8→10。',
+        '加血：立即回复 80，上限 300。',
+        '护盾：吸收 80 伤害，最多 10 秒或直到破完。',
+        '加血不占增益栏；其余三种可同时存在。再捡同种会刷新时间（护盾吸收量回到 80）。',
+      ]);
+      addBlock(body, '地裂矛阵', [
+        '开战约 12 秒首次预警，之后约每 18 秒一次。场上同时只有 1 处。',
+        '随机圆半径约 3.2，可与药水重叠。2 秒裂纹金边预警后金矛尖爆出。',
+        '圈内每人 36 伤害、从圆心向外击退、硬直 0.6 秒（1.5 秒内二次硬控减半）。',
+        '回场 2 秒无敌不受影响。爆完即收，不留持续伤害区。环境击杀不计分。',
+      ]);
+    } else {
+      addBlock(body, '怎么得分', [
+        '击破对方 +15。',
+        '助攻 +5（击杀前 3 秒内最近 1 名队友）。',
+        '领地：圈内活人数严格更多一方 +2/秒。',
+        '本模式无药水、无地裂矛阵。中央圈与左右矮柱照常。',
+      ]);
+      addBlock(body, '怎么赢', [
+        '先到 100 分立即结束。',
+        '240 秒到点，分高者胜。',
+        '平分则 30 秒加时，只计领地分。',
+        '再平则看下一次击破。',
+      ]);
+    }
     addBlock(body, '回场', ['击破后 5 秒回场，回场 2 秒无敌。']);
   };
 
-  fillBody('hook');
+  fillBody('hook', DEFAULT_MATCH_MODE);
 
   card.append(head, body);
   overlay.appendChild(card);
@@ -163,7 +202,10 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
     close,
     isOpen: () => overlay.classList.contains('isOn'),
     setHero: (hero) => {
-      fillBody(hero);
+      fillBody(hero, currentMode);
+    },
+    setMode: (mode) => {
+      fillBody(currentHero, mode);
     },
   };
 }

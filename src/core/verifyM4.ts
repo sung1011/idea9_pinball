@@ -1,4 +1,4 @@
-import { createBallBody } from './ballBody';
+import { createBallBody, type BallBody } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import {
   ASSIST_SCORE,
@@ -35,9 +35,14 @@ import {
   findAssistSource,
   inControlPoint,
   midpointHold,
+  type MatchConfig,
 } from './matchSession';
 import { stepPhysics } from './physicsStep';
 import { stallContains, stallForBall, stallsForBalls } from './stallFences';
+
+function pointMatch(balls: BallBody[], config: MatchConfig = {}) {
+  return createMatchSession(balls, { ...config, mode: 'controlPoint' });
+}
 
 function hit(
   victim: ReturnType<typeof createBallBody>,
@@ -104,7 +109,7 @@ export function verifyM4(): void {
 
   const scored = createMatchRoster();
   const [scoreRed1, scoreRed2, scoreBlue1, scoreBlue2] = scored;
-  const scoredMatch = createMatchSession(scored, { countdownSec: 0, playSec: 60 });
+  const scoredMatch = pointMatch(scored, { countdownSec: 0, playSec: 60 });
   for (const ball of scored) {
     ball.invincibleRemain = 0;
   }
@@ -164,7 +169,7 @@ export function verifyM4(): void {
   for (const ball of duo) {
     ball.invincibleRemain = 0;
   }
-  const assistMatch = createMatchSession(duo, { countdownSec: 0, playSec: 60 });
+  const assistMatch = pointMatch(duo, { countdownSec: 0, playSec: 60 });
   for (const ball of duo) {
     ball.invincibleRemain = 0;
   }
@@ -187,7 +192,7 @@ export function verifyM4(): void {
 
   const strayRed = createBallBody({ x: 5, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
   const strayBlue = createBallBody({ x: 15, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
-  const stray = createMatchSession([strayRed, strayBlue], { countdownSec: 0, playSec: 30 });
+  const stray = pointMatch([strayRed, strayBlue], { countdownSec: 0, playSec: 30 });
   strayRed.invincibleRemain = 0;
   strayBlue.invincibleRemain = 0;
   strayBlue.hp = 0;
@@ -202,7 +207,7 @@ export function verifyM4(): void {
 
   const soloRed = createBallBody({ x: 6, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
   const soloBlue = createBallBody({ x: 14, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
-  const solo = createMatchSession([soloRed, soloBlue], { countdownSec: 0, playSec: 60 });
+  const solo = pointMatch([soloRed, soloBlue], { countdownSec: 0, playSec: 60 });
   soloRed.invincibleRemain = 0;
   soloBlue.invincibleRemain = 0;
   soloBlue.hp = 0;
@@ -250,7 +255,7 @@ export function verifyM4(): void {
   });
   assert(inControlPoint(midRed) && !inControlPoint(midBlue), 'M4：区内判定应按圆心距');
   assert(countTeamInPoint([midRed, midBlue], 'red') === 1, 'M4：活人数应按在场且在圈');
-  const midMatch = createMatchSession([midRed, midBlue], { countdownSec: 0, playSec: 30 });
+  const midMatch = pointMatch([midRed, midBlue], { countdownSec: 0, playSec: 30 });
   midRed.invincibleRemain = 0;
   midBlue.invincibleRemain = 0;
   midMatch.tick(1, []);
@@ -279,7 +284,7 @@ export function verifyM4(): void {
     label: '蓝',
     team: 'blue',
   });
-  const sameFrame = createMatchSession([deadRed, liveBlue], { countdownSec: 0, playSec: 10 });
+  const sameFrame = pointMatch([deadRed, liveBlue], { countdownSec: 0, playSec: 10 });
   deadRed.invincibleRemain = 0;
   liveBlue.invincibleRemain = 0;
   deadRed.hp = 0;
@@ -291,7 +296,7 @@ export function verifyM4(): void {
 
   const limitRed = createBallBody({ x: 4, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
   const limitBlue = createBallBody({ x: 16, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
-  const limit = createMatchSession([limitRed, limitBlue], { countdownSec: 0, playSec: 240 });
+  const limit = pointMatch([limitRed, limitBlue], { countdownSec: 0, playSec: 240 });
   limit.debugAddScore('red', MATCH_SCORE_LIMIT);
   const limitSnap = limit.snapshot();
   assert(limitSnap.phase === 'result' && limitSnap.winner === 'red', 'M4：先到 100 应立即结束');
@@ -299,7 +304,7 @@ export function verifyM4(): void {
 
   const timeRed = createBallBody({ x: 4, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
   const timeBlue = createBallBody({ x: 16, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
-  const timed = createMatchSession([timeRed, timeBlue], { countdownSec: 0, playSec: 1.2 });
+  const timed = pointMatch([timeRed, timeBlue], { countdownSec: 0, playSec: 1.2 });
   timed.debugAddScore('blue', 6);
   timed.tick(1.3, []);
   assert(timed.snapshot().phase === 'result' && timed.snapshot().winner === 'blue', 'M4：到点应比总分');
@@ -318,7 +323,7 @@ export function verifyM4(): void {
     label: '蓝',
     team: 'blue',
   });
-  const ot = createMatchSession([otRed, otBlue], { countdownSec: 0, playSec: 0.6, overtimeSec: 0.95 });
+  const ot = pointMatch([otRed, otBlue], { countdownSec: 0, playSec: 0.6, overtimeSec: 0.95 });
   otRed.invincibleRemain = 0;
   otBlue.invincibleRemain = 0;
   ot.tick(0.7, []);
@@ -334,7 +339,7 @@ export function verifyM4(): void {
 
   const sdRed = createBallBody({ x: 6, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
   const sdBlue = createBallBody({ x: 14, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
-  const sudden = createMatchSession([sdRed, sdBlue], {
+  const sudden = pointMatch([sdRed, sdBlue], {
     countdownSec: 0,
     playSec: 0.4,
     overtimeSec: 0.4,
@@ -350,7 +355,7 @@ export function verifyM4(): void {
 
   const cdRed = createBallBody({ x: 4, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
   const cdBlue = createBallBody({ x: 16, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
-  const counted = createMatchSession([cdRed, cdBlue], { countdownSec: 0.5, playSec: 10 });
+  const counted = pointMatch([cdRed, cdBlue], { countdownSec: 0.5, playSec: 10 });
   assert(counted.snapshot().phase === 'countdown', 'M4：开局应为 Countdown');
   assert(counted.snapshot().stallsOn && counted.snapshot().skillsLocked, 'M4：Stall 倒计时应锁栏并禁技能');
   counted.tick(0.6, []);
@@ -361,7 +366,7 @@ export function verifyM4(): void {
 
   const preRed = createBallBody({ x: 4, y: 6, color: 0xe24a4a, label: '红', team: 'red' });
   const preBlue = createBallBody({ x: 16, y: 6, color: 0x3d7cf0, label: '蓝', team: 'blue' });
-  const pre = createMatchSession([preRed, preBlue], { countdownSec: 2, playSec: 10 });
+  const pre = pointMatch([preRed, preBlue], { countdownSec: 2, playSec: 10 });
   preBlue.hp = 0;
   pre.tick(0, [hit(preBlue, preRed)]);
   assert(preBlue.inPlay && preBlue.hp === preBlue.maxHp, 'M4：Countdown 内击破不离场');
@@ -380,7 +385,7 @@ export function verifyM4(): void {
   if (!ritualBlue) {
     throw new Error('M4：2v2 roster 应有蓝方');
   }
-  const ritual = createMatchSession(ritualRoster);
+  const ritual = pointMatch(ritualRoster);
   const ritualSnap = ritual.snapshot();
   assert(ritualSnap.phase === 'countdown' && ritualSnap.stallsOn, 'M4：默认开局应在 Stall');
   assert(

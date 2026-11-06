@@ -1,4 +1,4 @@
-import { clearKitAuras, createBallBody, grantInvincible, type BallBody, type TeamId } from './ballBody';
+import { clearKitAuras, clearPotionBuffs, createBallBody, grantInvincible, type BallBody, type TeamId } from './ballBody';
 import { pickRandomHero, type HeroId } from '../heroes/heroIds';
 import type { CollisionHit } from './collisionDamage';
 import {
@@ -7,6 +7,7 @@ import {
   BLUE_SPAWNS,
   CONTROL_POINT,
   DEBUG_CLOCK_SCALE,
+  EIGHT_KILL_LIMIT,
   facingTowardControl,
   KNOCKOUT_SCORE,
   MATCH_COUNTDOWN_SEC,
@@ -20,7 +21,11 @@ import {
   RESPAWN_SEC,
   SPAWN_INVINCIBLE_SEC,
 } from './constants';
+import { DEFAULT_MATCH_MODE, isEightKill, type MatchModeId } from './matchMode';
+import type { HealPulse } from './combatFloat';
 import { snapChargeFacing } from './openingCharge';
+import { createPotionField, POTION_KIND_LABEL, type PotionPickup } from './potionField';
+import { createRiftHazard, type RiftSnapshot } from './riftHazard';
 import { stallsForBalls, type StallFence } from './stallFences';
 
 export type MatchPhase = 'countdown' | 'playing' | 'overtime' | 'result';
@@ -33,10 +38,12 @@ export type MatchConfig = {
   overtimeSec?: number;
   scoreLimit?: number;
   clockScale?: number;
+  mode?: MatchModeId;
+  random?: () => number;
 };
 
 export type MatchEvent = {
-  kind: 'knockout' | 'assist' | 'midpoint' | 'phase' | 'score';
+  kind: 'knockout' | 'assist' | 'midpoint' | 'phase' | 'score' | 'potion';
   text: string;
   team?: TeamId;
   points?: number;
@@ -46,8 +53,11 @@ export type MatchSnapshot = {
   phase: MatchPhase;
   timeLeft: number;
   suddenDeath: boolean;
+  mode: MatchModeId;
   redScore: number;
   blueScore: number;
+  redKills: number;
+  blueKills: number;
   redBreakScore: number;
   blueBreakScore: number;
   redHoldScore: number;
@@ -62,6 +72,8 @@ export type MatchSnapshot = {
   stalls: StallFence[];
   openingChargeRemain: number;
   skillsLocked: boolean;
+  potion: PotionPickup | null;
+  rift: RiftSnapshot | null;
 };
 
 type DamageMark = {
@@ -230,6 +242,7 @@ function resetBall(ball: BallBody, openingInvincible: number): void {
   ball.suppressCombat = false;
   ball.hasAim = false;
   clearKitAuras(ball);
+  clearPotionBuffs(ball);
   const face = facingTowardControl(ball.x, ball.y);
   ball.facingX = face.facingX;
   ball.facingY = face.facingY;
@@ -243,12 +256,18 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   const overtimeSec = config.overtimeSec ?? MATCH_OVERTIME_SEC;
   const scoreLimit = config.scoreLimit ?? MATCH_SCORE_LIMIT;
   const clockScale = config.clockScale ?? DEBUG_CLOCK_SCALE;
+  let mode: MatchModeId = config.mode ?? DEFAULT_MATCH_MODE;
+  const rng = config.random ?? Math.random;
+  const potions = createPotionField(rng);
+  const rift = createRiftHazard(rng);
 
   let phase: MatchPhase = countdownSec > 0 ? 'countdown' : 'playing';
   let timeLeft = countdownSec > 0 ? countdownSec : playSec;
   let suddenDeath = false;
   let redScore = 0;
   let blueScore = 0;
+  let redKills = 0;
+  let blueKills = 0;
   let redBreakScore = 0;
   let blueBreakScore = 0;
   let redHoldScore = 0;
@@ -262,6 +281,8 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   const respawns: Record<number, number> = {};
   const marks: DamageMark[] = [];
   const recent: MatchEvent[] = [];
+  const potionHeals: HealPulse[] = [];
+  const extraHits: CollisionHit[] = [];
   const openingStalls = stallsForBalls(balls);
   let openingChargeRemain = 0;
 
@@ -309,7 +330,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   const teamOf = (ball: BallBody | undefined): TeamId | null => ball?.team ?? null;
 
   const tryFinishByScore = (): boolean => {
-    if (suddenDeath) {
+    if (isEightKill(mode) || suddenDeath) {
       return false;
     }
     if (redScore === blueScore) {
@@ -320,6 +341,66 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     }
     finish(redScore > blueScore ? 'red' : 'blue', '先到分');
     return true;
+  };
+
+  const tryFinishByKills = (): boolean => {
+    if (!isEightKill(mode) || phase !== 'playing') {
+      return false;
+    }
+    if (redKills === blueKills) {
+      return false;
+    }
+    if (Math.max(redKills, blueKills) < EIGHT_KILL_LIMIT) {
+      return false;
+    }
+    finish(redKills > blueKills ? 'red' : 'blue', '先到8杀');
+    return true;
+  };
+
+  const tryFinishOtKill = (): boolean => {
+    if (!isEightKill(mode) || phase !== 'overtime') {
+      return false;
+    }
+    if (redKills === blueKills) {
+      return false;
+    }
+    finish(redKills > blueKills ? 'red' : 'blue', '加时超前');
+    return true;
+  };
+
+  const teamHp = (team: TeamId): number => {
+    let hp = 0;
+    for (const ball of balls) {
+      if (ball.team !== team) {
+        continue;
+      }
+      hp += ball.inPlay ? Math.max(0, ball.hp) : 0;
+    }
+    return hp;
+  };
+
+  const finishByHp = (): void => {
+    const redHp = teamHp('red');
+    const blueHp = teamHp('blue');
+    if (redHp > blueHp) {
+      finish('red', '剩余血量');
+      return;
+    }
+    if (blueHp > redHp) {
+      finish('blue', '剩余血量');
+      return;
+    }
+    phase = 'result';
+    winner = null;
+    finishReason = '加时血量仍平';
+    timeLeft = 0;
+    suddenDeath = false;
+    for (const ball of balls) {
+      if (ball.inPlay) {
+        grantInvincible(ball, 60);
+      }
+    }
+    pushEvent({ kind: 'phase', text: '平局 · 加时血量仍平' });
   };
 
   const finish = (team: TeamId, reason: string): void => {
@@ -337,11 +418,13 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   };
 
   const finishByTime = (): void => {
-    if (redScore > blueScore) {
+    const redVal = isEightKill(mode) ? redKills : redScore;
+    const blueVal = isEightKill(mode) ? blueKills : blueScore;
+    if (redVal > blueVal) {
       finish('red', phase === 'overtime' ? '加时' : '时间到');
       return;
     }
-    if (blueScore > redScore) {
+    if (blueVal > redVal) {
       finish('blue', phase === 'overtime' ? '加时' : '时间到');
     }
   };
@@ -360,6 +443,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     ball.suppressCombat = false;
     ball.hasAim = false;
     clearKitAuras(ball);
+    clearPotionBuffs(ball);
     respawns[ball.id] = RESPAWN_SEC;
   };
 
@@ -380,6 +464,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     ball.suppressCombat = false;
     ball.hasAim = false;
     clearKitAuras(ball);
+    clearPotionBuffs(ball);
     grantInvincible(ball, SPAWN_INVINCIBLE_SEC);
     if (ball.team === 'blue') {
       ball.facingX = -1;
@@ -417,6 +502,25 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     const victimTeam = teamOf(victim);
     if (!killerTeam || !victimTeam || killerTeam === victimTeam) {
       pushEvent({ kind: 'knockout', text: `${source.label}击破${victim.label}` });
+      return;
+    }
+
+    if (isEightKill(mode)) {
+      if (killerTeam === 'red') {
+        redKills += 1;
+      } else {
+        blueKills += 1;
+      }
+      pushEvent({
+        kind: 'knockout',
+        team: killerTeam,
+        text: `${source.label}击破${victim.label} · ${killerTeam === 'red' ? '红' : '蓝'} ${killerTeam === 'red' ? redKills : blueKills}杀`,
+      });
+      if (phase === 'overtime') {
+        tryFinishOtKill();
+        return;
+      }
+      tryFinishByKills();
       return;
     }
 
@@ -459,7 +563,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
 
   const processKnockouts = (hits: readonly CollisionHit[]): void => {
     for (const hit of hits) {
-      if (hit.damage <= 0) {
+      if (hit.damage <= 0 || hit.environment) {
         continue;
       }
       marks.push({ victimId: hit.victimId, sourceId: hit.sourceId, at: now });
@@ -480,10 +584,14 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     const seen = new Set<number>();
     for (const hit of hits) {
       const victim = balls.find((ball) => ball.id === hit.victimId);
-      const source = balls.find((ball) => ball.id === hit.sourceId);
       if (!victim) {
         continue;
       }
+      if (hit.environment) {
+        resolveKnockout(victim, null, seen);
+        continue;
+      }
+      const source = balls.find((ball) => ball.id === hit.sourceId);
       resolveKnockout(victim, source ?? null, seen);
     }
     for (const ball of balls) {
@@ -509,6 +617,11 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   };
 
   const tickMidpoint = (dt: number): void => {
+    if (isEightKill(mode)) {
+      hold = 'none';
+      midpointAcc = 0;
+      return;
+    }
     const redN = countTeamInPoint(balls, 'red');
     const blueN = countTeamInPoint(balls, 'blue');
     hold = midpointHold(redN, blueN);
@@ -570,7 +683,10 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     timeLeft = overtimeSec;
     suddenDeath = false;
     midpointAcc = 0;
-    pushEvent({ kind: 'phase', text: '加时 30 秒 · 只计领地分' });
+    pushEvent({
+      kind: 'phase',
+      text: isEightKill(mode) ? '加时 30 秒 · 先超前 1 杀' : '加时 30 秒 · 只计领地分',
+    });
   };
 
   const enterSuddenDeath = (): void => {
@@ -596,6 +712,14 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
       return;
     }
     if (phase === 'playing') {
+      if (isEightKill(mode)) {
+        if (redKills !== blueKills) {
+          finishByTime();
+          return;
+        }
+        enterOvertime();
+        return;
+      }
       if (redScore !== blueScore) {
         finishByTime();
         return;
@@ -604,6 +728,14 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
       return;
     }
     if (phase === 'overtime') {
+      if (isEightKill(mode)) {
+        if (redKills !== blueKills) {
+          finishByTime();
+          return;
+        }
+        finishByHp();
+        return;
+      }
       if (redScore !== blueScore) {
         finishByTime();
         return;
@@ -618,10 +750,14 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     suddenDeath = false;
     redScore = 0;
     blueScore = 0;
+    redKills = 0;
+    blueKills = 0;
     redBreakScore = 0;
     blueBreakScore = 0;
     redHoldScore = 0;
     blueHoldScore = 0;
+    potions.reset();
+    rift.reset();
     elapsedSec = 0;
     finishReason = '';
     openingChargeRemain = 0;
@@ -631,6 +767,8 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     midpointAcc = 0;
     marks.length = 0;
     recent.length = 0;
+    potionHeals.length = 0;
+    extraHits.length = 0;
     for (const key of Object.keys(respawns)) {
       delete respawns[Number(key)];
     }
@@ -655,6 +793,35 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
       processKnockouts(hits);
       tickRespawns(clockDt);
       tickMidpoint(clockDt);
+      const fieldOn =
+        isEightKill(mode) && (phase === 'playing' || phase === 'overtime');
+      if (fieldOn) {
+        for (const grab of potions.tick(balls, elapsedSec, true)) {
+          const label = POTION_KIND_LABEL[grab.kind];
+          if (grab.healed > 0) {
+            potionHeals.push({
+              unitId: grab.ball.id,
+              amount: grab.healed,
+              x: grab.ball.x,
+              y: grab.ball.y,
+            });
+          }
+          pushEvent({
+            kind: 'potion',
+            team: grab.ball.team,
+            text:
+              grab.kind === 'heal'
+                ? `${grab.ball.label}捡到${label} +${Math.round(grab.healed)}`
+                : `${grab.ball.label}捡到${label}`,
+          });
+        }
+        const riftHits = rift.tick(clockDt, balls, elapsedSec, now, true);
+        extraHits.push(...riftHits);
+        processKnockouts(riftHits);
+      } else {
+        potions.tick(balls, elapsedSec, false);
+        rift.tick(clockDt, balls, elapsedSec, now, false);
+      }
       tickPhase(clockDt);
       if (phase === 'playing' && openingChargeRemain > 0) {
         openingChargeRemain = Math.max(0, openingChargeRemain - clockDt);
@@ -662,6 +829,19 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
       return recent.slice(0, Math.max(0, recent.length - before));
     },
     skipOpening,
+    takePotionHeals(): HealPulse[] {
+      const out = potionHeals.slice();
+      potionHeals.length = 0;
+      return out;
+    },
+    takeExtraHits(): CollisionHit[] {
+      const out = extraHits.slice();
+      extraHits.length = 0;
+      return out;
+    },
+    setMode(next: MatchModeId): void {
+      mode = next;
+    },
     reset(): void {
       applyReset();
     },
@@ -670,8 +850,11 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
         phase,
         timeLeft,
         suddenDeath,
+        mode,
         redScore,
         blueScore,
+        redKills,
+        blueKills,
         redBreakScore,
         blueBreakScore,
         redHoldScore,
@@ -686,10 +869,38 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
         stalls: phase === 'countdown' ? openingStalls.map((fence) => ({ ...fence })) : [],
         openingChargeRemain,
         skillsLocked: phase === 'countdown' || openingChargeRemain > 0,
+        potion: potions.snapshot(),
+        rift: rift.snapshot(),
       };
     },
     debugAddScore(team: TeamId, points: number): void {
       if (phase === 'result') {
+        return;
+      }
+      if (isEightKill(mode)) {
+        if (points < 0) {
+          const current = team === 'red' ? redKills : blueKills;
+          points = Math.max(points, -current);
+        }
+        if (points === 0) {
+          return;
+        }
+        if (team === 'red') {
+          redKills += points;
+        } else {
+          blueKills += points;
+        }
+        pushEvent({
+          kind: 'score',
+          team,
+          points,
+          text: `调试 ${team === 'red' ? '红' : '蓝'} ${points > 0 ? '+' : ''}${points}杀`,
+        });
+        if (phase === 'overtime') {
+          tryFinishOtKill();
+          return;
+        }
+        tryFinishByKills();
         return;
       }
       if (points < 0) {

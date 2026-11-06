@@ -1,6 +1,15 @@
 import type { HeroId } from '../heroes/heroIds';
 import type { CollisionHit } from './collisionDamage';
-import { ACTIVE_RAM_WINDOW, BALL_RADIUS, FINE_TUNE_WINDOW, MAX_HP } from './constants';
+import {
+  ACTIVE_RAM_WINDOW,
+  BALL_RADIUS,
+  FINE_TUNE_WINDOW,
+  FLOOR_SPEED,
+  MAX_HP,
+  POTION_DAMAGE_MUL,
+  POTION_SPEED_CAP,
+  SPEED_CAP,
+} from './constants';
 import { applyHpLoss } from './hpLoss';
 
 let nextBallId = 1;
@@ -99,6 +108,13 @@ export type BallBody = {
   refractRemain: number;
   /** 反照账本：只记折光实际减免与裂镜自伤 */
   mirrorLedger: number;
+  /** 伤害药水：枪尖与技能伤害 ×1.5 */
+  potionDamageRemain: number;
+  /** 加速药水：移速上限 8→10 */
+  potionSpeedRemain: number;
+  /** 护盾药水剩余秒；吸收量见 potionShieldHp */
+  potionShieldRemain: number;
+  potionShieldHp: number;
 };
 
 export function createBallBody(init: {
@@ -182,7 +198,49 @@ export function createBallBody(init: {
     phaseRemain: 0,
     refractRemain: 0,
     mirrorLedger: 0,
+    potionDamageRemain: 0,
+    potionSpeedRemain: 0,
+    potionShieldRemain: 0,
+    potionShieldHp: 0,
   };
+}
+
+export function outgoingDamageMul(source: BallBody): number {
+  return source.potionDamageRemain > 0 ? POTION_DAMAGE_MUL : 1;
+}
+
+export function speedCapOf(ball: BallBody): number {
+  return ball.potionSpeedRemain > 0 ? POTION_SPEED_CAP : SPEED_CAP;
+}
+
+export function floorSpeedOf(ball: BallBody): number {
+  if (ball.potionSpeedRemain <= 0) {
+    return FLOOR_SPEED;
+  }
+  return FLOOR_SPEED * (POTION_SPEED_CAP / SPEED_CAP);
+}
+
+export function clearPotionBuffs(ball: BallBody): void {
+  ball.potionDamageRemain = 0;
+  ball.potionSpeedRemain = 0;
+  ball.potionShieldRemain = 0;
+  ball.potionShieldHp = 0;
+}
+
+export function tickPotionBuffs(ball: BallBody, dt: number): void {
+  const step = Math.max(0, dt);
+  if (ball.potionDamageRemain > 0) {
+    ball.potionDamageRemain = Math.max(0, ball.potionDamageRemain - step);
+  }
+  if (ball.potionSpeedRemain > 0) {
+    ball.potionSpeedRemain = Math.max(0, ball.potionSpeedRemain - step);
+  }
+  if (ball.potionShieldRemain > 0) {
+    ball.potionShieldRemain = Math.max(0, ball.potionShieldRemain - step);
+    if (ball.potionShieldRemain <= 0) {
+      ball.potionShieldHp = 0;
+    }
+  }
 }
 
 export function openActiveRam(ball: BallBody): void {
@@ -288,7 +346,7 @@ export function tickBurn(ball: BallBody, dt: number, source: BallBody | undefine
   const step = Math.min(Math.max(0, dt), ball.burnRemain);
   let hit: CollisionHit | null = null;
   if (ball.inPlay && ball.burnDps > 0 && source && source.inPlay) {
-    const applied = applyHpLoss(ball, ball.burnDps * step);
+    const applied = applyHpLoss(ball, ball.burnDps * step * outgoingDamageMul(source));
     if (applied > 0) {
       hit = {
         victimId: ball.id,

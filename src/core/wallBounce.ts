@@ -140,8 +140,21 @@ export function resolvePillarWall(
   return bounceAlongInwardNormal(ball, nx, ny);
 }
 
+let pillarsEnabled = true;
+
+export function setArenaPillarsEnabled(on: boolean): void {
+  pillarsEnabled = on;
+}
+
+export function arenaPillarsEnabled(): boolean {
+  return pillarsEnabled;
+}
+
 export function resolveArenaObstacles(ball: BallBody): boolean {
   const wall = resolveArenaWall(ball);
+  if (!pillarsEnabled) {
+    return wall;
+  }
   const left = resolvePillarWall(ball, LEFT_PILLAR);
   const right = resolvePillarWall(ball, RIGHT_PILLAR);
   return wall || left || right;

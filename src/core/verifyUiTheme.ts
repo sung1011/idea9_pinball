@@ -67,6 +67,11 @@ function dummyResultSnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
     stalls: [],
     openingChargeRemain: 0,
     skillsLocked: false,
+    mode: 'controlPoint',
+    redKills: 0,
+    blueKills: 0,
+    potion: null,
+    rift: null,
     ...partial,
   };
 }
@@ -119,9 +124,9 @@ export function verifyUiTheme(): void {
   const clock = host.querySelector<HTMLElement>('.matchHudClock');
   const red = host.querySelector<HTMLElement>('.matchHudRed');
   const blue = host.querySelector<HTMLElement>('.matchHudBlue');
-  const wrap = host.querySelector<HTMLElement>('.matchHudHeroWrap');
-  const stripe = host.querySelector<HTMLElement>('.matchHudHeroStripe');
-  const pick = host.querySelector<HTMLElement>('.matchHudHero');
+  const wrap = host.querySelector<HTMLElement>('.matchHudHeroWrap:not(.matchHudModeWrap)');
+  const stripe = host.querySelector<HTMLElement>('.matchHudHeroStripe:not(.matchHudModeStripe)');
+  const pick = host.querySelector<HTMLElement>('select.matchHudHero:not(.matchHudMode):not(.matchHudAllyHero)');
   const skill = host.querySelector<HTMLButtonElement>('.touchSkillBtn');
   const helpFab = host.querySelector<HTMLButtonElement>('.helpFab');
   const settingsFab = host.querySelector<HTMLButtonElement>('.settingsFab');

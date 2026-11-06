@@ -58,7 +58,7 @@ export function verifyHeroPick(): void {
       state.ally = next;
     },
   });
-  const pick = host.querySelector<HTMLSelectElement>('select.matchHudHero:not(.matchHudAllyHero)');
+  const pick = host.querySelector<HTMLSelectElement>('select.matchHudHero:not(.matchHudAllyHero):not(.matchHudMode)');
   const allyPick = host.querySelector<HTMLSelectElement>('select.matchHudAllyHero');
   if (!pick || !allyPick) {
     throw new Error('换英雄：战场应有自己与队友两个下拉');

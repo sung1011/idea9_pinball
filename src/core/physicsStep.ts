@@ -15,12 +15,14 @@ import {
   tickShield,
   tickSilence,
   tickStun,
+  tickPotionBuffs,
+  speedCapOf,
   type BallBody,
 } from './ballBody';
 import { NAIL_ARMOR, NAIL_PIN } from '../heroes/nailKit';
 import type { HealPulse } from './combatFloat';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
-import { FRICTION, SPEED_CAP } from './constants';
+import { FRICTION } from './constants';
 import { applyFloorSpeed } from './skillStub';
 import { resolveAllMirrorWalls, tickAllMirrorWalls } from './mirrorWalls';
 import { resolveAllStakes } from './ropeStakes';
@@ -36,15 +38,16 @@ const MAX_DT = 1 / 20;
 const COLLISION_ITERS = 3;
 
 function capSpeed(ball: BallBody): void {
+  const cap = speedCapOf(ball);
   const speed = Math.hypot(ball.vx, ball.vy);
-  if (speed <= SPEED_CAP) {
+  if (speed <= cap) {
     ball.allowOverCap = false;
     return;
   }
   if (ball.allowOverCap) {
     return;
   }
-  const s = SPEED_CAP / speed;
+  const s = cap / speed;
   ball.vx *= s;
   ball.vy *= s;
 }
@@ -206,6 +209,7 @@ export function stepPhysics(
     tickGraze(ball, stepDt);
     tickEchoMark(ball, stepDt);
     tickRefract(ball, stepDt);
+    tickPotionBuffs(ball, stepDt);
     if (collided.has(ball.id)) {
       openFineTune(ball);
     }

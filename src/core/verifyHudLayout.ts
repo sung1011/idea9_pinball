@@ -45,6 +45,11 @@ function dummySnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
     stalls: [],
     openingChargeRemain: 0,
     skillsLocked: false,
+    mode: 'controlPoint',
+    redKills: 0,
+    blueKills: 0,
+    potion: null,
+    rift: null,
     ...partial,
   };
 }
@@ -144,7 +149,8 @@ function assertCornerHud(
 ): void {
   const hostW = host.clientWidth;
   const hostH = host.clientHeight;
-  const heroBox = localBox(heroRow, host);
+  const left = host.querySelector<HTMLElement>('.matchHudLeft') ?? heroRow;
+  const heroBox = localBox(left, host);
   const skillBox = localBox(skills, host);
   const clusterBox = localBox(cluster, host);
   const midX = hostW / 2;
@@ -299,15 +305,24 @@ export function verifyHudLayout(): void {
   const red = host.querySelector<HTMLElement>('.matchHudRed .matchHudScoreVal');
   const blue = host.querySelector<HTMLElement>('.matchHudBlue .matchHudScoreVal');
   const clock = host.querySelector<HTMLElement>('.matchHudClock');
-  const hero = host.querySelector<HTMLSelectElement>('select.matchHudHero:not(.matchHudAllyHero)');
+  const hero = host.querySelector<HTMLSelectElement>('select.matchHudHero:not(.matchHudAllyHero):not(.matchHudMode)');
   const allyHero = host.querySelector<HTMLSelectElement>('select.matchHudAllyHero');
+  const modePick = host.querySelector<HTMLSelectElement>('select.matchHudMode');
+  const leftStack = host.querySelector<HTMLElement>('.matchHudLeft');
   const heroRow = host.querySelector<HTMLElement>('.matchHudHeroRow');
   const skills = host.querySelector<HTMLElement>('.touchSkills');
   const skillBtns = [...host.querySelectorAll<HTMLButtonElement>('button.touchSkillBtn')];
   const cancelBtn = host.querySelector<HTMLButtonElement>('button.touchCancel');
-  if (!cluster || !red || !blue || !clock || !hero || !allyHero || !heroRow || !skills || !cancelBtn) {
-    throw new Error('HUD：应有顶中比分计时胶囊、自己/队友下拉、技能键与取消键');
+  if (!cluster || !red || !blue || !clock || !hero || !allyHero || !heroRow || !skills || !cancelBtn || !modePick || !leftStack) {
+    throw new Error('HUD：应有顶中比分计时胶囊、模式/自己/队友下拉、技能键与取消键');
   }
+  assert(
+    [...modePick.options].map((opt) => opt.textContent).join('/') === '八杀/占点',
+    'HUD：模式下拉应为八杀/占点',
+  );
+  assert(modePick.value === 'eightKill', 'HUD：模式下拉缺省应为八杀');
+  assert(leftStack.contains(modePick) && leftStack.contains(heroRow), 'HUD：模式与英雄下拉应同组在左上');
+  assert(leftStack.firstElementChild?.contains(modePick) ?? false, 'HUD：模式下拉应在我/队友之上');
   assert(!host.querySelector('.matchHudPill'), 'HUD：不应再有角落独立比分胶囊');
   assert(cluster.contains(red) && cluster.contains(clock) && cluster.contains(blue), 'HUD：红分/计时/蓝分应同在一颗胶囊');
   const sides = [...cluster.querySelectorAll('.matchHudSide')];
@@ -428,6 +443,8 @@ export function verifyHudLayout(): void {
   hud.sync(dummySnap(), []);
   assert(red.textContent === '15' && blue.textContent === '30', 'HUD：胶囊应同步双方分数');
   assert(clock.textContent === '03:07', 'HUD：胶囊中间应为倒计时');
+  hud.sync(dummySnap({ mode: 'eightKill', redKills: 4, blueKills: 7, redScore: 90, blueScore: 10 }), []);
+  assert(red.textContent === '4' && blue.textContent === '7', 'HUD：八杀应显示击杀数');
   hud.sync(dummySnap({ midpoint: 'red' }), []);
   assert(cluster.dataset.hold === 'red', 'HUD：领地归属应画在合并胶囊上');
 

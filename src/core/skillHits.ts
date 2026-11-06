@@ -1,4 +1,4 @@
-import type { BallBody } from './ballBody';
+import { outgoingDamageMul, type BallBody } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import { applyHpLoss, type HpLossOpts } from './hpLoss';
 
@@ -27,7 +27,7 @@ export function applySkillDamage(
   if (!selfHit && victim.team && source.team && victim.team === source.team) {
     return null;
   }
-  const applied = applyHpLoss(victim, damage, opts);
+  const applied = applyHpLoss(victim, damage * outgoingDamageMul(source), opts);
   if (applied <= 0) {
     return null;
   }

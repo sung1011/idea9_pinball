@@ -1,6 +1,10 @@
 import { Application, Container } from 'pixi.js';
 import { MAP_HEIGHT, MAP_WIDTH } from './core/constants';
+import { takeShieldAbsorbs } from './core/hpLoss';
+import { isControlPointMode, type MatchModeId } from './core/matchMode';
+import { loadLastModeId, saveLastModeId } from './core/lastModeId';
 import { createMatchRoster, createMatchSession, pickMatchRosterKits } from './core/matchSession';
+import { setArenaPillarsEnabled } from './core/wallBounce';
 import type { BallBody } from './core/ballBody';
 import { stepPhysics } from './core/physicsStep';
 import { createSimpleBot } from './core/simpleBot';
@@ -8,6 +12,7 @@ import { verifyM2 } from './core/verifyM2';
 import { verifyM3 } from './core/verifyM3';
 import { verifyM35 } from './core/verifyM35';
 import { verifyM4 } from './core/verifyM4';
+import { verifyEightKill } from './core/verifyEightKill';
 import { verifyM5 } from './core/verifyM5';
 import { verifyChain } from './core/verifyChain';
 import { verifyArc } from './core/verifyArc';
@@ -23,7 +28,7 @@ import { verifyTouchAim } from './core/verifyTouchAim';
 import { verifyUiTheme } from './core/verifyUiTheme';
 import { verifyCombatFloat } from './core/verifyCombatFloat';
 import { resetBoomFlashes } from './core/boomFlashes';
-import { floatsFromHits, resetCombatFloatAcc, takeHealFloats } from './core/combatFloat';
+import { floatsFromHits, floatsFromShield, resetCombatFloatAcc, takeHealFloats } from './core/combatFloat';
 import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
@@ -58,6 +63,7 @@ async function boot(): Promise<void> {
   verifyM3();
   verifyM35();
   verifyM4();
+  verifyEightKill();
   verifyM5();
   verifyRing();
   verifyChain();
@@ -99,7 +105,13 @@ async function boot(): Promise<void> {
   const botHandles = balls
     .filter((ball) => ball !== player)
     .map((ball) => ({ ball, ai: createSimpleBot(ball) }));
-  const match = createMatchSession(balls);
+  let matchMode = loadLastModeId();
+  const applyWorldRules = (mode: MatchModeId): void => {
+    setArenaPillarsEnabled(isControlPointMode(mode));
+    arena.syncMode(mode);
+  };
+  applyWorldRules(matchMode);
+  const match = createMatchSession(balls, { mode: matchMode });
   const views = balls.map((ball) => createBallView(ball));
   for (const view of views) {
     world.addChild(view.root);
@@ -193,11 +205,15 @@ async function boot(): Promise<void> {
     applyPlayerHero(nextHero(player.hero));
   };
 
+  let applyMatchMode = (_mode: MatchModeId): void => {};
+
   const matchHud = createMatchHud(host, {
     hero: player.hero,
     allyHero: ally?.hero ?? 'chain',
+    mode: matchMode,
     onPickHero: applyPlayerHero,
     onPickAllyHero: applyAllyHero,
+    onPickMode: (mode) => applyMatchMode(mode),
   });
   matchHud.sync(match.snapshot(), balls);
   arena.syncStalls(match.snapshot().stalls);
@@ -246,9 +262,24 @@ async function boot(): Promise<void> {
   bindDebugMatch(match, { isGmOn: () => settingsIsGmOn(), onSwapHero: swapPlayerHero });
 
   const help = createHelpCard(host, { onOpen: () => settingsClose() });
+  help.setMode(matchMode);
+  applyMatchMode = (mode: MatchModeId): void => {
+    if (mode === matchMode) {
+      return;
+    }
+    matchMode = mode;
+    saveLastModeId(mode);
+    match.setMode(mode);
+    applyWorldRules(mode);
+    help.setMode(mode);
+    matchHud.setMode(mode);
+    restart();
+  };
   syncHeroUi = () => {
     help.setHero(player.hero);
+    help.setMode(matchMode);
     matchHud.setHero(player.hero);
+    matchHud.setMode(matchMode);
     if (ally) {
       matchHud.setAllyHero(ally.hero);
     }
@@ -336,7 +367,9 @@ async function boot(): Promise<void> {
       applyOpeningCharge(player, dt, snap.openingChargeRemain);
     }
     for (const { ai } of botHandles) {
-      skillHits.push(...ai.tick(dt, balls, snap.phase, snap.openingChargeRemain));
+      skillHits.push(
+        ...ai.tick(dt, balls, snap.phase, snap.openingChargeRemain, isControlPointMode(matchMode)),
+      );
     }
     const step = stepPhysics(balls, dt, { stalls: snap.stallsOn ? snap.stalls : [] });
     if (charging) {
@@ -352,9 +385,13 @@ async function boot(): Promise<void> {
       skillHits.push(...ai.afterPhysics(dt, balls, step.wallHitIds.includes(ball.id)));
     }
     const frameHits = [...step.hits, ...skillHits];
-    combatFloats.spawn([...floatsFromHits(frameHits, balls), ...takeHealFloats(step.heals)]);
-    combatFloats.tick(dt);
     match.tick(dt, frameHits);
+    combatFloats.spawn([
+      ...floatsFromHits([...frameHits, ...match.takeExtraHits()], balls),
+      ...takeHealFloats([...step.heals, ...match.takePotionHeals()]),
+      ...floatsFromShield(takeShieldAbsorbs()),
+    ]);
+    combatFloats.tick(dt);
     const next = match.snapshot();
     const aimingSlot = control.getAimingSlot();
     const skillCds = control.getSkillCds();
@@ -364,6 +401,7 @@ async function boot(): Promise<void> {
     resultPanel.sync(next);
     arena.syncHold(next.midpoint);
     arena.syncStalls(next.stalls);
+    arena.syncMode(next.mode);
     touchPad.sync({
       aimingSlot,
       skillCds,
@@ -371,7 +409,7 @@ async function boot(): Promise<void> {
       fineTuneOn: player.fineTuneRemain > 0,
       hero: player.hero,
     });
-    fields.sync(balls);
+    fields.sync(balls, { potion: next.potion, rift: next.rift });
     aimPreview.sync(player, aimingSlot, sample, windup, aimHint);
     for (let i = 0; i < balls.length; i += 1) {
       views[i].sync(balls[i], { charging: next.openingChargeRemain > 0 });

@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '新增八杀模式（先到 8 杀、药水、地裂矛阵），占点保留旧领地规则；左上模式下落本地记住' },
   { title: '技能四键放大到约 60px；瞄准中「取消」出现在当前技能正上方' },
   { title: '锁死当前横屏侧：不再 CSS 转 90°，也不允许 180° 对调；无转屏提示' },
   { title: '英雄放大约 2 倍：碰撞半径 1.0，枪尖距 2.24；圆盾/羽冠/矛尖/冲锋残影对齐，技能与世界宽高不动' },

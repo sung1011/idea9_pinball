@@ -28,6 +28,7 @@ export type SimpleBot = {
     roster: readonly BallBody[],
     phase: MatchPhase,
     chargeRemain?: number,
+    seekMid?: boolean,
   ) => CollisionHit[];
   afterPhysics: (dt: number, roster: readonly BallBody[], wallHit: boolean) => CollisionHit[];
   reset: () => void;
@@ -117,6 +118,7 @@ function castSample(
 function pickApproachAim(
   bot: BallBody,
   enemy: BallBody | null,
+  seekMid: boolean,
 ): { x: number; y: number; enemyD: number; midD: number } {
   const toMidX = CONTROL_POINT.x - bot.x;
   const toMidY = CONTROL_POINT.y - bot.y;
@@ -124,7 +126,10 @@ function pickApproachAim(
   const enemyD = enemy ? Math.hypot(enemy.x - bot.x, enemy.y - bot.y) : Number.POSITIVE_INFINITY;
   let aimX = toMidX;
   let aimY = toMidY;
-  if (enemy && (enemyD < midD || midD < 1.2)) {
+  if (!seekMid && enemy) {
+    aimX = enemy.x - bot.x;
+    aimY = enemy.y - bot.y;
+  } else if (enemy && (enemyD < midD || midD < 1.2)) {
     aimX = enemy.x - bot.x;
     aimY = enemy.y - bot.y;
   }
@@ -303,7 +308,7 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
   let wait = nextWait(random) * 0.35;
 
   return {
-    tick(dt, roster, phase, chargeRemain = 0) {
+    tick(dt, roster, phase, chargeRemain = 0, seekMid = true) {
       if (!bot.inPlay || phase === 'result') {
         bot.hasAim = false;
         caster.tick(bot, dt, roster);
@@ -317,7 +322,7 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
 
       const enemy = nearestEnemy(bot, roster);
       const ally = nearestAlly(bot, roster);
-      const approach = pickApproachAim(bot, enemy);
+      const approach = pickApproachAim(bot, enemy, seekMid);
       const aimLen = Math.hypot(approach.x, approach.y);
       let aimX = bot.facingX;
       let aimY = bot.facingY;

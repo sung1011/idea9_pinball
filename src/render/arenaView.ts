@@ -9,6 +9,7 @@ import {
   PILLAR_WIDTH,
   RIGHT_PILLAR,
 } from '../core/constants';
+import { isControlPointMode, type MatchModeId } from '../core/matchMode';
 import type { MidpointHold } from '../core/matchSession';
 import type { StallFence } from '../core/stallFences';
 
@@ -173,6 +174,7 @@ export type ArenaView = {
   root: Container;
   syncHold: (hold: MidpointHold) => void;
   syncStalls: (stalls: readonly StallFence[]) => void;
+  syncMode: (mode: MatchModeId) => void;
 };
 
 /** 俯视场地：圆角矩形 + 领地纹章圈 + 左右矮柱 + 半场底线木栏。 */
@@ -191,20 +193,40 @@ export function createArenaView(): ArenaView {
 
   const control = new Graphics();
   paintControl(control, 'none');
+  const leftPillar = drawPillar(LEFT_PILLAR.x, LEFT_PILLAR.y);
+  const rightPillar = drawPillar(RIGHT_PILLAR.x, RIGHT_PILLAR.y);
   const inner = new Container();
   inner.addChild(clip);
   inner.mask = clip;
   inner.addChild(drawHalfway());
-  inner.addChild(drawPillar(LEFT_PILLAR.x, LEFT_PILLAR.y));
-  inner.addChild(drawPillar(RIGHT_PILLAR.x, RIGHT_PILLAR.y));
+  inner.addChild(leftPillar);
+  inner.addChild(rightPillar);
   inner.addChild(control);
   const stallGfx = new Graphics();
   inner.addChild(stallGfx);
   root.addChild(inner);
 
+  let lastHold: MidpointHold = 'none';
+  let controlOn = true;
+
+  const paintHold = (hold: MidpointHold): void => {
+    lastHold = hold;
+    if (!controlOn) {
+      control.clear();
+      return;
+    }
+    paintControl(control, hold);
+  };
+
   return {
     root,
-    syncHold: (hold) => paintControl(control, hold),
+    syncHold: paintHold,
     syncStalls: (stalls) => paintStalls(stallGfx, stalls),
+    syncMode: (mode) => {
+      controlOn = isControlPointMode(mode);
+      leftPillar.visible = controlOn;
+      rightPillar.visible = controlOn;
+      paintHold(lastHold);
+    },
   };
 }

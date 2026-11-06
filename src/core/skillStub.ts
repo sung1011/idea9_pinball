@@ -1,8 +1,6 @@
-import { openActiveRam, type BallBody } from './ballBody';
+import { floorSpeedOf, openActiveRam, speedCapOf, type BallBody } from './ballBody';
 import {
-  FLOOR_SPEED,
   SKILL_IMPULSE,
-  SPEED_CAP,
   STRONG_STEER_RAD_PER_SEC,
   WEAK_STEER_RAD_PER_SEC,
 } from './constants';
@@ -20,11 +18,12 @@ function wrapAngle(delta: number): number {
 }
 
 export function capBallSpeed(ball: BallBody): void {
+  const cap = speedCapOf(ball);
   const speed = Math.hypot(ball.vx, ball.vy);
-  if (speed <= SPEED_CAP) {
+  if (speed <= cap) {
     return;
   }
-  const s = SPEED_CAP / speed;
+  const s = cap / speed;
   ball.vx *= s;
   ball.vy *= s;
 }
@@ -41,8 +40,9 @@ export function setFacingFrom(ball: BallBody, dx: number, dy: number): boolean {
 
 /** 速度低于保底时沿当前方向拉回保底；静止则沿朝向起步。 */
 export function applyFloorSpeed(ball: BallBody): void {
+  const floor = floorSpeedOf(ball);
   const speed = Math.hypot(ball.vx, ball.vy);
-  if (speed >= FLOOR_SPEED) {
+  if (speed >= floor) {
     return;
   }
   let dx = speed > EPS ? ball.vx / speed : ball.facingX;
@@ -55,8 +55,8 @@ export function applyFloorSpeed(ball: BallBody): void {
     dx /= len;
     dy /= len;
   }
-  ball.vx = dx * FLOOR_SPEED;
-  ball.vy = dy * FLOOR_SPEED;
+  ball.vx = dx * floor;
+  ball.vy = dy * floor;
 }
 
 export function steerRateRad(ball: BallBody): number {

@@ -1,5 +1,5 @@
 import { applyArcOnCollision, consumeBladeVenom } from './arcCombat';
-import type { BallBody } from './ballBody';
+import { outgoingDamageMul, type BallBody } from './ballBody';
 import { applyHpLoss } from './hpLoss';
 import { applyNailReflect, applyPinRamBonus } from './nailCombat';
 import {
@@ -25,6 +25,8 @@ export type CollisionHit = {
   knockback: number;
   relSpeed: number;
   threshold: number;
+  /** 地裂矛阵等环境伤害：击破不计任何一方击杀 */
+  environment?: boolean;
 };
 
 const EPS = 1e-8;
@@ -107,12 +109,14 @@ function hitVictim(
   }
   const shieldMul = victim.shieldRemain > 0 ? victim.shieldMul : 1;
   const armorMul = victim.armorRemain > 0 ? victim.armorMul : 1;
-  const incoming = collisionDamage(relSpeed) * shieldMul * armorMul;
+  const incoming = collisionDamage(relSpeed) * shieldMul * armorMul * outgoingDamageMul(source);
   if (incoming <= 0) {
     return null;
   }
+  const shieldBefore = victim.potionShieldHp;
   const damage = applyHpLoss(victim, incoming);
-  if (damage <= 0) {
+  const absorbed = Math.max(0, shieldBefore - victim.potionShieldHp);
+  if (damage <= 0 && absorbed <= 0) {
     return null;
   }
   source.spearCdRemain = SPEAR_TIP_CD;

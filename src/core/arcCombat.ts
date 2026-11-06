@@ -1,6 +1,7 @@
 import { ARC_GRAZE, ARC_MARK } from '../heroes/arcKit';
 import type { CollisionHit } from './collisionDamage';
 import type { BallBody } from './ballBody';
+import { outgoingDamageMul } from './ballBody';
 import { applyHpLoss } from './hpLoss';
 import { applySkillDamage } from './skillHits';
 
@@ -11,7 +12,7 @@ export function consumeBladeVenom(source: BallBody, victim: BallBody): number {
   }
   source.grazeRemain = 0;
   source.grazeLocks.length = 0;
-  return applyHpLoss(victim, ARC_GRAZE.extra);
+  return applyHpLoss(victim, ARC_GRAZE.extra * outgoingDamageMul(source));
 }
 
 /** 标记回响：下一次主动撞或擦伤额外 14，然后清标记。 */
