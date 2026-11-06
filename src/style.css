@@ -61,6 +61,18 @@ body,
   --stage-center-y: 42%;
 }
 
+/* 竖持：整屏按横屏盒子排，90° CW；家庭键在右时画面正向。安全区随旋转重映射。 */
+#app.isForceLandscape {
+  width: 100dvh;
+  height: 100dvw;
+  transform-origin: top left;
+  transform: translate(100dvw, 0) rotate(90deg);
+  --hud-safe-top: env(safe-area-inset-right, 0px);
+  --hud-safe-right: env(safe-area-inset-bottom, 0px);
+  --hud-safe-bottom: env(safe-area-inset-left, 0px);
+  --hud-safe-left: env(safe-area-inset-top, 0px);
+}
+
 canvas {
   display: block;
 }
@@ -1156,69 +1168,65 @@ canvas {
   font: 12px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
 }
 
-@media (max-height: 430px) {
-  #app {
-    --hud-fab: 26px;
-  }
-
-  .matchHudCluster,
-  .matchHudHero {
-    min-height: 24px;
-    font-size: 12px;
-  }
-
-  .matchHudHeroTag {
-    font-size: 9px;
-  }
-
-  .matchHudHero {
-    min-width: 3.8em;
-    padding: 2px 18px 2px 6px;
-  }
-
-  .matchHudScoreVal {
-    font-size: 13px;
-  }
-
-  .touchSkillBtn {
-    width: 40px;
-    height: 40px;
-    min-width: 36px;
-    min-height: 36px;
-    font-size: 10px;
-  }
-
-  .touchSkillCdTime {
-    font-size: 11px;
-  }
-
-  .openingHudNum {
-    font-size: clamp(56px, 16vmin, 96px);
-  }
+#app.isShortHud {
+  --hud-fab: 26px;
 }
 
-@media (max-width: 420px) {
-  .matchHudCluster {
-    gap: 4px;
-    padding: 3px 8px;
-  }
+#app.isShortHud .matchHudCluster,
+#app.isShortHud .matchHudHero {
+  min-height: 24px;
+  font-size: 12px;
+}
 
-  .matchHudClock {
-    min-width: 3.8em;
-    font-size: 12px;
-  }
+#app.isShortHud .matchHudHeroTag {
+  font-size: 9px;
+}
 
-  .matchHudScoreVal {
-    font-size: 14px;
-  }
+#app.isShortHud .matchHudHero {
+  min-width: 3.8em;
+  padding: 2px 18px 2px 6px;
+}
 
-  .matchHudHero {
-    min-width: 3.4em;
-    padding: 2px 16px 2px 4px;
-  }
+#app.isShortHud .matchHudScoreVal {
+  font-size: 13px;
+}
 
-  .matchHudHeroTag {
-    font-size: 9px;
-    padding: 0 3px 0 4px;
-  }
+#app.isShortHud .touchSkillBtn {
+  width: 40px;
+  height: 40px;
+  min-width: 36px;
+  min-height: 36px;
+  font-size: 10px;
+}
+
+#app.isShortHud .touchSkillCdTime {
+  font-size: 11px;
+}
+
+#app.isShortHud .openingHudNum {
+  font-size: clamp(56px, 16vmin, 96px);
+}
+
+#app.isNarrowHud .matchHudCluster {
+  gap: 4px;
+  padding: 3px 8px;
+}
+
+#app.isNarrowHud .matchHudClock {
+  min-width: 3.8em;
+  font-size: 12px;
+}
+
+#app.isNarrowHud .matchHudScoreVal {
+  font-size: 14px;
+}
+
+#app.isNarrowHud .matchHudHero {
+  min-width: 3.4em;
+  padding: 2px 16px 2px 4px;
+}
+
+#app.isNarrowHud .matchHudHeroTag {
+  font-size: 9px;
+  padding: 0 3px 0 4px;
 }

@@ -2,7 +2,7 @@ type OrientationLockable = {
   lock?: (type: string) => Promise<void>;
 };
 
-/** 向系统申请锁横屏。失败（PC / 未授权 / 非 standalone）静默，不弹提示、不转画布。 */
+/** 向系统申请锁横屏。失败（PC / 未授权 / 非 standalone）静默，不弹提示；竖窗靠 CSS 旋转，不回退竖屏可玩布局。 */
 export function lockLandscape(): void {
   try {
     const orientation = window.screen?.orientation as OrientationLockable | undefined;
@@ -23,4 +23,5 @@ export function bindLandscapeLock(): void {
   };
   window.addEventListener('pointerdown', retry, { once: true, capture: true });
   window.addEventListener('touchstart', retry, { once: true, capture: true, passive: true });
+  window.addEventListener('orientationchange', retry);
 }
