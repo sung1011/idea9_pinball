@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '系统锁横屏（manifest + orientation.lock）；删掉请横过来遮罩与说明卡转屏文案；横屏 cover + 四角 HUD；画面不翻转' },
   { title: '只要横屏：竖窗盖「请横过来再玩」并暂停对局输入；横窗仍 cover + 四角 HUD；画面不翻转' },
   { title: '战场 cover 铺满无 letterbox；HUD 四角：换英雄左上、比分顶中、?齿轮顶右、技能右下；任意方向不翻转' },
   { title: '撤销骑马主体皮，还原圆盾+羽冠约六成+金矛尖+盾面本队编号；冲锋残影改回圆盾/圆影' },

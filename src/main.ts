@@ -48,8 +48,8 @@ import { createResultPanel } from './ui/resultPanel';
 import { createAppVersions } from './ui/appVersion';
 import { createSettingsPanel } from './ui/settingsPanel';
 import { createUpdatePrompt } from './ui/updatePrompt';
-import { createRotatePrompt } from './ui/rotatePrompt';
-import { applyStageVars, computeLandscapeStage, isPortraitViewport, readSafeInsets } from './ui/stageLayout';
+import { bindLandscapeLock } from './ui/lockLandscape';
+import { applyStageVars, computeLandscapeStage, readSafeInsets } from './ui/stageLayout';
 import { applyUiTheme } from './ui/uiTheme';
 import './style.css';
 
@@ -127,12 +127,9 @@ async function boot(): Promise<void> {
   let transform: WorldTransform = layoutWorld();
   applyWorldTransform(world, transform);
 
-  let syncOrientation = (): void => {};
-
   const layout = (): void => {
     transform = layoutWorld();
     applyWorldTransform(world, transform);
-    syncOrientation();
   };
 
   app.renderer.on('resize', layout);
@@ -140,6 +137,7 @@ async function boot(): Promise<void> {
   window.addEventListener('orientationchange', layout);
   window.visualViewport?.addEventListener('resize', layout);
   window.screen.orientation?.addEventListener('change', layout);
+  bindLandscapeLock();
 
   const bus = createActionBus();
   const control = createPlayerControl(player.hero);
@@ -149,7 +147,6 @@ async function boot(): Promise<void> {
     getTransform: () => transform,
     bus,
     getAimingSlot: () => control.getAimingSlot(),
-    isLocked: () => host.classList.contains('isPortrait'),
   });
 
   let syncHeroUi = (): void => {};
@@ -288,32 +285,8 @@ async function boot(): Promise<void> {
   settingsIsGmOn = () => settings.isGmOn();
   settingsClose = settings.close;
 
-  const rotatePrompt = createRotatePrompt(host);
-  let playLocked = false;
-  syncOrientation = (): void => {
-    const portrait = isPortraitViewport();
-    rotatePrompt.sync(portrait);
-    if (portrait === playLocked) {
-      if (portrait) {
-        app.render();
-      }
-      return;
-    }
-    playLocked = portrait;
-    bus.reset();
-    if (portrait) {
-      help.close();
-      settings.close();
-      app.ticker.stop();
-      app.render();
-      return;
-    }
-    app.ticker.start();
-  };
-  syncOrientation();
-
   const trySkipOpening = (): void => {
-    if (host.classList.contains('isPortrait') || settings.isOpen() || help.isOpen()) {
+    if (settings.isOpen() || help.isOpen()) {
       return;
     }
     match.skipOpening();
@@ -349,10 +322,6 @@ async function boot(): Promise<void> {
   });
 
   app.ticker.add((ticker) => {
-    if (host.classList.contains('isPortrait')) {
-      bus.reset();
-      return;
-    }
     const dt = ticker.deltaMS / 1000;
     const snap = match.snapshot();
     const sample = bus.sample(player.x, player.y);
