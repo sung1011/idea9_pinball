@@ -1,5 +1,5 @@
 import { createBallBody } from './ballBody';
-import { ACTIVE_RAM_WINDOW, MAX_HP, SKILL_IMPULSE, SPEED_CAP } from './constants';
+import { ACTIVE_RAM_WINDOW, BALL_RADIUS, MAX_HP, SKILL_IMPULSE, SPEED_CAP } from './constants';
 import { createPlayerControl } from '../input/playerControl';
 import { applyFineTune, applySkillRelease } from './skillStub';
 import { stepPhysics } from './physicsStep';
@@ -152,8 +152,8 @@ export function verifyM3(): void {
     facingY: 0,
   });
   const scrapeB = createBallBody({
-    x: 10.35,
-    y: 6.5,
+    x: 9.5 + 0.85 * (BALL_RADIUS / 0.5),
+    y: 6 + 0.5 * (BALL_RADIUS / 0.5),
     color: 0x3d7cf0,
     vx: 2.5,
     vy: 0,
@@ -175,7 +175,7 @@ export function verifyM3(): void {
   }
 
   const wallBall = createBallBody({
-    x: 0.6,
+    x: BALL_RADIUS + 0.1,
     y: 6,
     color: 0xe24a4a,
     vx: -8,

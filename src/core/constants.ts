@@ -11,8 +11,8 @@ export const MAP_HEIGHT = 20;
 /** 逻辑地图宽度（格）；高仍 20，宽按 iPhone 18 Pro Max 横屏 956:440 */
 export const MAP_WIDTH = (MAP_HEIGHT * IPHONE_LANDSCAPE_LOGICAL_WIDTH) / IPHONE_LANDSCAPE_LOGICAL_HEIGHT;
 
-/** 玩家半径（格） */
-export const BALL_RADIUS = 0.5;
+/** 玩家半径（格）；相对初版 0.5 放大 2 倍，与骑士皮/枪尖对齐 */
+export const BALL_RADIUS = 1.0;
 
 /** 圆角矩形场地的角半径（格） */
 export const ARENA_CORNER_RADIUS = 1.5;
@@ -90,12 +90,12 @@ export const COLLISION_DAMAGE_CAP = 28;
 export const SPEAR_TIP_CD = 1;
 
 /**
- * 枪尖距圆心（格），对齐 `ballView.drawTargetSpear` 的 tip（1.12）。
- * 有瞄准跟 aim，否则跟 facing。
+ * 枪尖距圆心（格），对齐 `ballView.drawTargetSpear` 的 tip（2.24）。
+ * 有瞄准跟 aim，否则跟 facing。相对初版 1.12 放大 2 倍。
  */
-export const SPEAR_TIP_DIST = 1.12;
-/** 枪尖相交检测小圆半径（格） */
-export const SPEAR_TIP_RADIUS = 0.1;
+export const SPEAR_TIP_DIST = 2.24;
+/** 枪尖相交检测小圆半径（格）；相对初版 0.1 放大 2 倍，贴视觉矛尖 */
+export const SPEAR_TIP_RADIUS = 0.2;
 
 /**
  * 掉血弹开初速 ≈ KNOCKBACK_SCALE × min(1, 相对速度/SPAN)

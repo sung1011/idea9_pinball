@@ -390,7 +390,7 @@ export function verifyWell(): void {
   resetTrapZones();
   resetStakes();
   const hookKeep = createSkillCaster('hook');
-  const [hookK, hookKb] = redBlue(8, 6, 12, 6, 'hook');
+  const [hookK, hookKb] = redBlue(8, 6, 13, 6, 'hook');
   fire(hookKeep, hookK, 1, [hookK, hookKb]);
   advance(hookKeep, hookK, [hookK, hookKb], HOOK_PULL.windup + 0.03);
   assert(Math.abs(hookKb.hp - (MAX_HP - HOOK_PULL.damage)) < 1e-6, '井绳：钩刺 kit 不应被拆坏');

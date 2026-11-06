@@ -1,5 +1,6 @@
 import { createBallBody } from './ballBody';
 import {
+  BALL_RADIUS,
   FLOOR_SPEED,
   STRONG_STEER_DEG_PER_SEC,
   STRONG_STEER_RAD_PER_SEC,
@@ -123,7 +124,7 @@ export function verifyM35(): void {
   }
 
   const hitA = createBallBody({
-    x: 9.45,
+    x: 10 - BALL_RADIUS * 1.1,
     y: 6,
     color: 0xe24a4a,
     vx: 8,
@@ -132,7 +133,7 @@ export function verifyM35(): void {
     facingY: 0,
   });
   const hitB = createBallBody({
-    x: 10.55,
+    x: 10 + BALL_RADIUS * 1.1,
     y: 6,
     color: 0x3d7cf0,
     vx: -8,

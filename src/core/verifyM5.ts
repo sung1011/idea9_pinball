@@ -265,7 +265,7 @@ export function verifyM5(): void {
   const dashExpect = 4 + FLOOR_SPEED * HOOK_SHOVE.windup + HOOK_SHOVE.dashDist;
   assert(Math.abs(dashBall.x - dashExpect) < 0.7, 'M5：推过去应冲约 4.5 格');
 
-  const [shoveRed, shoveBlue] = redBlue(8, 6, 10, 6);
+  const [shoveRed, shoveBlue] = redBlue(8, 6, 12, 6);
   const shove = createSkillCaster();
   fire(shove, shoveRed, 3);
   let shoveHit = false;

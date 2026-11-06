@@ -1,6 +1,7 @@
 import { createBallBody, type BallBody } from './ballBody';
 import {
   ACTIVE_RAM_WINDOW,
+  BALL_RADIUS,
   FLOOR_SPEED,
   HARD_CC_DIMINISH_WINDOW,
   MAX_HP,
@@ -177,7 +178,7 @@ export function verifyRing(): void {
   resetTrapZones();
   const slide = createSkillCaster('ring');
   const slideBall = createBallBody({
-    x: 1.05,
+    x: BALL_RADIUS + 0.55,
     y: 6,
     color: 0xe24a4a,
     team: 'red',
@@ -188,7 +189,7 @@ export function verifyRing(): void {
   fire(slide, slideBall, 3, [slideBall]);
   assert(slide.isDisplacing(), '磁环：粘壁应为位移技');
   advance(slide, slideBall, [slideBall], 0.35);
-  assert(slideBall.x < 0.7, '磁环：粘壁应贴墙');
+  assert(slideBall.x < BALL_RADIUS + 0.2, '磁环：粘壁应贴墙');
   assert(slideBall.vx <= 0.15, '磁环：粘壁撞墙不应反弹');
   assert(slideBall.slideWalls, '磁环：粘壁期间应沿壁滑');
   let popped = false;
@@ -207,10 +208,11 @@ export function verifyRing(): void {
   assert(popped, '磁环：粘壁结束后应弹出');
 
   resetTrapZones();
-  const [trapRed, trapBlue] = redBlue(10, 6, 12, 6);
+  const [trapRed, trapBlue] = redBlue(10, 6, 12.2, 6);
+  trapBlue.facingX = 1;
   const trap = createSkillCaster('ring');
   const hook = createSkillCaster('hook');
-  fire(trap, trapRed, 4, [trapRed, trapBlue]);
+  fire(trap, trapRed, 4, [trapRed, trapBlue], { pointerX: trapBlue.x, pointerY: trapBlue.y, hasPointer: true });
   assert(trap.getWindup()?.slot === 4, '磁环：困圈应走 0.35s 前摇');
   advance(trap, trapRed, [trapRed, trapBlue], 0.33);
   assert(!isInEnemyTrap(trapBlue), '磁环：前摇未结束不应出困圈');
@@ -264,9 +266,10 @@ export function verifyRing(): void {
   assert(allyHook.getCds()[3] > 10, '磁环：友军在圈内仍可放蓄势');
 
   resetTrapZones();
-  const [cageRed, cageBlue] = redBlue(10, 6, 10.4, 6);
+  const [cageRed, cageBlue] = redBlue(10, 6, 12.2, 6);
+  cageBlue.facingX = 1;
   const cageCaster = createSkillCaster('ring');
-  fire(cageCaster, cageRed, 4, [cageRed, cageBlue]);
+  fire(cageCaster, cageRed, 4, [cageRed, cageBlue], { pointerX: cageBlue.x, pointerY: cageBlue.y, hasPointer: true });
   advance(cageCaster, cageRed, [cageRed, cageBlue], RING_TRAP.windup + 0.05);
   const cage = listTrapZones()[0];
   assert(!!cage && isInEnemyTrap(cageBlue), '磁环：关死测应有困圈且敌在圈内');
@@ -341,9 +344,10 @@ export function verifyRing(): void {
   assert(Math.hypot(inbound.x - inZone.x, inbound.y - inZone.y) <= RING_TRAP.radius + 0.06, '磁环：滑进后敌不能再滑出');
 
   resetTrapZones();
-  const [endRed, endBlue] = redBlue(10, 6, 10.4, 6);
+  const [endRed, endBlue] = redBlue(10, 6, 12.2, 6);
+  endBlue.facingX = 1;
   const endTrap = createSkillCaster('ring');
-  fire(endTrap, endRed, 4, [endRed, endBlue]);
+  fire(endTrap, endRed, 4, [endRed, endBlue], { pointerX: endBlue.x, pointerY: endBlue.y, hasPointer: true });
   advance(endTrap, endRed, [endRed, endBlue], RING_TRAP.windup + 0.05);
   assert(isInEnemyTrap(endBlue), '磁环：关死测应先出困圈');
   endRed.x = 2;
@@ -377,7 +381,7 @@ export function verifyRing(): void {
 
   resetTrapZones();
   const hookKeep = createSkillCaster('hook');
-  const [hookRed, hookBlue] = redBlue(8, 6, 12, 6);
+  const [hookRed, hookBlue] = redBlue(8, 6, 13, 6);
   hookRed.hero = 'hook';
   fire(hookKeep, hookRed, 1, [hookRed, hookBlue]);
   advance(hookKeep, hookRed, [hookRed, hookBlue], HOOK_PULL.windup + 0.03);

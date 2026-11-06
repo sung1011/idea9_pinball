@@ -1,5 +1,5 @@
 import { openActiveRam, type BallBody } from '../core/ballBody';
-import { MAP_HEIGHT, SPEED_CAP } from '../core/constants';
+import { BALL_RADIUS, MAP_HEIGHT, SPEED_CAP } from '../core/constants';
 
 export type CollisionTestKind = 'back' | 'side' | 'front' | 'graze';
 
@@ -68,28 +68,29 @@ export function applyCollisionTest(
   }
   onPairDebug?.();
   const midY = MAP_HEIGHT / 2;
+  const skin = BALL_RADIUS / 0.5;
   if (kind === 'front') {
-    placeBall(pair[0], 8.7, midY, 1, 0);
-    placeBall(pair[1], 11.3, midY, -1, 0);
+    placeBall(pair[0], 10 - 1.3 * skin, midY, 1, 0);
+    placeBall(pair[1], 10 + 1.3 * skin, midY, -1, 0);
     impart(pair[0], 1, 0);
     impart(pair[1], -1, 0);
     return true;
   }
   if (kind === 'back') {
-    placeBall(pair[0], 8.7, midY, 1, 0);
-    placeBall(pair[1], 11.3, midY, 1, 0);
+    placeBall(pair[0], 10 - 1.3 * skin, midY, 1, 0);
+    placeBall(pair[1], 10 + 1.3 * skin, midY, 1, 0);
     impart(pair[0], 1, 0);
     return true;
   }
   if (kind === 'side') {
-    placeBall(pair[0], 8.5, midY - 0.55, 1, 0);
-    placeBall(pair[1], 10.4, midY + 0.2, 1, 0);
+    placeBall(pair[0], 8.8, midY - 0.7, 1, 0);
+    placeBall(pair[1], 10.2, midY + 0.6, 1, 0);
     impart(pair[0], 1, 0);
     impart(pair[1], 1, 0, 2.5, false);
     return true;
   }
   placeBall(pair[0], 9.5, midY, 1, 0);
-  placeBall(pair[1], 10.35, midY + 0.5, 1, 0);
+  placeBall(pair[1], 9.5 + 0.85 * skin, midY + 0.5 * skin, 1, 0);
   impart(pair[0], 1, 0, 2.5, false);
   impart(pair[1], 1, 0, 2.5, false);
   return true;

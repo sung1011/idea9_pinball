@@ -10,7 +10,7 @@ import {
   takeHealFloats,
 } from './combatFloat';
 import { applyCollisionCombat } from './collisionDamage';
-import { MAX_HP } from './constants';
+import { BALL_RADIUS, MAX_HP } from './constants';
 import { stepPhysics } from './physicsStep';
 
 function assert(cond: boolean, message: string): void {
@@ -40,7 +40,7 @@ export function verifyCombatFloat(): void {
   assert(Math.abs(b.dx) > 0.2 && Math.abs(c.dx) > 0.2 && b.dx * c.dx < 0, '飘字：同帧应左右错开');
 
   const hitA = createBallBody({
-    x: 9.2,
+    x: 10 - BALL_RADIUS * 1.1,
     y: 6,
     color: 0xe24a4a,
     label: '红',
@@ -50,7 +50,7 @@ export function verifyCombatFloat(): void {
     team: 'red',
   });
   const hitB = createBallBody({
-    x: 10.3,
+    x: 10 + BALL_RADIUS * 1.1,
     y: 6,
     color: 0x3d7cf0,
     label: '蓝',
@@ -72,16 +72,16 @@ export function verifyCombatFloat(): void {
   assert(hitA.hp < MAX_HP && hitB.hp < MAX_HP, '飘字：不应改掉血公式');
 
   const scrapeA = createBallBody({
-    x: 8.6,
-    y: 5.45,
+    x: 8.8,
+    y: 5.3,
     color: 0xe24a4a,
     vx: 2,
     facingX: 1,
     team: 'red',
   });
   const scrapeB = createBallBody({
-    x: 10.3,
-    y: 6.2,
+    x: 10.2,
+    y: 6.6,
     color: 0x3d7cf0,
     vx: 2,
     facingX: 1,

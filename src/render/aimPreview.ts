@@ -1,5 +1,6 @@
 import { Graphics } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
+import { BALL_RADIUS } from '../core/constants';
 import { getStake } from '../core/ropeStakes';
 import { aimDirOf, type AimHint, type WindupInfo } from '../core/skillCaster';
 import { arcAimShape } from '../heroes/arcKit';
@@ -52,7 +53,7 @@ function drawCircle(
 function drawAimArrow(g: Graphics, fx: number, fy: number, color: number, len = ARROW_LEN): void {
   const tipX = fx * len;
   const tipY = fy * len;
-  g.moveTo(fx * 0.55, fy * 0.55);
+  g.moveTo(fx * BALL_RADIUS * 1.1, fy * BALL_RADIUS * 1.1);
   g.lineTo(tipX, tipY);
   g.stroke({ color, width: 0.08, cap: 'round', alpha: 0.95 });
 

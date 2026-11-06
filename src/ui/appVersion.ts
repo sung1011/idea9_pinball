@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '英雄放大约 2 倍：碰撞半径 1.0，枪尖距 2.24；圆盾/羽冠/矛尖/冲锋残影对齐，技能与世界宽高不动' },
   { title: '战场加宽到 iPhone 18 Pro Max 横屏比例（高 20、宽 20×956/440）；956×440 看全图，更方屏左右略裁无黑边' },
   { title: '永远横屏对局：竖持整屏转 90°（家庭键在右时正向），无转屏提示；锁失败仍旋转，不回退竖屏可玩布局' },
   { title: '系统锁横屏（manifest + orientation.lock）；删掉请横过来遮罩与说明卡转屏文案；横屏 cover + 四角 HUD；画面不翻转' },

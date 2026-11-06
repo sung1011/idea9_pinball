@@ -4,7 +4,10 @@ import {
   collisionDamage,
   selfCheckCollisionDamage,
 } from './collisionDamage';
-import { MAX_HP, SPEAR_TIP_CD } from './constants';
+import { BALL_RADIUS, MAX_HP, SPEAR_TIP_CD, SPEAR_TIP_DIST } from './constants';
+
+const SKIN = BALL_RADIUS / 0.5;
+const SPEAR_HALF = BALL_RADIUS * 1.1;
 import { applySkillDamage } from './skillHits';
 import { stepPhysics } from './physicsStep';
 
@@ -21,10 +24,13 @@ function stepUntilHit(
 
 /** 公式 + 枪尖门闩 / 对撞 / 侧蹭 / 无门槛 / 普攻 CD 自检。 */
 export function verifyM2(): void {
+  if (BALL_RADIUS !== 1 || SPEAR_TIP_DIST !== 2.24) {
+    throw new Error('M2：半径应为 1.0、枪尖距应为 2.24');
+  }
   selfCheckCollisionDamage();
 
   const headA = createBallBody({
-    x: 9.45,
+    x: 10 - SPEAR_HALF,
     y: 6,
     color: 0xe24a4a,
     label: 'A',
@@ -34,7 +40,7 @@ export function verifyM2(): void {
     facingY: 0,
   });
   const headB = createBallBody({
-    x: 10.55,
+    x: 10 + SPEAR_HALF,
     y: 6,
     color: 0x3d7cf0,
     label: 'B',
@@ -59,8 +65,8 @@ export function verifyM2(): void {
     facingY: 0,
   });
   const scrapeB = createBallBody({
-    x: 10.35,
-    y: 4.5,
+    x: 9.5 + 0.85 * SKIN,
+    y: 4 + 0.5 * SKIN,
     color: 0x3d7cf0,
     label: 'D',
     vx: 2.5,
@@ -74,7 +80,7 @@ export function verifyM2(): void {
   }
 
   const ramA = createBallBody({
-    x: 9.45,
+    x: 10 - SPEAR_HALF,
     y: 8,
     color: 0xe24a4a,
     label: 'E',
@@ -84,7 +90,7 @@ export function verifyM2(): void {
     facingY: 0,
   });
   const ramB = createBallBody({
-    x: 10.55,
+    x: 10 + SPEAR_HALF,
     y: 8,
     color: 0x3d7cf0,
     label: 'F',
@@ -99,8 +105,8 @@ export function verifyM2(): void {
   }
 
   const sideA = createBallBody({
-    x: 8.6,
-    y: 5.45,
+    x: 8.8,
+    y: 5.3,
     color: 0xe24a4a,
     label: '侧A',
     vx: 8,
@@ -109,8 +115,8 @@ export function verifyM2(): void {
     facingY: 0,
   });
   const sideB = createBallBody({
-    x: 10.3,
-    y: 6.2,
+    x: 10.2,
+    y: 6.6,
     color: 0x3d7cf0,
     label: '侧B',
     vx: 2,
@@ -134,7 +140,7 @@ export function verifyM2(): void {
 
   const rubA = createBallBody({
     x: 10,
-    y: 5.2,
+    y: 10 - SPEAR_HALF,
     color: 0xe24a4a,
     vx: 0,
     vy: 8,
@@ -143,7 +149,7 @@ export function verifyM2(): void {
   });
   const rubB = createBallBody({
     x: 10,
-    y: 6.2,
+    y: 10 + SPEAR_HALF,
     color: 0x3d7cf0,
     vx: 0,
     vy: 0,
@@ -156,7 +162,7 @@ export function verifyM2(): void {
   }
 
   const stabA = createBallBody({
-    x: 9.2,
+    x: 10 - SPEAR_HALF,
     y: 5,
     color: 0xe24a4a,
     label: '戳A',
@@ -164,7 +170,7 @@ export function verifyM2(): void {
     facingX: 1,
   });
   const stabB = createBallBody({
-    x: 10.3,
+    x: 10 + SPEAR_HALF,
     y: 5,
     color: 0x3d7cf0,
     label: '戳B',
@@ -182,28 +188,28 @@ export function verifyM2(): void {
   }
 
   const frontA = createBallBody({
-    x: 9.2,
+    x: 10 - SPEAR_HALF,
     y: 3,
     color: 0xe24a4a,
     vx: 4,
     facingX: 1,
   });
   const frontB = createBallBody({
-    x: 10.3,
+    x: 10 + SPEAR_HALF,
     y: 3,
     color: 0x3d7cf0,
     vx: -4,
     facingX: -1,
   });
   const rearA = createBallBody({
-    x: 9.2,
+    x: 10 - SPEAR_HALF,
     y: 2,
     color: 0xe24a4a,
     vx: 4,
     facingX: 1,
   });
   const rearB = createBallBody({
-    x: 10.3,
+    x: 10 + SPEAR_HALF,
     y: 2,
     color: 0x3d7cf0,
     vx: -4,
@@ -220,14 +226,14 @@ export function verifyM2(): void {
   }
 
   const slowA = createBallBody({
-    x: 9.2,
+    x: 10 - SPEAR_HALF,
     y: 7,
     color: 0xe24a4a,
     vx: 1.5,
     facingX: 1,
   });
   const slowB = createBallBody({
-    x: 10.3,
+    x: 10 + SPEAR_HALF,
     y: 7,
     color: 0x3d7cf0,
     vx: -1.5,
@@ -240,14 +246,14 @@ export function verifyM2(): void {
   }
 
   const cdA = createBallBody({
-    x: 9.2,
+    x: 10 - SPEAR_HALF,
     y: 8,
     color: 0xe24a4a,
     vx: 4,
     facingX: 1,
   });
   const cdB = createBallBody({
-    x: 10.3,
+    x: 10 + SPEAR_HALF,
     y: 8,
     color: 0x3d7cf0,
     vx: -4,

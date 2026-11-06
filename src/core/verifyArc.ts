@@ -1,6 +1,6 @@
 import { applyEchoMark, createBallBody, type BallBody } from './ballBody';
 import { applyCollisionCombat, collisionDamage } from './collisionDamage';
-import { FLOOR_SPEED, MAX_HP, SPEAR_TIP_CD } from './constants';
+import { BALL_RADIUS, FLOOR_SPEED, MAX_HP, SPEAR_TIP_CD } from './constants';
 import { ARC_GRAZE, ARC_MARK, ARC_PHASE, ARC_SIDESTEP, behindEnemyPos } from '../heroes/arcKit';
 import { CHAIN_FAIL_CD, CHAIN_HEAL, CHAIN_SHIELD } from '../heroes/chainKit';
 import { nextHero } from '../heroes/heroIds';
@@ -123,8 +123,8 @@ export function verifyArc(): void {
   assert(nextHero('chain') === 'nail' && nextHero('nail') === 'arc', '闪弧：H 循环应接到钉壳再接到闪弧');
   assert(nextHero('arc') === 'well', '闪弧：H 循环闪弧后接到井绳');
 
-  const behind = behindEnemyPos(12, 6, -1, 0, 0.5, 0.5);
-  assert(Math.abs(behind.x - (12 + 0.5 + 0.5 + ARC_SIDESTEP.behindPad)) < 1e-6, '闪弧：贴背应在敌朝向反侧短距');
+  const behind = behindEnemyPos(12, 6, -1, 0, BALL_RADIUS, BALL_RADIUS);
+  assert(Math.abs(behind.x - (12 + BALL_RADIUS + BALL_RADIUS + ARC_SIDESTEP.behindPad)) < 1e-6, '闪弧：贴背应在敌朝向反侧短距');
   assert(behind.faceX < 0 && Math.abs(behind.faceY) < 1e-6, '闪弧：贴背后应朝向敌人');
 
   resetTrapZones();
@@ -154,7 +154,7 @@ export function verifyArc(): void {
 
   resetTrapZones();
   const graze = createSkillCaster('arc');
-  const [grazeRed, grazeBlue] = redBlue(9.2, 6, 10.3, 6);
+  const [grazeRed, grazeBlue] = redBlue(10 - BALL_RADIUS * 1.1, 6, 10 + BALL_RADIUS * 1.1, 6);
   fire(graze, grazeRed, 2, [grazeRed, grazeBlue]);
   assert(Math.abs(graze.getCds()[1] - ARC_GRAZE.cd) < 1e-6, '闪弧：掠刃应即放进 9s CD');
   assert(grazeRed.grazeRemain > ARC_GRAZE.duration - 0.05, '闪弧：掠刃应给自己荼毒 8s');
@@ -172,7 +172,7 @@ export function verifyArc(): void {
   assert(grazeRed.spearCdRemain > SPEAR_TIP_CD - 0.05, '闪弧：荼毒加伤仍走枪尖 1s CD');
 
   resetTrapZones();
-  const [cdRed, cdBlue] = redBlue(9.2, 6, 10.3, 6);
+  const [cdRed, cdBlue] = redBlue(10 - BALL_RADIUS * 1.1, 6, 10 + BALL_RADIUS * 1.1, 6);
   cdRed.grazeRemain = 8;
   cdRed.spearCdRemain = 0.5;
   cdRed.vx = 8;
@@ -204,7 +204,7 @@ export function verifyArc(): void {
   assert(markBlue.hp < hpAfterMark - 13, '闪弧：额外 14 应扣在目标上');
 
   resetTrapZones();
-  const [markGRed, markGBlue] = redBlue(10, 6, 11.2, 6);
+  const [markGRed, markGBlue] = redBlue(10, 6, 10 + BALL_RADIUS * 2.2, 6);
   applyEchoMark(markGBlue, ARC_MARK.duration, markGRed.id);
   markGRed.grazeRemain = 2;
   markGRed.activeRamRemain = 0;
@@ -274,7 +274,7 @@ export function verifyArc(): void {
 
   resetTrapZones();
   const hookKeep = createSkillCaster('hook');
-  const [hookRed, hookBlue] = redBlue(8, 6, 12, 6, 'hook');
+  const [hookRed, hookBlue] = redBlue(8, 6, 13, 6, 'hook');
   fire(hookKeep, hookRed, 1, [hookRed, hookBlue]);
   advance(hookKeep, hookRed, [hookRed, hookBlue], HOOK_PULL.windup + 0.03);
   assert(Math.abs(hookBlue.hp - (MAX_HP - HOOK_PULL.damage)) < 1e-6, '闪弧：钩刺 kit 不应被拆坏');

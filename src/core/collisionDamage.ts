@@ -4,6 +4,7 @@ import { applyHpLoss } from './hpLoss';
 import { applyNailReflect, applyPinRamBonus } from './nailCombat';
 import {
   ACTIVE_RAM_SPEED_THRESHOLD,
+  BALL_RADIUS,
   COLLISION_DAMAGE_CAP,
   COLLISION_DAMAGE_SCALE,
   COLLISION_SPEED_THRESHOLD,
@@ -228,8 +229,8 @@ export function selfCheckCollisionDamage(): void {
     aimY: 0,
     hasAim: false,
   };
-  const frontBody = { x: 1, y: 0, radius: 0.5 };
-  const sideBody = { x: 0, y: 1, radius: 0.5 };
+  const frontBody = { x: 2 * BALL_RADIUS, y: 0, radius: BALL_RADIUS };
+  const sideBody = { x: 0, y: 2 * BALL_RADIUS, radius: BALL_RADIUS };
   if (!spearTipHitsBody(stabber, frontBody)) {
     throw new Error('枪尖：正对接触应戳中身体');
   }

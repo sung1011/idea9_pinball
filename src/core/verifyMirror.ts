@@ -1,6 +1,6 @@
 import { applyArmor, applyShield, createBallBody, type BallBody } from './ballBody';
 import { applyCollisionCombat, collisionDamage } from './collisionDamage';
-import { FLOOR_SPEED, MAX_HP } from './constants';
+import { BALL_RADIUS, FLOOR_SPEED, MAX_HP } from './constants';
 import { ARC_SIDESTEP } from '../heroes/arcKit';
 import { CHAIN_HEAL } from '../heroes/chainKit';
 import { nextHero } from '../heroes/heroIds';
@@ -139,7 +139,7 @@ export function verifyMirror(): void {
   applyArmor(shRed, 0.4, 3);
   shRed.x = 10;
   shRed.y = 6;
-  shBlue.x = 10.9;
+  shBlue.x = 10 + BALL_RADIUS * 2.2;
   shBlue.y = 6;
   shRed.facingX = 1;
   shBlue.facingX = -1;
@@ -285,7 +285,7 @@ export function verifyMirror(): void {
   resetTrapZones();
   resetMirrorWalls();
   const hookKeep = createSkillCaster('hook');
-  const [hookK, hookKb] = redBlue(8, 6, 12, 6, 'hook');
+  const [hookK, hookKb] = redBlue(8, 6, 13, 6, 'hook');
   fire(hookKeep, hookK, 1, [hookK, hookKb]);
   hookKeep.tick(hookK, HOOK_PULL.windup + 0.03, [hookK, hookKb]);
   assert(Math.abs(hookKb.hp - (MAX_HP - HOOK_PULL.damage)) < 1e-6, '镜卫：钩刺 kit 不应被拆坏');

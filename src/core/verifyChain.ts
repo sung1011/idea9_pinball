@@ -1,5 +1,5 @@
 import { createBallBody, tickBurn, tickHeal, tickShield, tickSilence, type BallBody } from './ballBody';
-import { FLOOR_SPEED, MAX_HP } from './constants';
+import { BALL_RADIUS, FLOOR_SPEED, MAX_HP } from './constants';
 import { CHAIN_FAIL_CD, CHAIN_HEAL, CHAIN_SCRAMBLE, CHAIN_SHIELD, CHAIN_TOW } from '../heroes/chainKit';
 import { HOOK_PULL } from '../heroes/hookKit';
 import { RING_FIELD } from '../heroes/ringKit';
@@ -204,7 +204,7 @@ export function verifyChain(): void {
   assert(Math.abs(shieldRed.hp - (leechSelf + 8)) < 0.45, '链生：盾脉 1s 己应回约 8');
   assert(Math.abs(shieldFar.hp - (leechEnemy - 8)) < 0.45, '链生：盾脉 1s 敌应掉约 8');
   assert(
-    Math.hypot(shieldRed.x - shieldFar.x, shieldRed.y - shieldFar.y) < 1.25,
+    Math.hypot(shieldRed.x - shieldFar.x, shieldRed.y - shieldFar.y) < BALL_RADIUS * 2 + 0.25,
     '链生：盾脉期间应贴在敌身侧',
   );
   advance(shield, shieldRed, [shieldRed, shieldAlly, shieldFar], CHAIN_SHIELD.duration);
@@ -337,7 +337,7 @@ export function verifyChain(): void {
     hero: 'hook',
   });
   const hookBlue = createBallBody({
-    x: 12,
+    x: 13,
     y: 6,
     color: 0x3d7cf0,
     team: 'blue',

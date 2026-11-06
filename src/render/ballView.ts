@@ -18,6 +18,8 @@ const SLOT_FILL = 0xf8f4ea;
 const SLOT_STROKE = 0x1a1410;
 const SLOT_FONT = 72;
 const SLOT_SCALE = 0.009;
+/** 骑士皮世界尺寸相对初版半径 0.5 的倍率，与碰撞圆同步 */
+const SKIN = BALL_RADIUS / 0.5;
 
 function unit(x: number, y: number): { x: number; y: number } {
   const len = Math.hypot(x, y);
@@ -27,7 +29,7 @@ function unit(x: number, y: number): { x: number; y: number } {
   return { x: x / len, y: y / len };
 }
 
-/** 圆盾 + 本队第几人大号数字。碰撞半径不变，只改外观。 */
+/** 圆盾 + 本队第几人大号数字。盾半径与碰撞圆一致。 */
 function drawKnightShield(g: Graphics, ball: BallBody): void {
   const alpha = ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
   const rim =
@@ -46,7 +48,7 @@ function drawKnightShield(g: Graphics, ball: BallBody): void {
                 : SHIELD_RIM;
   g.circle(0, 0, BALL_RADIUS);
   g.fill({ color: ball.color, alpha });
-  g.stroke({ color: rim, width: 0.055, alpha: 0.95 });
+  g.stroke({ color: rim, width: 0.055 * SKIN, alpha: 0.95 });
 }
 
 function slotDigits(slot: number): string {
@@ -75,7 +77,7 @@ function syncSlotLabel(label: Text, ball: BallBody): void {
   if (label.text !== digits) {
     label.text = digits;
   }
-  label.scale.set(digits.length > 1 ? SLOT_SCALE * 0.72 : SLOT_SCALE);
+  label.scale.set((digits.length > 1 ? SLOT_SCALE * 0.72 : SLOT_SCALE) * SKIN);
   label.alpha = ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
   label.visible = ball.inPlay;
 }
@@ -89,15 +91,15 @@ function drawPlume(g: Graphics, fx: number, fy: number, color: number): void {
   const ry = -fy;
   const px = -fy;
   const py = fx;
-  const bx = rx * 0.42;
-  const by = ry * 0.42;
-  const lift = 0.12 * PLUME_LENGTH;
-  const midX = bx + (rx * 0.26 + px * 0.02) * PLUME_LENGTH;
-  const midY = by + ry * 0.26 * PLUME_LENGTH - lift;
-  const tipX = bx + rx * 0.52 * PLUME_LENGTH;
-  const tipY = by + ry * 0.52 * PLUME_LENGTH - lift * 1.4;
-  const halfW = 0.06 * PLUME_LENGTH;
-  const midW = 0.2 * PLUME_LENGTH;
+  const bx = rx * 0.42 * SKIN;
+  const by = ry * 0.42 * SKIN;
+  const lift = 0.12 * PLUME_LENGTH * SKIN;
+  const midX = bx + (rx * 0.26 + px * 0.02) * PLUME_LENGTH * SKIN;
+  const midY = by + ry * 0.26 * PLUME_LENGTH * SKIN - lift;
+  const tipX = bx + rx * 0.52 * PLUME_LENGTH * SKIN;
+  const tipY = by + ry * 0.52 * PLUME_LENGTH * SKIN - lift * 1.4;
+  const halfW = 0.06 * PLUME_LENGTH * SKIN;
+  const midW = 0.2 * PLUME_LENGTH * SKIN;
 
   g.moveTo(bx + px * halfW, by + py * halfW);
   g.quadraticCurveTo(midX + px * midW, midY + py * midW, tipX, tipY);
@@ -105,7 +107,7 @@ function drawPlume(g: Graphics, fx: number, fy: number, color: number): void {
   g.closePath();
   g.fill({ color, alpha: 0.96 });
 
-  g.circle(bx, by, 0.042);
+  g.circle(bx, by, 0.042 * SKIN);
   g.fill({ color: SHIELD_RIM, alpha: 0.95 });
 }
 
@@ -114,33 +116,33 @@ function drawTargetSpear(g: Graphics, tx: number, ty: number): void {
   const { x: fx, y: fy } = unit(tx, ty);
   const px = -fy;
   const py = fx;
-  const rootX = fx * 0.48;
-  const rootY = fy * 0.48;
-  const guardX = fx * 0.78;
-  const guardY = fy * 0.78;
+  const rootX = fx * 0.48 * SKIN;
+  const rootY = fy * 0.48 * SKIN;
+  const guardX = fx * 0.78 * SKIN;
+  const guardY = fy * 0.78 * SKIN;
   const tipX = fx * SPEAR_TIP_DIST;
   const tipY = fy * SPEAR_TIP_DIST;
 
   g.moveTo(rootX, rootY);
   g.lineTo(guardX, guardY);
-  g.stroke({ color: SPEAR_GOLD, width: 0.055, cap: 'round' });
+  g.stroke({ color: SPEAR_GOLD, width: 0.055 * SKIN, cap: 'round' });
 
-  g.moveTo(guardX + px * 0.09, guardY + py * 0.09);
-  g.lineTo(guardX - px * 0.09, guardY - py * 0.09);
-  g.stroke({ color: SPEAR_GOLD, width: 0.04, cap: 'round' });
+  g.moveTo(guardX + px * 0.09 * SKIN, guardY + py * 0.09 * SKIN);
+  g.lineTo(guardX - px * 0.09 * SKIN, guardY - py * 0.09 * SKIN);
+  g.stroke({ color: SPEAR_GOLD, width: 0.04 * SKIN, cap: 'round' });
 
   g.moveTo(tipX, tipY);
-  g.lineTo(tipX - fx * 0.16 + px * 0.07, tipY - fy * 0.16 + py * 0.07);
-  g.lineTo(tipX - fx * 0.16 - px * 0.07, tipY - fy * 0.16 - py * 0.07);
+  g.lineTo(tipX - fx * 0.16 * SKIN + px * 0.07 * SKIN, tipY - fy * 0.16 * SKIN + py * 0.07 * SKIN);
+  g.lineTo(tipX - fx * 0.16 * SKIN - px * 0.07 * SKIN, tipY - fy * 0.16 * SKIN - py * 0.07 * SKIN);
   g.closePath();
   g.fill({ color: SPEAR_GOLD });
 }
 
-const HP_BAR_WIDTH = 0.92;
-const HP_BAR_HEIGHT = 0.1;
-const HP_BAR_Y = -0.74;
-const SPEAR_CD_HEIGHT = 0.042;
-const SPEAR_CD_GAP = 0.016;
+const HP_BAR_WIDTH = 0.92 * SKIN;
+const HP_BAR_HEIGHT = 0.1 * SKIN;
+const HP_BAR_Y = -0.74 * SKIN;
+const SPEAR_CD_HEIGHT = 0.042 * SKIN;
+const SPEAR_CD_GAP = 0.016 * SKIN;
 const SPEAR_CD_TRACK = 0x1a1410;
 const SPEAR_CD_FILL = 0xe8d8b8;
 
@@ -179,14 +181,14 @@ function drawChargeFx(
   const py = fx;
 
   for (let i = 1; i <= 5; i += 1) {
-    const start = 0.18 + i * 0.16;
-    const end = start + 0.38;
-    const sway = i % 2 === 0 ? 0.07 : -0.07;
+    const start = (0.18 + i * 0.16) * SKIN;
+    const end = start + 0.38 * SKIN;
+    const sway = (i % 2 === 0 ? 0.07 : -0.07) * SKIN;
     g.moveTo(-fx * start + px * sway, -fy * start + py * sway);
     g.lineTo(-fx * end + px * sway * 1.15, -fy * end + py * sway * 1.15);
     g.stroke({
       color: next.color,
-      width: 0.11 - i * 0.012,
+      width: (0.11 - i * 0.012) * SKIN,
       alpha: 0.5 * (1 - i / 6),
       cap: 'round',
     });
@@ -199,9 +201,9 @@ function drawChargeFx(
   }
 
   for (let i = 1; i <= 4; i += 1) {
-    const d = 0.34 * i;
-    const sway = i % 2 === 0 ? 0.12 : -0.12;
-    g.circle(-fx * d + px * sway, -fy * d + py * sway, 0.055 + 0.02 * (5 - i));
+    const d = 0.34 * i * SKIN;
+    const sway = (i % 2 === 0 ? 0.12 : -0.12) * SKIN;
+    g.circle(-fx * d + px * sway, -fy * d + py * sway, (0.055 + 0.02 * (5 - i)) * SKIN);
     g.fill({ color: SPEAR_GOLD, alpha: 0.32 * (1 - i / 5) });
   }
 }
@@ -247,60 +249,60 @@ export function createBallView(ball: BallBody): BallView {
     drawPlume(body, dir.x, dir.y, next.color);
     if (next.invincibleRemain > 0) {
       const pulse = 0.45 + 0.45 * (0.5 + 0.5 * Math.sin(next.invincibleRemain * 10));
-      body.circle(0, 0, BALL_RADIUS + 0.14);
-      body.stroke({ color: 0xffffff, width: 0.07, alpha: pulse });
+      body.circle(0, 0, BALL_RADIUS + 0.14 * SKIN);
+      body.stroke({ color: 0xffffff, width: 0.07 * SKIN, alpha: pulse });
     }
     if (next.activeRamRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.08);
-      body.stroke({ color: SPEAR_GOLD, width: 0.055, alpha: 0.95 });
+      body.circle(0, 0, BALL_RADIUS + 0.08 * SKIN);
+      body.stroke({ color: SPEAR_GOLD, width: 0.055 * SKIN, alpha: 0.95 });
     }
     if (next.fineTuneRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.16);
-      body.stroke({ color: 0x7ee8ff, width: 0.05, alpha: 0.9 });
+      body.circle(0, 0, BALL_RADIUS + 0.16 * SKIN);
+      body.stroke({ color: 0x7ee8ff, width: 0.05 * SKIN, alpha: 0.9 });
     }
     if (next.fieldRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.22);
-      body.stroke({ color: 0x5eead4, width: 0.055, alpha: 0.88 });
+      body.circle(0, 0, BALL_RADIUS + 0.22 * SKIN);
+      body.stroke({ color: 0x5eead4, width: 0.055 * SKIN, alpha: 0.88 });
     }
     if (next.healRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.2);
-      body.stroke({ color: 0x86efac, width: 0.05, alpha: 0.9 });
+      body.circle(0, 0, BALL_RADIUS + 0.2 * SKIN);
+      body.stroke({ color: 0x86efac, width: 0.05 * SKIN, alpha: 0.9 });
     }
     if (next.burnRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.21);
-      body.stroke({ color: 0xfb7185, width: 0.05, alpha: 0.88 });
+      body.circle(0, 0, BALL_RADIUS + 0.21 * SKIN);
+      body.stroke({ color: 0xfb7185, width: 0.05 * SKIN, alpha: 0.88 });
     }
     if (next.shieldRemain > 0 || next.leechRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.26);
-      body.stroke({ color: 0xfde68a, width: 0.06, alpha: 0.92 });
+      body.circle(0, 0, BALL_RADIUS + 0.26 * SKIN);
+      body.stroke({ color: 0xfde68a, width: 0.06 * SKIN, alpha: 0.92 });
     }
     if (next.armorRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.28);
-      body.stroke({ color: 0xf4bf6a, width: 0.07, alpha: next.armorBroken ? 0.45 : 0.95 });
+      body.circle(0, 0, BALL_RADIUS + 0.28 * SKIN);
+      body.stroke({ color: 0xf4bf6a, width: 0.07 * SKIN, alpha: next.armorBroken ? 0.45 : 0.95 });
     }
     if (next.reflectRemain > 0 && next.reflectArmed) {
-      body.circle(0, 0, BALL_RADIUS + 0.18);
-      body.stroke({ color: 0xfb7185, width: 0.055, alpha: 0.92 });
+      body.circle(0, 0, BALL_RADIUS + 0.18 * SKIN);
+      body.stroke({ color: 0xfb7185, width: 0.055 * SKIN, alpha: 0.92 });
     }
     if (next.pinRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.12);
-      body.stroke({ color: 0xf59e0b, width: 0.07, alpha: 0.95 });
+      body.circle(0, 0, BALL_RADIUS + 0.12 * SKIN);
+      body.stroke({ color: 0xf59e0b, width: 0.07 * SKIN, alpha: 0.95 });
     }
     if (next.grazeRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.2);
-      body.stroke({ color: 0x7dd3fc, width: 0.05, alpha: 0.9 });
+      body.circle(0, 0, BALL_RADIUS + 0.2 * SKIN);
+      body.stroke({ color: 0x7dd3fc, width: 0.05 * SKIN, alpha: 0.9 });
     }
     if (next.echoMarkRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.24);
-      body.stroke({ color: 0xf0abfc, width: 0.06, alpha: 0.92 });
+      body.circle(0, 0, BALL_RADIUS + 0.24 * SKIN);
+      body.stroke({ color: 0xf0abfc, width: 0.06 * SKIN, alpha: 0.92 });
     }
     if (next.phaseRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.16);
-      body.stroke({ color: 0xe0f2fe, width: 0.05, alpha: 0.7 });
+      body.circle(0, 0, BALL_RADIUS + 0.16 * SKIN);
+      body.stroke({ color: 0xe0f2fe, width: 0.05 * SKIN, alpha: 0.7 });
     }
     if (next.refractRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.3);
-      body.stroke({ color: 0xa5d8ff, width: 0.06, alpha: 0.92 });
+      body.circle(0, 0, BALL_RADIUS + 0.3 * SKIN);
+      body.stroke({ color: 0xa5d8ff, width: 0.06 * SKIN, alpha: 0.92 });
     }
 
     hpBar.clear();

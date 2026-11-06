@@ -1,4 +1,5 @@
 import { Container, Text } from 'pixi.js';
+import { BALL_RADIUS } from '../core/constants';
 import {
   COMBAT_FLOAT_LIFE,
   COMBAT_FLOAT_RISE,
@@ -38,7 +39,7 @@ function makeLabel(event: CombatFloatEvent, stack: number): Text {
   const off = combatFloatStackOffset(stack);
   label.anchor.set(0.5, 1);
   label.scale.set(TEXT_SCALE);
-  label.position.set(event.x + off.dx, event.y - 0.62 + off.dy);
+  label.position.set(event.x + off.dx, event.y - BALL_RADIUS * 1.24 + off.dy);
   label.eventMode = 'none';
   return label;
 }

@@ -7,7 +7,7 @@ import {
   type BallBody,
 } from './ballBody';
 import { applyCollisionCombat, collisionDamage } from './collisionDamage';
-import { ACTIVE_RAM_WINDOW, FLOOR_SPEED, HARD_CC_DIMINISH_WINDOW, MAX_HP } from './constants';
+import { ACTIVE_RAM_WINDOW, BALL_RADIUS, FLOOR_SPEED, HARD_CC_DIMINISH_WINDOW, MAX_HP } from './constants';
 import { CHAIN_HEAL } from '../heroes/chainKit';
 import { HOOK_PULL } from '../heroes/hookKit';
 import { nextHero } from '../heroes/heroIds';
@@ -160,7 +160,7 @@ export function verifyNail(): void {
   const raw = collisionDamage(8);
   const expected = raw * NAIL_ARMOR.mul;
   const hitA = createBallBody({
-    x: 9.2,
+    x: 10 - BALL_RADIUS * 1.1,
     y: 4,
     color: 0x3d7cf0,
     team: 'blue',
@@ -168,7 +168,7 @@ export function verifyNail(): void {
     facingX: 1,
   });
   const hitB = createBallBody({
-    x: 10.3,
+    x: 10 + BALL_RADIUS * 1.1,
     y: 4,
     color: 0xe24a4a,
     team: 'red',
@@ -190,7 +190,7 @@ export function verifyNail(): void {
   assert(Math.abs(hitB.hp - afterHitHp) < 1e-6, '钉壳：破甲结束不应回血');
 
   resetTrapZones();
-  const [thornRed, thornBlue] = redBlue(10, 6, 11.2, 6);
+  const [thornRed, thornBlue] = redBlue(10, 6, 10 + BALL_RADIUS * 2.2, 6);
   thornBlue.activeRamRemain = ACTIVE_RAM_WINDOW;
   const thornVx = thornBlue.vx;
   const passiveHits = applyCollisionCombat(thornRed, thornBlue, 1, 0, 8);
@@ -221,7 +221,7 @@ export function verifyNail(): void {
   assert(rammer.vx > 3, '钉壳：被动小推应把撞来的人推开');
 
   resetTrapZones();
-  const [activeRed, activeBlue] = redBlue(10, 6, 11.2, 6);
+  const [activeRed, activeBlue] = redBlue(10, 6, 10 + BALL_RADIUS * 2.2, 6);
   const active = createSkillCaster('nail');
   fire(active, activeRed, 2, [activeRed, activeBlue]);
   assert(Math.abs(active.getCds()[1] - NAIL_THORN.cd) < 1e-6, '钉壳：反击刺主动应进 9s CD');
@@ -343,7 +343,7 @@ export function verifyNail(): void {
 
   resetTrapZones();
   const hookKeep = createSkillCaster('hook');
-  const [hookRed, hookBlue] = redBlue(8, 6, 12, 6, 'hook');
+  const [hookRed, hookBlue] = redBlue(8, 6, 13, 6, 'hook');
   fire(hookKeep, hookRed, 1, [hookRed, hookBlue]);
   advance(hookKeep, hookRed, [hookRed, hookBlue], HOOK_PULL.windup + 0.03);
   assert(Math.abs(hookBlue.hp - (MAX_HP - HOOK_PULL.damage)) < 1e-6, '钉壳：钩刺 kit 不应被拆坏');

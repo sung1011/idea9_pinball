@@ -2,6 +2,7 @@ import { createBallBody } from './ballBody';
 import type { CollisionHit } from './collisionDamage';
 import {
   ASSIST_SCORE,
+  BALL_RADIUS,
   CONTROL_POINT,
   FLOOR_SPEED,
   KNOCKOUT_SCORE,
@@ -72,6 +73,7 @@ export function verifyM4(): void {
   );
   assert(MAP_HEIGHT === 20, 'M4：地图高度应为 20');
   assert(MAP_WIDTH === (20 * 956) / 440, 'M4：地图宽度应为 20×956/440');
+  assert(BALL_RADIUS === 1, 'M4：玩家半径应为 1');
   assert(CONTROL_POINT.radius === 2.5, 'M4：领地半径应为 2.5');
   assert(
     Math.abs(CONTROL_POINT.x - MAP_WIDTH / 2) < 1e-9 && CONTROL_POINT.y === MAP_HEIGHT / 2,
@@ -208,7 +210,7 @@ export function verifyM4(): void {
   assert(solo.snapshot().redScore === KNOCKOUT_SCORE, 'M4：无队友时只加击破 15');
 
   const invA = createBallBody({
-    x: 9.45,
+    x: 10 - BALL_RADIUS * 1.1,
     y: 6,
     color: 0xe24a4a,
     label: '甲',
@@ -217,7 +219,7 @@ export function verifyM4(): void {
     facingX: 1,
   });
   const invB = createBallBody({
-    x: 10.55,
+    x: 10 + BALL_RADIUS * 1.1,
     y: 6,
     color: 0x3d7cf0,
     label: '乙',
