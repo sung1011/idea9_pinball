@@ -55,10 +55,17 @@ export function bindPcInput(opts: {
   canvas: HTMLCanvasElement;
   getTransform: () => WorldTransform;
   getAimingSlot: () => SkillSlot | 0;
+  isLocked?: () => boolean;
 }): () => void {
   let stroke: TouchAimStroke | null = null;
 
+  const locked = (): boolean => opts.isLocked?.() === true;
+
   const onMove = (ev: PointerEvent): void => {
+    if (locked()) {
+      stroke = null;
+      return;
+    }
     if (stroke) {
       markStrokeMoved(stroke, ev);
     }
@@ -70,7 +77,7 @@ export function bindPcInput(opts: {
   };
 
   const onDown = (ev: PointerEvent): void => {
-    if (isAimUiTarget(ev.target)) {
+    if (locked() || isAimUiTarget(ev.target)) {
       return;
     }
     trackPointer(ev, opts.canvas, opts.getTransform, opts.bus);
@@ -92,6 +99,10 @@ export function bindPcInput(opts: {
   };
 
   const onUp = (ev: PointerEvent): void => {
+    if (locked()) {
+      stroke = null;
+      return;
+    }
     if (!stroke || ev.pointerId !== stroke.pointerId) {
       return;
     }
@@ -111,7 +122,7 @@ export function bindPcInput(opts: {
   };
 
   const onKey = (ev: KeyboardEvent): void => {
-    if (ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) {
+    if (locked() || ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) {
       return;
     }
     if (isAimUiTarget(ev.target)) {

@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.19-landscape-only",
+    "version": "0.0.19",
+    "date": "2026-11-06",
+    "summary": "只要横屏：竖窗盖「请横过来再玩」并暂停对局输入；横窗仍 cover + 四角 HUD；画面不翻转"
+  },
+  {
     "id": "v0.0.18-cover-hud-corners",
     "version": "0.0.18",
     "date": "2026-11-06",

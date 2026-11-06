@@ -5,6 +5,7 @@ import { fitWorldToBox, screenToLogical } from '../render/worldTransform';
 import type { AppVersions } from '../ui/appVersion';
 import { createHelpCard } from '../ui/helpCard';
 import { createMatchHud } from '../ui/matchHud';
+import { createRotatePrompt, ROTATE_PROMPT_COPY } from '../ui/rotatePrompt';
 import { createSettingsPanel } from '../ui/settingsPanel';
 import {
   applyStageVars,
@@ -141,7 +142,24 @@ function assertCornerHud(
   }
 }
 
-/** 横竖同 cover：无 letterbox；HUD 叠四角（换英雄左上、比分顶中、?齿轮顶右、技能右下）。 */
+function displayOf(el: HTMLElement | null): string {
+  return el ? getComputedStyle(el).display : '';
+}
+
+function assertHiddenHud(host: HTMLElement, label: string): void {
+  const hud = host.querySelector<HTMLElement>('.matchHud');
+  const layer = host.querySelector<HTMLElement>('.touchLayer');
+  const opening = host.querySelector<HTMLElement>('.openingHud');
+  const helpFab = host.querySelector<HTMLElement>('.helpFab');
+  const settingsFab = host.querySelector<HTMLElement>('.settingsFab');
+  assert(displayOf(hud) === 'none', `${label}：对局 HUD 应隐藏`);
+  assert(displayOf(layer) === 'none', `${label}：技能层应隐藏`);
+  assert(!opening || displayOf(opening) === 'none', `${label}：开局倒计时应隐藏`);
+  assert(displayOf(helpFab) === 'none', `${label}：? 应隐藏`);
+  assert(displayOf(settingsFab) === 'none', `${label}：齿轮应隐藏`);
+}
+
+/** 横窗 cover + 四角 HUD；竖窗盖「请横过来」且不旋转画面。 */
 export function verifyHudLayout(): void {
   const none: SafeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
   const landscape = computeLandscapeStage(1600, 900, none);
@@ -244,43 +262,32 @@ export function verifyHudLayout(): void {
     onForceRespawn: () => {},
     versions: dummyVersions(),
   });
+  const rotate = createRotatePrompt(host);
+  rotate.sync(host.classList.contains('isPortrait'));
   const helpFab = host.querySelector<HTMLButtonElement>('.helpFab');
   const settingsFab = host.querySelector<HTMLButtonElement>('.settingsFab');
-  if (!helpFab || !settingsFab) {
-    throw new Error('HUD：顶右应有 ? 与齿轮');
+  const prompt = host.querySelector<HTMLElement>('.rotatePrompt');
+  const promptCard = host.querySelector<HTMLElement>('.rotatePromptCard');
+  const promptMsg = host.querySelector<HTMLElement>('.rotatePromptMsg');
+  if (!helpFab || !settingsFab || !prompt || !promptCard || !promptMsg) {
+    throw new Error('HUD：顶右应有 ? 与齿轮，竖窗应有横过来提示');
   }
   assert(helpFab.textContent === '?', 'HUD：说明钮应为 ?');
-  const helpRect = helpFab.getBoundingClientRect();
-  const gearRect = settingsFab.getBoundingClientRect();
-  const clusterRect = cluster.getBoundingClientRect();
-  const clusterTop = parseFloat(getComputedStyle(cluster).top);
-  const heroDir = getComputedStyle(heroRow).flexDirection;
-  const skillsDisplay = getComputedStyle(skills).display;
-  const skillsDir = getComputedStyle(skills).flexDirection;
   const hostTransform = getComputedStyle(host).transform;
-  helpFab.click();
-  const helpOpenedByFab = help.isOpen();
-  help.close();
-  settings.open();
-  const howTo = [...host.querySelectorAll('button')].find((btn) => btn.textContent === '怎么玩');
-  howTo?.click();
-  const helpOpenedBySettings = help.isOpen();
-  const settingsClosedAfterHowTo = !settings.isOpen();
-  help.close();
+  const promptBox = localBox(prompt, host);
   assert(host.classList.contains('isPortrait') && !host.classList.contains('isLandscape'), 'HUD：竖窗宿主应标 isPortrait');
-  assert(Number.isFinite(clusterTop) && clusterTop < 40, 'HUD：顶中胶囊应贴竖窗顶');
-  assert(portraitStage.x < -1, 'HUD：竖窗舞台应 cover 超出左右');
-  assert(heroDir === 'column', 'HUD：我/队友应竖叠');
-  assert(skillsDisplay === 'flex' && skillsDir === 'row', 'HUD：四键应一行横排');
-  assert(helpRect.right <= gearRect.left + 1, 'HUD：? 应在齿轮左侧');
-  assert(Math.abs(helpRect.top - gearRect.top) < 2, 'HUD：? 应与齿轮顶对齐');
-  assert(helpRect.left + 1 >= clusterRect.right, 'HUD：? 不应叠顶中比分');
+  assert(portraitStage.x < -1, 'HUD：竖窗舞台应 cover 超出左右，不把战场转 90 度');
+  assert(rotate.isOn() && prompt.classList.contains('isOn'), 'HUD：竖窗应盖横过来提示');
+  assert(promptMsg.textContent === ROTATE_PROMPT_COPY, 'HUD：竖窗提示文案');
+  assert(displayOf(prompt) === 'flex', 'HUD：竖窗提示应全屏盖住');
+  assert(Math.abs(promptBox.left) < 1 && Math.abs(promptBox.top) < 1, 'HUD：提示应铺满宿主');
+  assert(Math.abs(promptBox.right - 375) < 1 && Math.abs(promptBox.bottom - 667) < 1, 'HUD：提示应铺满竖窗');
+  assertHiddenHud(host, 'HUD：竖窗');
   assert(hostTransform === 'none', 'HUD：宿主 transform 无旋转');
-  assert(noRotate(host) && noRotate(heroRow) && noRotate(skills), 'HUD：技能/下拉无旋转');
-  assert(helpOpenedByFab, 'HUD：点 ? 应打开同一份说明卡');
-  assert(!!howTo, 'HUD：设置常规应仍有怎么玩');
-  assert(helpOpenedBySettings && settingsClosedAfterHowTo, 'HUD：设置怎么玩应打开同一份说明卡');
-  assertCornerHud(host, heroRow, skills, cluster, helpFab, settingsFab, 'HUD：竖窗');
+  assert(noRotate(host) && noRotate(prompt) && noRotate(promptCard) && noRotate(heroRow) && noRotate(skills), 'HUD：竖窗无画面翻转');
+  assert(!host.style.transform && !prompt.style.transform, 'HUD：竖窗不应写 CSS 旋转');
+  help.close();
+  settings.close();
 
   const landHost = document.createElement('div');
   landHost.style.cssText = `position:relative;width:1600px;height:900px;${hudChrome}`;
@@ -297,10 +304,10 @@ export function verifyHudLayout(): void {
   if (!landHero || !landSkills || !landCluster) {
     throw new Error('HUD：横窗应有下拉、技能与胶囊');
   }
-  createHelpCard(landHost);
-  createSettingsPanel(landHost, {
-    onOpen: () => {},
-    onOpenHelp: () => {},
+  const landHelpCard = createHelpCard(landHost);
+  const landSettings = createSettingsPanel(landHost, {
+    onOpen: () => landHelpCard.close(),
+    onOpenHelp: () => landHelpCard.open(),
     onRestart: () => {},
     onCollision: () => {},
     onScore: () => {},
@@ -309,18 +316,39 @@ export function verifyHudLayout(): void {
     onForceRespawn: () => {},
     versions: dummyVersions(),
   });
-  const landHelpFab = landHost.querySelector<HTMLElement>('.helpFab') ?? landHelp;
-  const landGearFab = landHost.querySelector<HTMLElement>('.settingsFab') ?? landGear;
+  const landRotate = createRotatePrompt(landHost);
+  landRotate.sync(landHost.classList.contains('isPortrait'));
+  const landHelpFab = landHost.querySelector<HTMLButtonElement>('.helpFab') ?? landHelp;
+  const landGearFab = landHost.querySelector<HTMLButtonElement>('.settingsFab') ?? landGear;
+  const landPrompt = landHost.querySelector<HTMLElement>('.rotatePrompt');
+  if (!landHelpFab || !landGearFab || !landPrompt) {
+    throw new Error('HUD：横窗应有 ?、齿轮与提示层');
+  }
   const landHeroDir = getComputedStyle(landHero).flexDirection;
   const landSkillsDir = getComputedStyle(landSkills).flexDirection;
-  const landNoRotate = noRotate(landHost) && noRotate(landHero) && noRotate(landSkills);
+  const landSkillsDisplay = getComputedStyle(landSkills).display;
+  const landNoRotate = noRotate(landHost) && noRotate(landHero) && noRotate(landSkills) && noRotate(landPrompt);
   const landIsLandscape = landHost.classList.contains('isLandscape') && !landHost.classList.contains('isPortrait');
+  landHelpFab.click();
+  const helpOpenedByFab = landHelpCard.isOpen();
+  landHelpCard.close();
+  landSettings.open();
+  const howTo = [...landHost.querySelectorAll('button')].find((btn) => btn.textContent === '怎么玩');
+  howTo?.click();
+  const helpOpenedBySettings = landHelpCard.isOpen();
+  const settingsClosedAfterHowTo = !landSettings.isOpen();
+  landHelpCard.close();
   assert(landIsLandscape, 'HUD：横窗宿主应标 isLandscape');
   assert(landStage.y < -1, 'HUD：横窗舞台应 cover 裁掉上下');
+  assert(!landRotate.isOn() && !landPrompt.classList.contains('isOn'), 'HUD：横窗不应出横过来提示');
+  assert(displayOf(landPrompt) === 'none', 'HUD：横窗提示应收起');
   assert(landHeroDir === 'column', 'HUD：横窗我/队友仍应竖叠');
-  assert(landSkillsDir === 'row', 'HUD：横窗四键仍应一行横排');
+  assert(landSkillsDisplay === 'flex' && landSkillsDir === 'row', 'HUD：横窗四键仍应一行横排');
   assertCornerHud(landHost, landHero, landSkills, landCluster, landHelpFab, landGearFab, 'HUD：横窗');
-  assert(landNoRotate, 'HUD：横窗技能/下拉无旋转');
+  assert(landNoRotate, 'HUD：横窗技能/下拉/提示无旋转');
+  assert(helpOpenedByFab, 'HUD：点 ? 应打开同一份说明卡');
+  assert(!!howTo, 'HUD：设置常规应仍有怎么玩');
+  assert(helpOpenedBySettings && settingsClosedAfterHowTo, 'HUD：设置怎么玩应打开同一份说明卡');
   landHost.remove();
 
   hud.sync(dummySnap(), []);
@@ -350,5 +378,15 @@ export function verifyHudLayout(): void {
   assert(!opening.classList.contains('isOn'), 'HUD：冲锋阶段不应出说明板');
   assert(openingNum.textContent === '', 'HUD：冲锋阶段不应写冲锋字');
   assert(toast.textContent !== '冲锋', 'HUD：冲锋阶段 toast 不应解释冲锋');
+
+  host.style.width = '667px';
+  host.style.height = '375px';
+  applyStageVars(host, computeLandscapeStage(667, 375, none));
+  rotate.sync(false);
+  assert(host.classList.contains('isLandscape') && !host.classList.contains('isPortrait'), 'HUD：转回横窗应标 isLandscape');
+  assert(!rotate.isOn() && displayOf(prompt) === 'none', 'HUD：转回横窗提示应消失');
+  assert(displayOf(host.querySelector('.matchHud')) !== 'none', 'HUD：转回横窗应对局 HUD 回来');
+  assertCornerHud(host, heroRow, skills, cluster, helpFab, settingsFab, 'HUD：转回横窗');
+  assert(noRotate(host) && noRotate(prompt), 'HUD：转回横窗仍无翻转');
   host.remove();
 }
