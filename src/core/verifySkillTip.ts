@@ -97,4 +97,40 @@ export function verifySkillTip(): void {
   assert(!!instantHost.querySelector('.skillTip.isOn'), '技能提示：CD 中长按仍应出浮层');
   firePointer(btns[0], 'pointercancel', 'mouse');
   assert(!instantHost.querySelector('.skillTip.isOn'), '技能提示：取消应按下收起');
+
+  const overlapHost = document.createElement('div');
+  overlapHost.style.cssText =
+    'position:fixed;left:0;top:0;width:800px;height:450px;--hud-pad:8px;--hud-safe-top:0px;--hud-safe-right:0px;--hud-safe-bottom:0px;--hud-safe-left:0px';
+  const overlapPad = createTouchPad(overlapHost, createActionBus(), { holdMs: 0 });
+  document.body.appendChild(overlapHost);
+  try {
+    const overlapBtns = overlapHost.querySelectorAll<HTMLButtonElement>('button.touchSkillBtn');
+    overlapPad.sync({
+      aimingSlot: 2,
+      skillCds: [0, 0, 0, 0],
+      fineTuneOn: false,
+      hero: 'hook',
+    });
+    firePointer(overlapBtns[1], 'pointerdown', 'mouse');
+    const overlapTip = overlapHost.querySelector<HTMLElement>('.skillTip.isOn');
+    const overlapCancel = overlapHost.querySelector<HTMLButtonElement>('.touchCancel');
+    if (!overlapTip || !overlapCancel || overlapCancel.hidden) {
+      throw new Error('技能提示：瞄准中长按应同时看到浮层与取消键');
+    }
+    overlapPad.sync({
+      aimingSlot: 2,
+      skillCds: [0, 0, 0, 0],
+      fineTuneOn: false,
+      hero: 'hook',
+    });
+    const tipBox = overlapTip.getBoundingClientRect();
+    const cancelBox = overlapCancel.getBoundingClientRect();
+    assert(
+      tipBox.bottom <= cancelBox.top + 1,
+      `技能提示：与取消键重叠时应再上移，不盖住取消 (tipBottom=${tipBox.bottom.toFixed(1)} cancelTop=${cancelBox.top.toFixed(1)})`,
+    );
+    firePointer(overlapBtns[1], 'pointerup', 'mouse');
+  } finally {
+    overlapHost.remove();
+  }
 }

@@ -42,7 +42,7 @@ function isSkillSlot(slot: number): slot is SkillSlot {
   return slot === 1 || slot === 2 || slot === 3 || slot === 4;
 }
 
-/** 横排技能四键 Skill1–4，锚在视窗右下；无左摇杆。点在键上不抢 Aim（data-touch-control）。 */
+/** 横排技能四键 Skill1–4，锚在视窗右下；无左摇杆。瞄准中「取消」锚在当前技能正上方。点在键上不抢 Aim（data-touch-control）。 */
 export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPadOpts = {}): TouchPad {
   const holdMs = opts.holdMs ?? SKILL_TIP_HOLD_MS;
   const root = document.createElement('div');
@@ -57,7 +57,8 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
   let hero: HeroId = 'hook';
   let holdTimer = 0;
   let holdSlot: SkillSlot | 0 = 0;
-  const tip = createSkillTip(root);
+  let cancelBtn: HTMLButtonElement | null = null;
+  const tip = createSkillTip(root, () => (cancelBtn && !cancelBtn.hidden ? cancelBtn : null));
 
   const hideTip = (): void => {
     if (holdTimer) {
@@ -137,16 +138,27 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
   window.addEventListener('pointerup', onGlobalRelease);
   window.addEventListener('pointercancel', onGlobalRelease);
 
+  cancelBtn = cancel;
   skills.appendChild(cancel);
   root.append(skills);
   host.appendChild(root);
   preventPageGestures();
 
+  const placeCancel = (slot: number): void => {
+    if (!isSkillSlot(slot)) {
+      cancel.hidden = true;
+      return;
+    }
+    const btn = buttons[slot - 1];
+    cancel.hidden = false;
+    cancel.style.left = `${btn.offsetLeft + btn.offsetWidth / 2}px`;
+  };
+
   return {
     sync: (status: TouchPadStatus) => {
       hero = status.hero ?? 'hook';
       root.classList.toggle('isFineTune', status.fineTuneOn);
-      cancel.hidden = status.aimingSlot === 0;
+      placeCancel(status.aimingSlot);
       const shorts = skillShorts(hero);
       for (let i = 0; i < buttons.length; i += 1) {
         const slot = i + 1;
@@ -158,6 +170,8 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
       }
       if (tip.isOn() && isSkillSlot(holdSlot)) {
         tip.syncCopy(skillTipCopy(hero, holdSlot));
+      } else if (tip.isOn()) {
+        tip.relayout();
       }
     },
   };

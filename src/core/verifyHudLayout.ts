@@ -294,7 +294,7 @@ export function verifyHudLayout(): void {
 
   const host = document.createElement('div');
   const hud = createMatchHud(host);
-  createTouchPad(host, createActionBus());
+  const pad = createTouchPad(host, createActionBus());
   const cluster = host.querySelector<HTMLElement>('.matchHudCluster');
   const red = host.querySelector<HTMLElement>('.matchHudRed .matchHudScoreVal');
   const blue = host.querySelector<HTMLElement>('.matchHudBlue .matchHudScoreVal');
@@ -304,8 +304,9 @@ export function verifyHudLayout(): void {
   const heroRow = host.querySelector<HTMLElement>('.matchHudHeroRow');
   const skills = host.querySelector<HTMLElement>('.touchSkills');
   const skillBtns = [...host.querySelectorAll<HTMLButtonElement>('button.touchSkillBtn')];
-  if (!cluster || !red || !blue || !clock || !hero || !allyHero || !heroRow || !skills) {
-    throw new Error('HUD：应有顶中比分计时胶囊、自己/队友下拉与技能键');
+  const cancelBtn = host.querySelector<HTMLButtonElement>('button.touchCancel');
+  if (!cluster || !red || !blue || !clock || !hero || !allyHero || !heroRow || !skills || !cancelBtn) {
+    throw new Error('HUD：应有顶中比分计时胶囊、自己/队友下拉、技能键与取消键');
   }
   assert(!host.querySelector('.matchHudPill'), 'HUD：不应再有角落独立比分胶囊');
   assert(cluster.contains(red) && cluster.contains(clock) && cluster.contains(blue), 'HUD：红分/计时/蓝分应同在一颗胶囊');
@@ -319,6 +320,8 @@ export function verifyHudLayout(): void {
   assert(tags[0] === '我' && tags[1] === '队友', 'HUD：双下拉标签应为我/队友');
   assert(skillBtns.length === 4, 'HUD：应为横排四技能键');
   assert(skillBtns.map((btn) => btn.dataset.slot).join('') === '1234', 'HUD：技能键从左到右应为 Skill1–4');
+  assert(cancelBtn.textContent === '取消', 'HUD：取消键文案应为取消');
+  assert(cancelBtn.hidden, 'HUD：未瞄准时取消键应隐藏');
 
   host.style.cssText = `position:relative;width:1600px;height:900px;${hudChrome}`;
   document.body.appendChild(host);
@@ -365,6 +368,30 @@ export function verifyHudLayout(): void {
   assert(heroDir === 'column', 'HUD：我/队友应竖叠');
   assert(skillsDisplay === 'flex' && skillsDir === 'row', 'HUD：四键应一行横排');
   assertCornerHud(host, heroRow, skills, cluster, helpFab, settingsFab, 'HUD：横窗');
+  const skillSize = skillBtns[0].getBoundingClientRect();
+  assert(skillSize.width >= 56 && skillSize.width <= 64, `HUD：技能键应约 60px（实际 ${skillSize.width}）`);
+  assert(Math.abs(skillSize.width - skillSize.height) < 1, 'HUD：技能键应保持圆形');
+  pad.sync({
+    aimingSlot: 2,
+    skillCds: [0, 0, 0, 0],
+    fineTuneOn: false,
+  });
+  assert(!cancelBtn.hidden, 'HUD：瞄准中应显示取消键');
+  const cancelBox = localBox(cancelBtn, host);
+  const skill2Box = localBox(skillBtns[1], host);
+  const skill4Box = localBox(skillBtns[3], host);
+  const cancelMid = (cancelBox.left + cancelBox.right) / 2;
+  const skill2Mid = (skill2Box.left + skill2Box.right) / 2;
+  assert(Math.abs(cancelMid - skill2Mid) < 8, 'HUD：取消键应水平居中在当前瞄准技能上');
+  assert(cancelBox.bottom <= skill2Box.top - 4, 'HUD：取消键应在瞄准技能正上方');
+  assert(skill2Box.top - cancelBox.bottom <= 12, 'HUD：取消键与技能键间距约 6–8px');
+  assert(cancelBox.right < skill4Box.right - 4, 'HUD：取消键不应出现在技能行右侧');
+  pad.sync({
+    aimingSlot: 0,
+    skillCds: [0, 0, 0, 0],
+    fineTuneOn: false,
+  });
+  assert(cancelBtn.hidden, 'HUD：退出瞄准应隐藏取消键');
   assert(hostTransform === 'none', 'HUD：宿主 transform 无旋转');
   assert(noRotate(host) && noRotate(heroRow) && noRotate(skills), 'HUD：技能/下拉无旋转');
   assert(helpOpenedByFab, 'HUD：点 ? 应打开同一份说明卡');
@@ -383,6 +410,20 @@ export function verifyHudLayout(): void {
   assert(!tallHost.querySelector('.rotatePrompt'), 'HUD：窄高窗不应有转屏遮罩');
   assert(!hasRotatePromptCopy(tallHost.textContent ?? ''), 'HUD：窄高窗不应出现转屏文案');
   tallHost.remove();
+
+  const shortLand = document.createElement('div');
+  shortLand.style.cssText = `position:fixed;left:0;top:0;width:667px;height:375px;${hudChrome}`;
+  createTouchPad(shortLand, createActionBus());
+  document.body.appendChild(shortLand);
+  applyStageVars(shortLand, computeLandscapeStage(667, 375, none));
+  assert(shortLand.classList.contains('isLandscape') && shortLand.classList.contains('isShortHud'), 'HUD：矮横窗应标 isLandscape + isShortHud');
+  const shortBtn = shortLand.querySelector<HTMLButtonElement>('.touchSkillBtn');
+  if (!shortBtn) {
+    throw new Error('HUD：矮横窗应有技能键');
+  }
+  const shortSize = shortBtn.getBoundingClientRect();
+  assert(shortSize.width >= 56, `HUD：矮横窗技能键不应缩回 40px（实际 ${shortSize.width}）`);
+  shortLand.remove();
 
   hud.sync(dummySnap(), []);
   assert(red.textContent === '15' && blue.textContent === '30', 'HUD：胶囊应同步双方分数');

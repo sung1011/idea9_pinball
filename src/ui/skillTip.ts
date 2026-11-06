@@ -9,10 +9,11 @@ export type SkillTip = {
   hide: () => void;
   isOn: () => boolean;
   syncCopy: (copy: SkillTipCopy) => void;
+  relayout: () => void;
 };
 
 /** 浮在技能键上方的短提示；不挡场地中心。 */
-export function createSkillTip(host: HTMLElement): SkillTip {
+export function createSkillTip(host: HTMLElement, getClearance?: () => HTMLElement | null): SkillTip {
   const root = document.createElement('div');
   root.className = 'skillTip';
   root.setAttribute('aria-hidden', 'true');
@@ -43,8 +44,22 @@ export function createSkillTip(host: HTMLElement): SkillTip {
     const minCenter = tipW / 2 + 6;
     const maxCenter = host.clientWidth - tipW / 2 - 6;
     const x = Math.min(maxCenter, Math.max(minCenter, center.x));
+    let top = Math.max(6, localTop - 8);
+    const clearance = getClearance?.() ?? host.querySelector<HTMLElement>('.touchCancel');
+    if (clearance && !clearance.hidden) {
+      const cancelRect = clearance.getBoundingClientRect();
+      const hostRect = host.getBoundingClientRect();
+      if (cancelRect.width > 0 && cancelRect.height > 0 && hostRect.width > 0) {
+        const tipLeft = hostRect.left + x - tipW / 2;
+        const tipRight = tipLeft + tipW;
+        const overlapsX = tipRight > cancelRect.left && tipLeft < cancelRect.right;
+        if (overlapsX) {
+          top = cancelRect.top - hostRect.top - 8;
+        }
+      }
+    }
     root.style.left = `${x}px`;
-    root.style.top = `${Math.max(6, localTop - 8)}px`;
+    root.style.top = `${top}px`;
   };
 
   return {
@@ -68,6 +83,9 @@ export function createSkillTip(host: HTMLElement): SkillTip {
         return;
       }
       write(copy);
+      place();
+    },
+    relayout() {
       place();
     },
   };

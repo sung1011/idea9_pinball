@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.25-skill-btn-cancel-above",
+    "version": "0.0.25",
+    "date": "2026-11-06",
+    "summary": "技能四键放大到约 60px；瞄准中「取消」出现在当前技能正上方"
+  },
+  {
     "id": "v0.0.24-lock-current-landscape",
     "version": "0.0.24",
     "date": "2026-11-06",

@@ -1022,27 +1022,21 @@ canvas {
   transform: none;
 }
 
-.isLandscape .touchSkillBtn {
-  width: min(8vmin, 40px);
-  height: min(8vmin, 40px);
-  min-width: 32px;
-  min-height: 32px;
-}
-
 .touchSkillBtn {
   position: relative;
+  box-sizing: border-box;
   overflow: hidden;
   display: grid;
   place-items: center;
-  width: min(11vmin, 48px);
-  height: min(11vmin, 48px);
-  min-width: 40px;
-  min-height: 40px;
+  width: min(12vmin, 60px);
+  height: min(12vmin, 60px);
+  min-width: 60px;
+  min-height: 60px;
   border-radius: 50%;
   border: 2px solid var(--wood-frame);
   background: var(--button-idle);
   color: var(--ink);
-  font: 700 11px/1.1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  font: 700 13px/1.1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   box-shadow: var(--hud-shadow);
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
@@ -1074,7 +1068,7 @@ canvas {
   z-index: 3;
   pointer-events: none;
   place-items: center;
-  font: 700 12px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  font: 700 14px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   color: var(--parchment-highlight);
   text-shadow: 0 1px 2px var(--outline-ui);
 }
@@ -1141,18 +1135,22 @@ canvas {
 }
 
 .touchCancel {
-  position: relative;
-  left: auto;
-  bottom: auto;
-  flex: 0 0 auto;
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 7px);
+  z-index: 6;
+  flex: none;
   min-width: 56px;
   height: 32px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid #e24a4a;
   background: #0b1014cc;
   color: #ffd0d0;
   pointer-events: auto;
   touch-action: none;
+  white-space: nowrap;
+  transform: translateX(-50%);
   font: 12px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
 }
 
@@ -1180,15 +1178,15 @@ canvas {
 }
 
 #app.isShortHud .touchSkillBtn {
-  width: 40px;
-  height: 40px;
-  min-width: 36px;
-  min-height: 36px;
-  font-size: 10px;
+  width: min(12vmin, 60px);
+  height: min(12vmin, 60px);
+  min-width: 60px;
+  min-height: 60px;
+  font-size: 12px;
 }
 
 #app.isShortHud .touchSkillCdTime {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 #app.isShortHud .openingHudNum {
