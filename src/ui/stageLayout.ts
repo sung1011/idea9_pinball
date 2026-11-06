@@ -110,8 +110,9 @@ export function clientToHostLocal(
 }
 
 /**
- * 按 20×20 正方形 cover 铺满可用安全区，保持比例不拉伸。
- * 永远按传入的横屏盒子计算：宽屏裁上下。竖持时先互换宽高再调用，不在这里排竖屏战场。
+ * 按世界比例 cover 铺满可用安全区，保持比例不拉伸。
+ * 永远按传入的横屏盒子计算：956:440 恰好看全图；更方的屏（如 16:9）左右略裁；更宽的屏裁上下。
+ * 竖持时先互换宽高再调用，不在这里排竖屏战场。
  */
 export function computeLandscapeStage(viewW: number, viewH: number, insets: SafeInsets): StageRect {
   const left = insets.left;

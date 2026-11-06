@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '战场加宽到 iPhone 18 Pro Max 横屏比例（高 20、宽 20×956/440）；956×440 看全图，更方屏左右略裁无黑边' },
   { title: '永远横屏对局：竖持整屏转 90°（家庭键在右时正向），无转屏提示；锁失败仍旋转，不回退竖屏可玩布局' },
   { title: '系统锁横屏（manifest + orientation.lock）；删掉请横过来遮罩与说明卡转屏文案；横屏 cover + 四角 HUD；画面不翻转' },
   { title: '只要横屏：竖窗盖「请横过来再玩」并暂停对局输入；横窗仍 cover + 四角 HUD；画面不翻转' },

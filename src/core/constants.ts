@@ -1,8 +1,15 @@
-/** 逻辑地图边长（格）；正方形 */
-export const MAP_WIDTH = 20;
+/** iPhone 18 Pro Max 横屏逻辑像素；战场比例锁定此屏 */
+export const IPHONE_LANDSCAPE_LOGICAL_WIDTH = 956;
+export const IPHONE_LANDSCAPE_LOGICAL_HEIGHT = 440;
+/** 物理像素 2868×1320，与逻辑 956:440 = 239:110 同比例 */
+export const IPHONE_LANDSCAPE_PHYSICAL_WIDTH = 2868;
+export const IPHONE_LANDSCAPE_PHYSICAL_HEIGHT = 1320;
 
-/** 逻辑地图边长（格）；与 MAP_WIDTH 相同 */
+/** 逻辑地图高度（格） */
 export const MAP_HEIGHT = 20;
+
+/** 逻辑地图宽度（格）；高仍 20，宽按 iPhone 18 Pro Max 横屏 956:440 */
+export const MAP_WIDTH = (MAP_HEIGHT * IPHONE_LANDSCAPE_LOGICAL_WIDTH) / IPHONE_LANDSCAPE_LOGICAL_HEIGHT;
 
 /** 玩家半径（格） */
 export const BALL_RADIUS = 0.5;

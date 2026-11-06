@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.22-iphone-landscape-arena",
+    "version": "0.0.22",
+    "date": "2026-11-06",
+    "summary": "战场加宽到 iPhone 18 Pro Max 横屏比例（高 20、宽 20×956/440）；956×440 看全图，更方屏左右略裁无黑边"
+  },
+  {
     "id": "v0.0.21-force-landscape-rotate",
     "version": "0.0.21",
     "date": "2026-11-06",

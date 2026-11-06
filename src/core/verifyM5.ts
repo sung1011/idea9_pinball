@@ -6,6 +6,7 @@ import {
   FRICTION,
   HARD_CC_DIMINISH_WINDOW,
   LEFT_PILLAR,
+  MAP_WIDTH,
   MAX_HP,
   RESPAWN_SEC,
   SPAWN_INVINCIBLE_SEC,
@@ -286,7 +287,7 @@ export function verifyM5(): void {
 
   const wallDash = createSkillCaster();
   const wallDashBall = createBallBody({
-    x: 18.6,
+    x: MAP_WIDTH - 1.4,
     y: 6,
     color: 0xe24a4a,
     team: 'red',
@@ -294,7 +295,7 @@ export function verifyM5(): void {
   });
   fire(wallDash, wallDashBall, 3);
   advance(wallDash, wallDashBall, [wallDashBall], HOOK_SHOVE.windup + 0.12);
-  assert(wallDashBall.x < 19.7, 'M5：冲刺撞墙应提前结束');
+  assert(wallDashBall.x < MAP_WIDTH - 0.3, 'M5：冲刺撞墙应提前结束');
   assert(!wallDash.isDisplacing(), 'M5：撞墙后不应继续冲刺');
 
   const brake = createSkillCaster();

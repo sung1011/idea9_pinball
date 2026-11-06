@@ -1,4 +1,4 @@
-import { MAP_HEIGHT, MAP_WIDTH } from './constants';
+import { IPHONE_LANDSCAPE_LOGICAL_HEIGHT, IPHONE_LANDSCAPE_LOGICAL_WIDTH, MAP_HEIGHT, MAP_WIDTH } from './constants';
 import { createActionBus } from '../input/actionBus';
 import { bindPcInput } from '../input/pcInput';
 import { createTouchPad } from '../input/touchPad';
@@ -112,10 +112,29 @@ function coversSafeArea(stage: StageRect, viewW: number, viewH: number, insets: 
   );
 }
 
-function assertSquareCover(stage: StageRect, viewW: number, viewH: number, insets: SafeInsets, label: string): void {
-  assert(Math.abs(stage.width - stage.height) < 1e-6, `${label}：舞台应为 20×20 正方形`);
+function assertWorldCover(stage: StageRect, viewW: number, viewH: number, insets: SafeInsets, label: string): void {
   assert(Math.abs(stage.width / stage.height - MAP_WIDTH / MAP_HEIGHT) < 1e-6, `${label}：舞台应保持世界比例、不拉伸`);
   assert(coversSafeArea(stage, viewW, viewH, insets), `${label}：cover 应铺满可用安全区`);
+}
+
+function assertExactFit(stage: StageRect, viewW: number, viewH: number, insets: SafeInsets, label: string): void {
+  assertWorldCover(stage, viewW, viewH, insets, label);
+  const availW = viewW - insets.left - insets.right;
+  const availH = viewH - insets.top - insets.bottom;
+  assert(Math.abs(stage.x - insets.left) < 1e-6 && Math.abs(stage.y - insets.top) < 1e-6, `${label}：目标机应恰好看全图、无黑边`);
+  assert(Math.abs(stage.width - availW) < 1e-6 && Math.abs(stage.height - availH) < 1e-6, `${label}：目标机舞台应贴齐可用区`);
+}
+
+function assertCropSides(stage: StageRect, viewW: number, viewH: number, insets: SafeInsets, label: string): void {
+  assertWorldCover(stage, viewW, viewH, insets, label);
+  assert(Math.abs(stage.y - insets.top) < 1e-6, `${label}：更方的屏 cover 高度应贴齐可用高`);
+  assert(stage.x < insets.left - 1, `${label}：更方的屏 cover 应左右略裁、无黑边`);
+}
+
+function assertCropTopBottom(stage: StageRect, viewW: number, viewH: number, insets: SafeInsets, label: string): void {
+  assertWorldCover(stage, viewW, viewH, insets, label);
+  assert(Math.abs(stage.x - insets.left) < 1e-6, `${label}：更宽的屏 cover 宽度应贴齐可用宽`);
+  assert(stage.y < insets.top - 1, `${label}：更宽的屏 cover 应裁掉上下、无黑边`);
 }
 
 function assertCornerHud(
@@ -162,46 +181,60 @@ function hasRotatePromptCopy(text: string): boolean {
 /** 永远横屏 cover：竖窗先转 90° 再按横屏盒子排；HUD 叠四角。无转屏提示。 */
 export function verifyHudLayout(): void {
   const none: SafeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+  const targetW = IPHONE_LANDSCAPE_LOGICAL_WIDTH;
+  const targetH = IPHONE_LANDSCAPE_LOGICAL_HEIGHT;
+  const target = computeLandscapeStage(targetW, targetH, none);
+  assertExactFit(target, targetW, targetH, none, 'HUD：iPhone 18 Pro Max 横屏');
+
   const landscape = computeLandscapeStage(1600, 900, none);
-  assertSquareCover(landscape, 1600, 900, none, 'HUD：横窗');
-  assert(landscape.y < -1, 'HUD：横窗 cover 应裁掉上下（y 为负）');
-  assert(Math.abs(landscape.x) < 1e-6, 'HUD：横窗 cover 宽度应贴齐可用宽');
+  assertCropSides(landscape, 1600, 900, none, 'HUD：横窗 16:9');
+
+  const sixteenNine = computeLandscapeStage(1280, 720, none);
+  assertCropSides(sixteenNine, 1280, 720, none, 'HUD：1280×720');
 
   const forcedSize = forceLandscapeViewSize(800, 1200);
   assert(forcedSize.width === 1200 && forcedSize.height === 800, 'HUD：竖窗应互换宽高再按横屏排');
   const forced = computeLandscapeStage(forcedSize.width, forcedSize.height, none);
-  assertSquareCover(forced, 1200, 800, none, 'HUD：竖窗转横后');
-  assert(forced.y < -1, 'HUD：竖窗转横后 cover 应裁掉上下');
-  assert(Math.abs(forced.x) < 1e-6, 'HUD：竖窗转横后宽度应贴齐长边');
+  assertCropSides(forced, 1200, 800, none, 'HUD：竖窗转横后');
 
   const phoneForced = forceLandscapeViewSize(375, 667);
   assert(phoneForced.width === 667 && phoneForced.height === 375, 'HUD：竖持短边当高、长边当宽');
   const phoneStage = computeLandscapeStage(phoneForced.width, phoneForced.height, none);
-  assertSquareCover(phoneStage, 667, 375, none, 'HUD：竖持转横');
-  assert(phoneStage.y < -1, 'HUD：竖持转横后 cover 应超出上下，不是竖着的战场');
+  assertCropSides(phoneStage, 667, 375, none, 'HUD：竖持转横');
 
   const phoneLand = computeLandscapeStage(667, 375, none);
-  assertSquareCover(phoneLand, 667, 375, none, 'HUD：横持');
-  assert(phoneLand.y < -1, 'HUD：横持 cover 应超出上下');
+  assertCropSides(phoneLand, 667, 375, none, 'HUD：横持');
 
   const pcWide = computeLandscapeStage(1920, 1080, none);
-  assertSquareCover(pcWide, 1920, 1080, none, 'HUD：PC 宽窗');
+  assertCropSides(pcWide, 1920, 1080, none, 'HUD：PC 宽窗');
 
   const square = computeLandscapeStage(800, 800, none);
-  assertSquareCover(square, 800, 800, none, 'HUD：正方窗');
-  assert(Math.abs(square.x) < 1e-6 && Math.abs(square.y) < 1e-6, 'HUD：正方窗 cover 应刚好铺满');
+  assertCropSides(square, 800, 800, none, 'HUD：正方窗');
 
-  const notch = computeLandscapeStage(1600, 900, { top: 0, right: 44, bottom: 0, left: 44 });
-  assertSquareCover(notch, 1600, 900, { top: 0, right: 44, bottom: 0, left: 44 }, 'HUD：刘海横窗');
-  assert(notch.x >= 44 - 1e-6, 'HUD：舞台应避开左侧安全区');
-  assert(notch.x + notch.width <= 1600 - 44 + 1e-6, 'HUD：舞台应避开右侧安全区');
-  assert(notch.y < -1, 'HUD：刘海横窗仍应 cover 裁上下');
+  const ultra = computeLandscapeStage(2560, 1080, none);
+  assertCropTopBottom(ultra, 2560, 1080, none, 'HUD：超宽屏');
+
+  const notchInsets: SafeInsets = { top: 0, right: 44, bottom: 0, left: 44 };
+  const notch = computeLandscapeStage(1600, 900, notchInsets);
+  assertCropSides(notch, 1600, 900, notchInsets, 'HUD：刘海横窗');
+  assert(notch.y >= -1e-6, 'HUD：刘海横窗高度应贴齐可用高，不在上下加黑边');
 
   const xf = fitWorldToBox(landscape.x, landscape.y, landscape.width, landscape.height, MAP_WIDTH, MAP_HEIGHT);
   const mid = screenToLogical(800, 450, xf);
-  assert(Math.abs(mid.x - 10) < 0.05 && Math.abs(mid.y - 10) < 0.05, 'HUD：视口中点应对准世界中心');
+  assert(
+    Math.abs(mid.x - MAP_WIDTH / 2) < 0.05 && Math.abs(mid.y - MAP_HEIGHT / 2) < 0.05,
+    'HUD：视口中点应对准世界中心',
+  );
   const off = screenToLogical(-1, -1, xf);
   assert(off.x < 0 || off.y < 0, 'HUD：cover 裁掉的舞台边缘在视口外');
+  const targetXf = fitWorldToBox(target.x, target.y, target.width, target.height, MAP_WIDTH, MAP_HEIGHT);
+  const targetOrigin = screenToLogical(0, 0, targetXf);
+  const targetFar = screenToLogical(targetW, targetH, targetXf);
+  assert(Math.abs(targetOrigin.x) < 0.05 && Math.abs(targetOrigin.y) < 0.05, 'HUD：目标机左上应对准世界原点');
+  assert(
+    Math.abs(targetFar.x - MAP_WIDTH) < 0.05 && Math.abs(targetFar.y - MAP_HEIGHT) < 0.05,
+    'HUD：目标机右下应对准世界右下，不裁掉战场',
+  );
 
   assert(isPortraitViewport(800, 1200) && !isPortraitViewport(1600, 900), 'HUD：竖/横判定');
   assert(wantsForceLandscape(375, 667) && !wantsForceLandscape(667, 375), 'HUD：竖持应强制横屏，横持不转');
@@ -354,7 +387,7 @@ export function verifyHudLayout(): void {
   const settingsClosedAfterHowTo = !settings.isOpen();
   help.close();
   assert(host.classList.contains('isLandscape') && !host.classList.contains('isPortrait'), 'HUD：横窗宿主应标 isLandscape');
-  assert(landStage.y < -1, 'HUD：横窗舞台应 cover 裁掉上下');
+  assert(landStage.x < -1 && Math.abs(landStage.y) < 1e-6, 'HUD：横窗 16:9 舞台应左右略裁、无上下黑边');
   assert(!host.querySelector('.rotatePrompt'), 'HUD：不应有转屏遮罩');
   assert(!hasRotatePromptCopy(helpCopy), 'HUD：说明卡不应写竖屏/转屏提示');
   assert(!hasRotatePromptCopy(settingsHint), 'HUD：设置页不应写竖屏/转屏提示');
@@ -384,7 +417,7 @@ export function verifyHudLayout(): void {
   const tallGear = tallHost.querySelector<HTMLElement>('.settingsFab');
   assert(tallHost.classList.contains('isForceLandscape'), 'HUD：窄高窗应旋转成横屏对局');
   assert(tallHost.classList.contains('isLandscape') && !tallHost.classList.contains('isPortrait'), 'HUD：窄高窗转横后应按横屏 HUD');
-  assert(tallStage.y < -1, 'HUD：窄高窗转横后 cover 应裁掉上下，不是竖着的战场');
+  assert(tallStage.x < -1 && Math.abs(tallStage.y) < 1e-6, 'HUD：窄高窗转横后 cover 应左右略裁，不是竖着的战场');
   assert(tallHost.style.transform.includes('rotate(90deg)'), 'HUD：窄高窗应 rotate(90deg)');
   assert(!tallHost.querySelector('.rotatePrompt'), 'HUD：窄高窗不应有转屏遮罩');
   assert(!hasRotatePromptCopy(tallHost.textContent ?? ''), 'HUD：窄高窗不应出现转屏文案');

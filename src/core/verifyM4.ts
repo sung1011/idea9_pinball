@@ -5,6 +5,10 @@ import {
   CONTROL_POINT,
   FLOOR_SPEED,
   KNOCKOUT_SCORE,
+  IPHONE_LANDSCAPE_LOGICAL_HEIGHT,
+  IPHONE_LANDSCAPE_LOGICAL_WIDTH,
+  IPHONE_LANDSCAPE_PHYSICAL_HEIGHT,
+  IPHONE_LANDSCAPE_PHYSICAL_WIDTH,
   MAP_HEIGHT,
   MAP_WIDTH,
   MATCH_COUNTDOWN_SEC,
@@ -17,6 +21,7 @@ import {
   OPENING_CHARGE_START_SPEED,
   RESPAWN_SEC,
   SPAWN_INVINCIBLE_SEC,
+  SPAWN_X_INSET,
   SPEED_CAP,
   STALL_DEPTH,
 } from './constants';
@@ -58,13 +63,27 @@ function assert(cond: boolean, message: string): void {
 
 /** 一局规则：击破/助攻、回场无敌、领地、加时与下次击破。 */
 export function verifyM4(): void {
-  assert(MAP_WIDTH === 20 && MAP_HEIGHT === 20, 'M4：地图应为 20×20');
+  assert(IPHONE_LANDSCAPE_LOGICAL_WIDTH === 956 && IPHONE_LANDSCAPE_LOGICAL_HEIGHT === 440, 'M4：应对齐 iPhone 18 Pro Max 横屏逻辑 956×440');
+  assert(IPHONE_LANDSCAPE_PHYSICAL_WIDTH === 2868 && IPHONE_LANDSCAPE_PHYSICAL_HEIGHT === 1320, 'M4：应对齐 iPhone 18 Pro Max 横屏物理 2868×1320');
+  assert(
+    IPHONE_LANDSCAPE_PHYSICAL_WIDTH / IPHONE_LANDSCAPE_PHYSICAL_HEIGHT ===
+      IPHONE_LANDSCAPE_LOGICAL_WIDTH / IPHONE_LANDSCAPE_LOGICAL_HEIGHT,
+    'M4：物理与逻辑横屏比例应相同',
+  );
+  assert(MAP_HEIGHT === 20, 'M4：地图高度应为 20');
+  assert(MAP_WIDTH === (20 * 956) / 440, 'M4：地图宽度应为 20×956/440');
   assert(CONTROL_POINT.radius === 2.5, 'M4：领地半径应为 2.5');
-  assert(CONTROL_POINT.x === 10 && CONTROL_POINT.y === 10, 'M4：领地应在地图中心');
+  assert(
+    Math.abs(CONTROL_POINT.x - MAP_WIDTH / 2) < 1e-9 && CONTROL_POINT.y === MAP_HEIGHT / 2,
+    'M4：领地应在地图中心',
+  );
   assert(midpointHold(2, 1) === 'red' && midpointHold(1, 1) === 'none', 'M4：领地须严格多数');
   const roster = createMatchRoster();
   assert(roster.length === 4, 'M4：本机固定 2v2，场上应为 4 球');
   assert(roster[0].y < roster[1].y && roster[2].y < roster[3].y, 'M4：同队应上下两出生');
+  assert(Math.abs(roster[0].x - SPAWN_X_INSET) < 1e-9, 'M4：红出生应贴左底线');
+  assert(Math.abs(roster[2].x - (MAP_WIDTH - SPAWN_X_INSET)) < 1e-9, 'M4：蓝出生应贴右底线');
+  assert(roster[2].x > 20, 'M4：蓝出生应按新宽度居右，不得挤在旧宽 20 左侧');
   for (const ball of roster) {
     const dx = CONTROL_POINT.x - ball.x;
     const dy = CONTROL_POINT.y - ball.y;
