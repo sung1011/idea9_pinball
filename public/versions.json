@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.28-hook-brake-pop-spear",
+    "version": "0.0.28",
+    "date": "2026-11-09",
+    "summary": "钩刺蓄势弹出改按当刻可见枪尖方向，蓄势中转向影响弹出；力度/冷却/时长不变"
+  },
+  {
     "id": "v0.0.27-combat-stats-panel",
     "version": "0.0.27",
     "date": "2026-11-09",

@@ -1,6 +1,6 @@
 import type { BallBody } from './ballBody';
 import { consumeAimBreak, openActiveRam, skillsBlocked } from './ballBody';
-import type { CollisionHit } from './collisionDamage';
+import { spearAimDir, type CollisionHit } from './collisionDamage';
 import type { HeroId } from '../heroes/heroIds';
 import { applyHardCc } from './hardCc';
 import {
@@ -393,7 +393,7 @@ export function createHookCaster(): SkillCaster {
   };
 
   const popBrake = (ball: BallBody): void => {
-    const dir = unitVec(ball.facingX, ball.facingY) ?? { x: 1, y: 0 };
+    const dir = spearAimDir(ball);
     ball.facingX = dir.x;
     ball.facingY = dir.y;
     ball.vx = dir.x * HOOK_BRAKE.popSpeed;

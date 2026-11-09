@@ -11,6 +11,7 @@ import {
   RESPAWN_SEC,
   SPAWN_INVINCIBLE_SEC,
 } from './constants';
+import { spearAimDir } from './collisionDamage';
 import { HOOK_BRAKE, HOOK_PULL, HOOK_SHOVE, HOOK_STAB } from '../heroes/hookKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import { createPlayerControl } from '../input/playerControl';
@@ -102,6 +103,29 @@ function advance(
     play(caster, ball, roster, dt);
     left -= dt;
   }
+}
+
+function controlPlay(
+  ctl: ReturnType<typeof createPlayerControl>,
+  ball: BallBody,
+  input: ActionSample,
+  dt: number,
+): void {
+  ctl.tick(ball, input, dt, [ball]);
+  const phys = stepPhysics([ball], dt);
+  ctl.afterPhysics(ball, dt, [ball], phys.wallHitIds.includes(ball.id));
+}
+
+function assertPopAlongSpear(ball: BallBody, expectX: number, expectY: number, label: string): void {
+  const speed = Math.hypot(ball.vx, ball.vy);
+  assert(Math.abs(speed - HOOK_BRAKE.popSpeed) < 0.35, `${label}：弹出速度应为 11`);
+  const spear = spearAimDir(ball);
+  const len = Math.hypot(expectX, expectY) || 1;
+  const nx = expectX / len;
+  const ny = expectY / len;
+  assert(Math.abs(spear.x - nx) < 0.08 && Math.abs(spear.y - ny) < 0.08, `${label}：当刻可见枪尖应沿期望方向`);
+  assert(Math.abs(ball.vx / speed - spear.x) < 0.08, `${label}：弹出应与当刻可见枪尖同向`);
+  assert(Math.abs(ball.vy / speed - spear.y) < 0.08, `${label}：弹出应与当刻可见枪尖同向`);
 }
 
 /** 钩刺四技能：释放后前摇、未中短 CD、连捅、冲刺、急停，以及简化 bot。 */
@@ -325,9 +349,100 @@ export function verifyM5(): void {
       popped = true;
       assert(Math.abs(speed - HOOK_BRAKE.popSpeed) < 0.35, 'M5：急停结束应按朝向 11 速弹出');
       assert(brakeBall.activeRamRemain > 0.2, 'M5：弹出后应开主动撞窗');
+      assertPopAlongSpear(brakeBall, 1, 0, 'M5：不转向蓄势');
     }
   }
   assert(popped, 'M5：急停结束应弹出');
+  assert(
+    HOOK_BRAKE.brakeTime === 2.6 && HOOK_BRAKE.frictionMul === 10 && HOOK_BRAKE.popSpeed === 11,
+    'M5：蓄势时长/摩擦/弹出速不应改',
+  );
+
+  const steerCaster = createSkillCaster();
+  const steerBall = createBallBody({
+    x: 8,
+    y: 6,
+    color: 0xe24a4a,
+    team: 'red',
+    vx: 8,
+    facingX: 1,
+    facingY: 0,
+  });
+  fire(steerCaster, steerBall, 4, 1, 0);
+  steerBall.hasAim = true;
+  steerBall.aimX = 0;
+  steerBall.aimY = 1;
+  advance(steerCaster, steerBall, [steerBall], 0.4);
+  assert(steerBall.vx > 0 && Math.abs(steerBall.vy) < 0.4, 'M5：蓄势期间转向不应改刹车速度方向');
+  let steerPopped = false;
+  let steerLeft = HOOK_BRAKE.brakeTime - 0.4 + 0.08;
+  while (steerLeft > 1e-9 && !steerPopped) {
+    const dt = Math.min(1 / 60, steerLeft);
+    play(steerCaster, steerBall, [steerBall], dt);
+    steerLeft -= dt;
+    const speed = Math.hypot(steerBall.vx, steerBall.vy);
+    if (speed > 8) {
+      steerPopped = true;
+      assertPopAlongSpear(steerBall, 0, 1, 'M5：蓄势中转向后弹出');
+      assert(Math.abs(steerBall.vx) < 0.5 && steerBall.vy > 8, 'M5：蓄势弹出应沿转向后的枪尖而非起步朝向');
+    }
+  }
+  assert(steerPopped, 'M5：蓄势中转向后仍应弹出');
+  assert(Math.abs((steerCaster.getCds()[3] ?? 0) - (HOOK_BRAKE.cd - HOOK_BRAKE.brakeTime)) < 0.15, 'M5：蓄势 CD 仍为 12');
+
+  const liveCtl = createPlayerControl();
+  const liveBall = createBallBody({
+    x: 8,
+    y: 6,
+    color: 0xe24a4a,
+    team: 'red',
+    vx: 8,
+    facingX: 1,
+    facingY: 0,
+  });
+  controlPlay(liveCtl, liveBall, sample({ skillPress: 4, aimX: 1, aimY: 0 }), 0);
+  controlPlay(liveCtl, liveBall, sample({ skillPress: 4, aimX: 1, aimY: 0 }), 1 / 60);
+  assert(Math.abs((liveCtl.getSkillCds()[3] ?? 0) - HOOK_BRAKE.cd) < 0.05, 'M5：控制层蓄势 CD 应为 12');
+  let livePopped = false;
+  let liveLeft = HOOK_BRAKE.brakeTime + 0.08;
+  while (liveLeft > 1e-9 && !livePopped) {
+    const dt = Math.min(1 / 60, liveLeft);
+    controlPlay(liveCtl, liveBall, sample({ aimX: 0, aimY: 1 }), dt);
+    liveLeft -= dt;
+    const speed = Math.hypot(liveBall.vx, liveBall.vy);
+    if (speed > 8 && liveBall.activeRamRemain > 0.2) {
+      livePopped = true;
+      assertPopAlongSpear(liveBall, 0, 1, 'M5：控制层蓄势转向弹出');
+      assert(Math.abs(liveBall.vx) < 0.5 && liveBall.vy > 8, 'M5：控制层弹出应沿当刻枪尖 B 而非起步 A');
+    }
+  }
+  assert(livePopped, 'M5：控制层蓄势转向后应弹出');
+
+  const stillCtl = createPlayerControl();
+  const stillBall = createBallBody({
+    x: 8,
+    y: 6,
+    color: 0xe24a4a,
+    team: 'red',
+    vx: 8,
+    facingX: 1,
+    facingY: 0,
+  });
+  controlPlay(stillCtl, stillBall, sample({ skillPress: 4, aimX: 1, aimY: 0, hasAim: false }), 0);
+  controlPlay(stillCtl, stillBall, sample({ skillPress: 4, aimX: 1, aimY: 0, hasAim: false }), 1 / 60);
+  let stillPopped = false;
+  let stillLeft = HOOK_BRAKE.brakeTime + 0.08;
+  while (stillLeft > 1e-9 && !stillPopped) {
+    const dt = Math.min(1 / 60, stillLeft);
+    controlPlay(stillCtl, stillBall, sample({ aimX: 1, aimY: 0, hasAim: false }), dt);
+    stillLeft -= dt;
+    const speed = Math.hypot(stillBall.vx, stillBall.vy);
+    if (speed > 8 && stillBall.activeRamRemain > 0.2) {
+      stillPopped = true;
+      assertPopAlongSpear(stillBall, 1, 0, 'M5：控制层不转向蓄势');
+    }
+  }
+  assert(stillPopped, 'M5：控制层不转向仍应沿起步枪尖弹出');
 
   const cds = createSkillCaster();
   const cdsBall = createBallBody({ x: 8, y: 6, color: 0xe24a4a, team: 'red', facingX: 1 });

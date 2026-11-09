@@ -50,26 +50,30 @@ export function createPlayerControl(initial: HeroId = 'hook'): PlayerControl {
       if (skillsOn) {
         caster.handleInput(player, sample, roster);
       }
+      if (player.inPlay) {
+        if (steerOn && sample.hasAim) {
+          player.aimX = sample.aimX;
+          player.aimY = sample.aimY;
+          player.hasAim = true;
+        } else {
+          player.hasAim = false;
+        }
+      }
       const hits = caster.tick(player, dt, roster);
       if (!player.inPlay) {
         player.hasAim = false;
         return hits;
       }
-      if (steerOn && sample.hasAim) {
-        player.aimX = sample.aimX;
-        player.aimY = sample.aimY;
-        player.hasAim = true;
-        if (
-          dt > 0 &&
-          player.stunRemain <= 0 &&
-          !caster.isDisplacing() &&
-          player.frictionMul === 1
-        ) {
-          applyFloorSpeed(player);
-          applySteerToward(player, sample.aimX, sample.aimY, dt);
-        }
-      } else {
-        player.hasAim = false;
+      if (
+        steerOn &&
+        sample.hasAim &&
+        dt > 0 &&
+        player.stunRemain <= 0 &&
+        !caster.isDisplacing() &&
+        player.frictionMul === 1
+      ) {
+        applyFloorSpeed(player);
+        applySteerToward(player, sample.aimX, sample.aimY, dt);
       }
       return hits;
     },
