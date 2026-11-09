@@ -1,7 +1,7 @@
 import { BALL_RADIUS, MAP_HEIGHT, MAP_WIDTH } from './constants';
 import { createActionBus } from '../input/actionBus';
 import { bindPcInput } from '../input/pcInput';
-import { createWorldViewSession, enterWorldView, followWorldView } from '../render/worldViewLock';
+import { canLockWorldView, createWorldViewSession, enterWorldView, followWorldView } from '../render/worldViewLock';
 import { logicalToScreen, screenToLogical } from '../render/worldTransform';
 import { applyStageVars, clientToHostLocal, computeLandscapeStage } from '../ui/stageLayout';
 
@@ -17,7 +17,7 @@ function near(a: number, b: number, eps = 1e-4): boolean {
   return Math.abs(a - b) < eps;
 }
 
-/** 进入适配一次后锁比例：缩窗裁切、扩窗留背景，刷新才重新适配。 */
+/** 首次稳定横屏再 cover 锁比例：竖窗不锁死，横屏期内缩窗裁切、扩窗留背景，刷新才重新适配。 */
 export function verifyWorldViewLock(): void {
   assert(MAP_HEIGHT === 20, '锁定视野：世界高度应仍为 20');
   assert(MAP_WIDTH === (20 * 956) / 440, '锁定视野：世界宽度应仍为 20×956/440');
@@ -74,6 +74,58 @@ export function verifyWorldViewLock(): void {
   assert(session.getLock()?.scale === first.lock.scale, '锁定视野：多次窗口变化仍不得解锁');
   const reentered = session.enter(1280, 720);
   assert(reentered.lock.scale !== first.lock.scale, '锁定视野：再次 enter（刷新）才重新适配');
+
+  assert(canLockWorldView(844, 390) && !canLockWorldView(390, 844), '锁定视野：宽≥高才算稳定横屏');
+  assert(canLockWorldView(800, 800), '锁定视野：正方窗应按横屏锁');
+
+  const phone = createWorldViewSession();
+  const port = phone.enter(390, 844);
+  assert(phone.getLock() === null, '锁定视野：竖窗 enter 不应按竖屏比例永久锁死');
+  assert(near(port.lock.scale, 844 / 20), '锁定视野：竖窗仍可临时 cover，不留黑边逻辑');
+  const stillPort = phone.follow(390, 800);
+  assert(phone.getLock() === null, '锁定视野：竖窗期内 follow 仍不应锁死');
+  assert(near(stillPort.lock.scale, 800 / 20), '锁定视野：未锁前竖窗可按当前窗临时 cover');
+  const land = phone.follow(844, 390);
+  const expectLand = enterWorldView(844, 390);
+  assert(phone.getLock() !== null, '锁定视野：第一次稳定横屏应锁定');
+  assert(near(land.lock.scale, expectLand.lock.scale), '锁定视野：竖→横不刷新后 scale 应落到横档');
+  assert(near(land.lock.scale, 390 / 20), '锁定视野：844×390 应按横屏高 cover');
+  assert(land.lock.scale < port.lock.scale - 10, '锁定视野：横档 scale 应明显低于竖档 42.2');
+  const landNW = screenToLogical(0, 0, land.transform);
+  const landSE = screenToLogical(844, 390, land.transform);
+  assert(landNW.x < 0.2 && MAP_WIDTH - landSE.x < 0.2, '锁定视野：竖→横后可见宽应回到 cover 预期（约全图）');
+  assert(near(landNW.y, 0, 0.05) && near(landSE.y, MAP_HEIGHT, 0.05), '锁定视野：竖→横后高度应看全');
+  const landShrink = phone.follow(844, 334);
+  assert(landShrink.lock.scale === land.lock.scale, '锁定视野：横屏期内变矮只 follow、不改比例');
+  const landDirect = createWorldViewSession().enter(844, 390);
+  assert(landDirect.lock.scale === land.lock.scale, '锁定视野：横屏直进应一次适配即锁到同一档');
+  assert(createWorldViewSession().getLock() === null, '锁定视野：新会话刷新前不应带旧锁');
+
+  const se = createWorldViewSession();
+  se.enter(375, 667);
+  assert(se.getLock() === null, '锁定视野：SE 竖窗不应锁死');
+  const seLand = se.follow(667, 375);
+  const seExpect = enterWorldView(667, 375);
+  assert(near(seLand.lock.scale, seExpect.lock.scale), '锁定视野：SE 竖→横应锁到横屏 cover 档');
+  const seNW = screenToLogical(0, 0, seLand.transform);
+  const seSE = screenToLogical(667, 375, seLand.transform);
+  assert(near(seNW.y, 0, 0.08) && near(seSE.y, MAP_HEIGHT, 0.08), '锁定视野：SE 竖→横高度应看全');
+  assert(seNW.x > 3 && seNW.x < 5, '锁定视野：SE 横屏更方，左右裁切应为 cover 少量而非竖档');
+
+  const lockedThenPort = createWorldViewSession();
+  const pcLock = lockedThenPort.enter(1920, 1080);
+  lockedThenPort.follow(390, 844);
+  assert(lockedThenPort.getLock()?.scale === pcLock.lock.scale, '锁定视野：已锁横屏后再竖持只 follow');
+
+  const refreshWait = createWorldViewSession();
+  refreshWait.enter(390, 844);
+  refreshWait.follow(844, 390);
+  const phoneScale = refreshWait.getLock()?.scale ?? 0;
+  refreshWait.enter(390, 844);
+  assert(refreshWait.getLock() === null, '锁定视野：刷新到竖窗应清锁，等下次横屏');
+  const refreshLand = refreshWait.follow(1280, 720);
+  assert(near(refreshLand.lock.scale, 720 / 20), '锁定视野：刷新后第一次横屏应按新窗 cover');
+  assert(refreshLand.lock.scale !== phoneScale, '锁定视野：刷新重适配不应沿用上一横屏锁');
 
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:0;top:0;width:800px;height:400px';

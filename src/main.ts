@@ -154,6 +154,7 @@ async function boot(): Promise<void> {
     const layout = enter ? worldView.enter(box.width, box.height, insets) : worldView.follow(box.width, box.height, insets);
     transform = layout.transform;
     host.dataset.worldScale = String(layout.lock.scale);
+    host.dataset.worldLocked = worldView.getLock() ? '1' : '0';
     applyStageVars(host, layout.stage);
     applyWorldTransform(world, transform);
   };

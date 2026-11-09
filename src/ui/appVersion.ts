@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '首次稳定横屏（宽≥高）再适配并锁定战场比例；竖窗不按竖屏锁死，横屏期内仍只平移' },
   { title: '钩刺蓄势弹出速度与距离约为原来 1.5 倍（16.5 格/秒）；冷却/时长/摩擦不变' },
   { title: '自己阵亡时屏幕中央偏上显示「复活还需 X 秒」（仅本人、无遮罩）；5s 回场与 2s 无敌不变' },
   { title: '自己离场时场中显示大号回场倒计时（仅本人、整数秒）；5s 回场与 2s 无敌不变，他人仍短 toast' },
