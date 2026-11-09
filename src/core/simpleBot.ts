@@ -12,6 +12,7 @@ import type { HeroId } from '../heroes/heroIds';
 import { ARC_MARK, ARC_SIDESTEP } from '../heroes/arcKit';
 import { CHAIN_HEAL, CHAIN_SCRAMBLE, CHAIN_SHIELD, CHAIN_TOW } from '../heroes/chainKit';
 import { HOOK_PULL } from '../heroes/hookKit';
+import { ULT_ENERGY_MAX } from './ultEnergy';
 import { NAIL_PIN, NAIL_RAM } from '../heroes/nailKit';
 import { RING_FIELD, RING_TRAP, RING_WAVE } from '../heroes/ringKit';
 import { WELL_BLAST, WELL_STAKE, WELL_SWAP } from '../heroes/wellKit';
@@ -21,6 +22,7 @@ import type { MatchPhase } from './matchSession';
 import { createSkillCaster, type SkillCaster, type SkillCds } from './skillCaster';
 import { applyOpeningCharge } from './openingCharge';
 import { applyFloorSpeed, applySteerToward } from './skillStub';
+import { clearUltEnergy, tickUltEnergy } from './ultEnergy';
 
 export type SimpleBot = {
   tick: (
@@ -148,7 +150,12 @@ function pickHookAction(
   random: () => number,
   jx: number,
   jy: number,
+  energy = 0,
+  hasEnemy = false,
 ): ActionSample | null {
+  if (hasEnemy && energy + 1e-6 >= ULT_ENERGY_MAX) {
+    return castSample(5, jx, jy);
+  }
   if (inHookRange && cds[0] <= 0 && random() < hookChance) {
     return castSample(1, jx, jy);
   }
@@ -309,6 +316,7 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
 
   return {
     tick(dt, roster, phase, chargeRemain = 0, seekMid = true) {
+      tickUltEnergy(bot, dt);
       if (!bot.inPlay || phase === 'result') {
         bot.hasAim = false;
         caster.tick(bot, dt, roster);
@@ -385,6 +393,8 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
                 random,
                 jx,
                 jy,
+                bot.ultEnergy,
+                !!enemy,
               );
         if (picked) {
           sample = picked;
@@ -406,6 +416,7 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
     setHero(ball, hero) {
       caster.reset();
       clearKitAuras(ball);
+      clearUltEnergy(ball);
       ball.hero = hero;
       caster = createSkillCaster(hero);
       wait = nextWait(random) * 0.35;

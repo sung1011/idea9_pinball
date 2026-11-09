@@ -8,6 +8,7 @@ const SKILL_KEYS: Record<string, SkillSlot> = {
   '2': 2,
   '3': 3,
   '4': 4,
+  '5': 5,
 };
 
 /** 触屏位移超过此像素视为滑动（只改瞄准），否则视为点空白。 */
@@ -49,7 +50,7 @@ function markStrokeMoved(stroke: TouchAimStroke, ev: PointerEvent): void {
   }
 }
 
-/** PC：鼠标持续设 targetDir；技能仅 1–4；左键释放；右键 / Esc 取消。R 只重开一局。触屏瞄准中点空白=瞄向并释放，滑动只改向。 */
+/** PC：鼠标持续设 targetDir；技能 1–4，第五键必杀用 5；左键释放；右键 / Esc 取消。R 只重开一局。触屏瞄准中点空白=瞄向并释放，滑动只改向。 */
 export function bindPcInput(opts: {
   bus: ActionBus;
   canvas: HTMLCanvasElement;

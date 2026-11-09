@@ -151,7 +151,24 @@ export type SkillTipCopy = {
   effect: string;
 };
 
+export const ULT_TODO_COPY = 'todo';
+
+export function ultShort(hero: HeroId): string {
+  return hero === 'hook' ? '无畏' : '必杀';
+}
+
+export function ultName(hero: HeroId): string {
+  return hero === 'hook' ? '无畏冲锋' : '必杀';
+}
+
+export function ultTip(hero: HeroId): string {
+  return hero === 'hook' ? '后退三步后沿枪尖加速穿刺，碰敌不回头' : ULT_TODO_COPY;
+}
+
 export function skillTipCopy(hero: HeroId, slot: SkillSlot): SkillTipCopy {
+  if (slot === 5) {
+    return { name: ultName(hero), effect: ultTip(hero) };
+  }
   const names = skillNames(hero);
   const tips = skillTips(hero);
   return {
@@ -162,49 +179,49 @@ export function skillTipCopy(hero: HeroId, slot: SkillSlot): SkillTipCopy {
 
 export function kitHudLine(hero: HeroId): string {
   const shorts = skillShorts(hero);
-  return `${kitTitle(hero)}：1${shorts[0]} 2${shorts[1]} 3${shorts[2]} 4${shorts[3]} · 点地纠偏 · 同键或左键释放；触屏瞄准中点空白也可释放`;
+  return `${kitTitle(hero)}：1${shorts[0]} 2${shorts[1]} 3${shorts[2]} 4${shorts[3]} 5${ultShort(hero)} · 点地纠偏 · 同键或左键释放；触屏瞄准中点空白也可释放`;
 }
 
 export function kitHelpSkills(hero: HeroId): string {
   if (hero === 'ring') {
-    return '技能 1–4：1 辉环（身周磁场） / 2 斥波 / 3 壁行 / 4 囚环（物理关死出不去）。';
+    return '技能 1–4：1 辉环（身周磁场） / 2 斥波 / 3 壁行 / 4 囚环（物理关死出不去）。第五键必杀占位。';
   }
   if (hero === 'chain') {
-    return '技能 1–4：1 愈链（治疗链） / 2 盾脉 / 3 援勾 / 4 扰锋（范围沉默）。';
+    return '技能 1–4：1 愈链（治疗链） / 2 盾脉 / 3 援勾 / 4 扰锋（范围沉默）。第五键必杀占位。';
   }
   if (hero === 'nail') {
-    return '技能 1–4：1 甲垒（叠甲） / 2 刺盾 / 3 顶冲 / 4 钉锚（定锚）。';
+    return '技能 1–4：1 甲垒（叠甲） / 2 刺盾 / 3 顶冲 / 4 钉锚（定锚）。第五键必杀占位。';
   }
   if (hero === 'arc') {
-    return '技能 1–4：1 侧闪（侧移闪） / 2 掠刃 / 3 回印（标记回响） / 4 虚影（虚晃）。';
+    return '技能 1–4：1 侧闪（侧移闪） / 2 掠刃 / 3 回印（标记回响） / 4 虚影（虚晃）。第五键必杀占位。';
   }
   if (hero === 'well') {
-    return '技能 1–4：1 索爆（身周四脉冲，有桩则同步炸） / 2 易位 / 3 索桩 / 4 回索。';
+    return '技能 1–4：1 索爆（身周四脉冲，有桩则同步炸） / 2 易位 / 3 索桩 / 4 回索。第五键必杀占位。';
   }
   if (hero === 'mirror') {
-    return '技能 1–4：1 折光（受伤减半入账） / 2 反照 / 3 裂镜 / 4 镜壁。';
+    return '技能 1–4：1 折光（受伤减半入账） / 2 反照 / 3 裂镜 / 4 镜壁。第五键必杀占位。';
   }
-  return '技能 1–4：1 钩矛 / 2 连刺×3 / 3 盾冲 / 4 蓄势。';
+  return '技能 1–4：1 钩矛 / 2 连刺×3 / 3 盾冲 / 4 蓄势。第五键无畏冲锋（满能量后退三步后沿枪尖穿刺）。';
 }
 
 export function kitSettingsHint(hero: HeroId): string {
   if (hero === 'ring') {
-    return '技能 1 辉环 / 2 斥波 / 3 壁行 / 4 囚环。按下进瞄，再按同键或左键释放。';
+    return '技能 1 辉环 / 2 斥波 / 3 壁行 / 4 囚环 / 5 必杀。按下进瞄，再按同键或左键释放。';
   }
   if (hero === 'chain') {
-    return '技能 1 愈链 / 2 盾脉 / 3 援勾 / 4 扰锋。按下进瞄，再按同键或左键释放。';
+    return '技能 1 愈链 / 2 盾脉 / 3 援勾 / 4 扰锋 / 5 必杀。按下进瞄，再按同键或左键释放。';
   }
   if (hero === 'nail') {
-    return '技能 1 甲垒 / 2 刺盾 / 3 顶冲 / 4 钉锚。按下进瞄，再按同键或左键释放。';
+    return '技能 1 甲垒 / 2 刺盾 / 3 顶冲 / 4 钉锚 / 5 必杀。按下进瞄，再按同键或左键释放。';
   }
   if (hero === 'arc') {
-    return '技能 1 侧闪 / 2 掠刃 / 3 回印 / 4 虚影。按下进瞄，再按同键或左键释放。';
+    return '技能 1 侧闪 / 2 掠刃 / 3 回印 / 4 虚影 / 5 必杀。按下进瞄，再按同键或左键释放。';
   }
   if (hero === 'well') {
-    return '技能 1 索爆 / 2 易位 / 3 索桩 / 4 回索。按下进瞄，再按同键或左键释放。';
+    return '技能 1 索爆 / 2 易位 / 3 索桩 / 4 回索 / 5 必杀。按下进瞄，再按同键或左键释放。';
   }
   if (hero === 'mirror') {
-    return '技能 1 折光 / 2 反照 / 3 裂镜 / 4 镜壁。按下进瞄，再按同键或左键释放。';
+    return '技能 1 折光 / 2 反照 / 3 裂镜 / 4 镜壁 / 5 必杀。按下进瞄，再按同键或左键释放。';
   }
-  return '技能 1 钩矛 / 2 连刺 / 3 盾冲 / 4 蓄势。按下进瞄，再按同键或左键释放。';
+  return '技能 1 钩矛 / 2 连刺 / 3 盾冲 / 4 蓄势 / 5 无畏冲锋。按下进瞄，再按同键或左键释放。';
 }

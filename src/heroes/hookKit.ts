@@ -45,6 +45,21 @@ export const HOOK_BRAKE = {
   popSpeed: 16.5,
 } as const;
 
+/** 钩刺第五键必杀：三步后退后沿活枪尖加速穿刺，与盾冲/蓄势不是同一套。 */
+export const HOOK_ULT = {
+  slot: 5,
+  energyCost: 100,
+  steps: 3,
+  stepTime: 0.2,
+  stepDist: 0.8,
+  chargeSpeed0: 8,
+  chargeAccel: 12,
+  chargeSpeedCap: 16,
+  turnDegPerSec: 90,
+  damage: 36,
+  stallAbortSec: 0.25,
+} as const;
+
 /** 对内仍是钩刺四槽：勾过来 / 方向捅 / 推过去 / 急停蓄弹 */
 export const HOOK_SKILL_INTERNAL = ['勾过来', '方向捅', '推过去', '急停蓄弹'] as const;
 /** 骑士冲杀对外显示名 */
@@ -69,6 +84,9 @@ export function hookWindup(slot: SkillSlot): number {
   if (slot === 3) {
     return HOOK_SHOVE.windup;
   }
+  if (slot === 5) {
+    return 0;
+  }
   return HOOK_BRAKE.windup;
 }
 
@@ -78,7 +96,7 @@ export function hookSkillCd(slot: SkillSlot): number {
 
 /** 勾飞 / 盾冲 / 蓄势弹出算位移技，吃困圈禁止。 */
 export function hookIsDisplace(slot: SkillSlot): boolean {
-  return slot === 1 || slot === 3 || slot === 4;
+  return slot === 1 || slot === 3 || slot === 4 || slot === 5;
 }
 
 /** 瞄准预览：勾/捅用扇形，推过去用冲刺线段，急停只画箭头。 */

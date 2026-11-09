@@ -1,4 +1,4 @@
-export type SkillSlot = 1 | 2 | 3 | 4;
+export type SkillSlot = 1 | 2 | 3 | 4 | 5;
 
 export type ActionSample = {
   aimX: number;

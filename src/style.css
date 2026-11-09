@@ -1114,6 +1114,94 @@ canvas {
   transform: none;
 }
 
+.touchUlt {
+  position: relative;
+  width: min(12vmin, 60px);
+  height: min(12vmin, 60px);
+  min-width: 60px;
+  min-height: 60px;
+  flex: none;
+}
+
+.touchUltRing {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  background: conic-gradient(
+    from -90deg,
+    var(--wood-frame) 0 calc(var(--ult-energy, 0) * 1turn),
+    rgba(47, 36, 26, 0.18) 0
+  );
+}
+
+.touchUltBtn {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid var(--wood-frame);
+  background: var(--button-idle);
+  color: var(--ink);
+  font: 700 12px/1.1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  box-shadow: var(--hud-shadow);
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touchUltBtn.isAiming,
+.touchUltBtn:active {
+  background: var(--button-pressed);
+  border-color: var(--wood-frame-dark);
+}
+
+.touchUltBtn.isReady {
+  border-color: var(--wood-frame-dark);
+}
+
+.touchUltName,
+.touchUltNeed {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+  text-shadow: 0 1px 2px var(--outline-ui);
+}
+
+.touchUltNeed {
+  position: absolute;
+  bottom: 4px;
+  font-size: 10px;
+  color: var(--ink-muted);
+}
+
+.touchUltTodo {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 8;
+  padding: 3px 7px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: var(--parchment-base);
+  color: var(--ink);
+  font: 700 12px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  transform: translateX(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.touchUltTodo.isOn {
+  display: block;
+}
+
 .touchSkillBtn {
   position: relative;
   box-sizing: border-box;
@@ -1292,7 +1380,9 @@ canvas {
   font-size: 13px;
 }
 
-#app.isShortHud .touchSkillBtn {
+#app.isShortHud .touchSkillBtn,
+#app.isShortHud .touchUlt,
+#app.isShortHud .touchUltBtn {
   width: min(12vmin, 60px);
   height: min(12vmin, 60px);
   min-width: 60px;

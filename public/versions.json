@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.39-hook-ult-charge",
+    "version": "0.0.39",
+    "date": "2026-11-09",
+    "summary": "钩刺第五键无畏冲锋：满能量后退三步后沿枪尖加速穿刺；七英雄统一必杀键+能量，其余点 5 显示 todo"
+  },
+  {
     "id": "v0.0.38-lock-first-landscape",
     "version": "0.0.38",
     "date": "2026-11-09",

@@ -211,6 +211,10 @@ export function createAimPreview(): AimPreview {
     }
     const shape = hookAimShape(slot);
     const dir = aimDirOf(player, sample);
+    if (slot === 5) {
+      drawAimArrow(root, dir.x, dir.y, color, 1.6);
+      return;
+    }
     if (shape) {
       drawCone(root, dir.x, dir.y, shape.halfRad, shape.radius, color, alpha);
     }

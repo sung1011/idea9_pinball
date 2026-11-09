@@ -34,6 +34,8 @@ import { verifyCombatStats } from './core/verifyCombatStats';
 import { verifySelfMark } from './core/verifySelfMark';
 import { verifyWorldViewLock } from './core/verifyWorldViewLock';
 import { verifyRespawnHud } from './core/verifyRespawnHud';
+import { verifyUlt } from './core/verifyUlt';
+import { creditUltCombat } from './core/ultEnergy';
 import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
@@ -90,6 +92,7 @@ async function boot(): Promise<void> {
   verifySelfMark();
   verifyWorldViewLock();
   verifyRespawnHud();
+  verifyUlt();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -174,8 +177,8 @@ async function boot(): Promise<void> {
   bindLandscapeLock();
 
   const bus = createActionBus();
-  const control = createPlayerControl(player.hero);
   const touchPad = createTouchPad(host, bus);
+  const control = createPlayerControl(player.hero, { onUltTodo: () => touchPad.showTodo() });
   bindPcInput({
     canvas: app.canvas,
     getTransform: () => transform,
@@ -407,6 +410,7 @@ async function boot(): Promise<void> {
     combatStats.applyHits(frameHits);
     combatStats.applyHits(extraHits);
     combatStats.applyHeals(step.heals);
+    creditUltCombat(balls, [...frameHits, ...extraHits], step.heals);
     combatFloats.spawn([
       ...floatsFromHits([...frameHits, ...extraHits], balls),
       ...takeHealFloats([...step.heals, ...potionHeals]),
@@ -430,6 +434,7 @@ async function boot(): Promise<void> {
       windupSlot: windup?.slot ?? 0,
       fineTuneOn: player.fineTuneRemain > 0,
       hero: player.hero,
+      energy: player.ultEnergy,
     });
     fields.sync(balls, { potion: next.potion, rift: next.rift });
     aimPreview.sync(player, aimingSlot, sample, windup, aimHint);

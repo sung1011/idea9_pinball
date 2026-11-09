@@ -1,6 +1,7 @@
 import type { SkillCds } from '../core/skillCaster';
+import { ULT_ENERGY_MAX } from '../core/ultEnergy';
 import type { HeroId } from '../heroes/heroIds';
-import { skillNames, skillShorts, skillTipCopy } from '../heroes/kitLabels';
+import { skillNames, skillShorts, skillTipCopy, ultName, ultShort, ULT_TODO_COPY } from '../heroes/kitLabels';
 import { skillIconUrl } from '../heroes/skillIcons';
 import {
   bindSkillIcon,
@@ -19,10 +20,12 @@ export type TouchPadStatus = {
   windupSlot?: number;
   fineTuneOn: boolean;
   hero?: HeroId;
+  energy?: number;
 };
 
 export type TouchPad = {
   sync: (status: TouchPadStatus) => void;
+  showTodo: () => void;
 };
 
 export type TouchPadOpts = {
@@ -41,10 +44,10 @@ function preventPageGestures(): void {
 }
 
 function isSkillSlot(slot: number): slot is SkillSlot {
-  return slot === 1 || slot === 2 || slot === 3 || slot === 4;
+  return slot === 1 || slot === 2 || slot === 3 || slot === 4 || slot === 5;
 }
 
-/** 横排技能四键 Skill1–4，锚在视窗右下；无左摇杆。瞄准中「取消」锚在当前技能正上方。点在键上不抢 Aim（data-touch-control）。 */
+/** 横排技能四键 Skill1–4，其左第五键必杀+能量；锚在视窗右下。瞄准中「取消」锚在当前技能正上方。点在键上不抢 Aim（data-touch-control）。 */
 export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPadOpts = {}): TouchPad {
   const holdMs = opts.holdMs ?? SKILL_TIP_HOLD_MS;
   const root = document.createElement('div');
@@ -60,7 +63,49 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
   let holdTimer = 0;
   let holdSlot: SkillSlot | 0 = 0;
   let cancelBtn: HTMLButtonElement | null = null;
+  let todoTimer = 0;
   const tip = createSkillTip(root, () => (cancelBtn && !cancelBtn.hidden ? cancelBtn : null));
+
+  const ultWrap = document.createElement('div');
+  ultWrap.className = 'touchUlt';
+  ultWrap.dataset.touchControl = 'ult';
+  const ultRing = document.createElement('span');
+  ultRing.className = 'touchUltRing';
+  ultRing.setAttribute('aria-hidden', 'true');
+  const ultBtn = document.createElement('button');
+  ultBtn.type = 'button';
+  ultBtn.className = 'touchUltBtn';
+  ultBtn.dataset.touchControl = 'skill';
+  ultBtn.dataset.slot = '5';
+  const ultNameEl = document.createElement('span');
+  ultNameEl.className = 'touchUltName';
+  ultNameEl.textContent = ultShort('hook');
+  const ultNeed = document.createElement('span');
+  ultNeed.className = 'touchUltNeed';
+  ultNeed.setAttribute('aria-hidden', 'true');
+  ultBtn.append(ultNameEl, ultNeed);
+  const ultTodo = document.createElement('div');
+  ultTodo.className = 'touchUltTodo';
+  ultTodo.textContent = ULT_TODO_COPY;
+  ultWrap.append(ultRing, ultBtn, ultTodo);
+
+  const hideTodo = (): void => {
+    if (todoTimer) {
+      window.clearTimeout(todoTimer);
+      todoTimer = 0;
+    }
+    ultTodo.classList.remove('isOn');
+  };
+
+  const showTodo = (): void => {
+    hideTodo();
+    ultTodo.textContent = ULT_TODO_COPY;
+    ultTodo.classList.add('isOn');
+    todoTimer = window.setTimeout(() => {
+      todoTimer = 0;
+      ultTodo.classList.remove('isOn');
+    }, 1100);
+  };
 
   const hideTip = (): void => {
     if (holdTimer) {
@@ -87,6 +132,31 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
       showTip(slot, btn);
     }, holdMs);
   };
+
+  skills.appendChild(ultWrap);
+
+  ultBtn.addEventListener('pointerdown', (ev: PointerEvent) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    bus.pushSkill(5);
+    try {
+      ultBtn.setPointerCapture(ev.pointerId);
+    } catch {
+      // 启动自测可能未接入文档。
+    }
+    beginHold(5, ultBtn);
+  });
+  ultBtn.addEventListener('pointerup', (ev: PointerEvent) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    hideTip();
+  });
+  ultBtn.addEventListener('pointercancel', () => {
+    hideTip();
+  });
+  ultBtn.addEventListener('contextmenu', (ev: Event) => {
+    ev.preventDefault();
+  });
 
   for (let slot = 1; slot <= 4; slot += 1) {
     const btn = document.createElement('button');
@@ -151,12 +221,13 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
       cancel.hidden = true;
       return;
     }
-    const btn = buttons[slot - 1];
+    const btn = slot === 5 ? ultBtn : buttons[slot - 1];
     cancel.hidden = false;
     cancel.style.left = `${btn.offsetLeft + btn.offsetWidth / 2}px`;
   };
 
   return {
+    showTodo,
     sync: (status: TouchPadStatus) => {
       hero = status.hero ?? 'hook';
       root.classList.toggle('isFineTune', status.fineTuneOn);
@@ -173,6 +244,15 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
         buttons[i].classList.toggle('isAiming', status.aimingSlot === slot || status.windupSlot === slot);
         syncSkillCdFace(buttons[i], faces[i], remain, cdTotals[i]);
       }
+      const energy = Math.max(0, Math.min(ULT_ENERGY_MAX, status.energy ?? 0));
+      const filled = energy >= ULT_ENERGY_MAX - 1e-6;
+      ultNameEl.textContent = ultShort(hero);
+      ultBtn.setAttribute('aria-label', ultName(hero));
+      ultBtn.classList.toggle('isAiming', status.aimingSlot === 5 || status.windupSlot === 5);
+      ultBtn.classList.toggle('isReady', filled && hero === 'hook');
+      ultWrap.classList.toggle('isHook', hero === 'hook');
+      ultRing.style.setProperty('--ult-energy', (energy / ULT_ENERGY_MAX).toFixed(4));
+      ultNeed.textContent = filled ? '' : String(Math.floor(energy));
       if (tip.isOn() && isSkillSlot(holdSlot)) {
         tip.syncCopy(skillTipCopy(hero, holdSlot));
       } else if (tip.isOn()) {

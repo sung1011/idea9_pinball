@@ -1,4 +1,5 @@
 import { clearKitAuras, clearPotionBuffs, createBallBody, grantInvincible, type BallBody, type TeamId } from './ballBody';
+import { clearUltEnergy } from './ultEnergy';
 import { pickRandomHero, type HeroId } from '../heroes/heroIds';
 import type { CollisionHit } from './collisionDamage';
 import {
@@ -243,6 +244,7 @@ function resetBall(ball: BallBody, openingInvincible: number): void {
   ball.hasAim = false;
   clearKitAuras(ball);
   clearPotionBuffs(ball);
+  clearUltEnergy(ball);
   const face = facingTowardControl(ball.x, ball.y);
   ball.facingX = face.facingX;
   ball.facingY = face.facingY;

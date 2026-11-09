@@ -341,8 +341,10 @@ export function verifyHudLayout(): void {
   assert(sides[0]?.classList.contains('matchHudRed') && sides[1]?.classList.contains('matchHudBlue'), 'HUD：胶囊顺序应为红 | 计时 | 蓝');
   assert(cluster.querySelectorAll('.matchHudMark').length === 2, 'HUD：红蓝两侧应有小队标');
   assert(cluster.contains(modePick) === false, 'HUD：模式下拉应留在边缘，不进顶中胶囊');
+  const ultBtn = host.querySelector<HTMLButtonElement>('button.touchUltBtn');
   assert(skillBtns.length === 4, 'HUD：应为横排四技能键');
   assert(skillBtns.map((btn) => btn.dataset.slot).join('') === '1234', 'HUD：技能键从左到右应为 Skill1–4');
+  assert(!!ultBtn && ultBtn.dataset.slot === '5', 'HUD：右侧技能行应另有第五键必杀');
   assert(cancelBtn.textContent === '取消', 'HUD：取消键文案应为取消');
   assert(cancelBtn.hidden, 'HUD：未瞄准时取消键应隐藏');
 

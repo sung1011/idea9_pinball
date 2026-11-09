@@ -62,11 +62,15 @@ export const SKILL_ICON_COUNT = 28;
 export const SKILL_ICON_BYTES = 253850;
 
 export function skillIconFile(hero: HeroId, slot: SkillSlot): string {
-  return SKILL_ICON_FILES[hero][slot - 1];
+  return SKILL_ICON_FILES[hero][slot - 1] ?? '';
 }
 
 export function skillIconUrl(hero: HeroId, slot: SkillSlot): string {
+  const file = skillIconFile(hero, slot);
+  if (!file) {
+    return '';
+  }
   const base = import.meta.env.BASE_URL || '/';
   const prefix = base.endsWith('/') ? base : `${base}/`;
-  return `${prefix}skillIcons/${skillIconFile(hero, slot)}`;
+  return `${prefix}skillIcons/${file}`;
 }

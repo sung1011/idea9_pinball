@@ -8,11 +8,25 @@ import {
   HOOK_PULL,
   HOOK_SHOVE,
   HOOK_STAB,
+  HOOK_ULT,
   hookAimShape,
   hookIsDisplace,
   hookSkillCd,
   hookWindup,
 } from '../heroes/hookKit';
+import {
+  applyUltBackVel,
+  applyUltChargeVel,
+  beginUltBack,
+  beginUltCharge,
+  finishUltThrust,
+  keepUltFacing,
+  restoreUltChargeVel,
+  sweepUltHits,
+  ultOutOfBounds,
+  type UltEffect,
+} from './hookUlt';
+import { canSpendUlt, spendUltEnergy, ULT_ENERGY_MAX } from './ultEnergy';
 import { RING_TRAP } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import { createArcCaster } from './arcCaster';
@@ -56,7 +70,8 @@ type Effect =
   | { kind: 'windup'; slot: SkillSlot; remain: number; aimX: number; aimY: number; targetId?: number }
   | { kind: 'hookFly'; targetId: number }
   | { kind: 'stab'; nextIn: number; index: number; aimX: number; aimY: number }
-  | { kind: 'dash'; dirX: number; dirY: number; remainTime: number; remainDist: number; speed: number };
+  | { kind: 'dash'; dirX: number; dirY: number; remainTime: number; remainDist: number; speed: number }
+  | UltEffect;
 
 export { applyHardCc, scaleHardCc } from './hardCc';
 
@@ -109,12 +124,16 @@ function lockedPullTarget(ball: BallBody, roster: readonly BallBody[], lockId: n
   return target;
 }
 
+function isUltEffect(effect: Effect | null): effect is UltEffect {
+  return !!effect && (effect.kind === 'ultBack' || effect.kind === 'ultCharge');
+}
+
 function isHardBusy(effect: Effect | null): boolean {
-  return !!effect && (effect.kind === 'windup' || effect.kind === 'stab' || effect.kind === 'dash');
+  return !!effect && (effect.kind === 'windup' || effect.kind === 'stab' || effect.kind === 'dash' || isUltEffect(effect));
 }
 
 function isDisplacing(effect: Effect | null): boolean {
-  return !!effect && (effect.kind === 'hookFly' || effect.kind === 'dash');
+  return !!effect && (effect.kind === 'hookFly' || effect.kind === 'dash' || isUltEffect(effect));
 }
 
 export type SkillCaster = {
@@ -188,7 +207,10 @@ export function createHookCaster(): SkillCaster {
       return;
     }
     const slot = aimingSlot;
-    if (cds[slot - 1] > 0) {
+    if (slot !== 5 && cds[slot - 1] > 0) {
+      return;
+    }
+    if (slot === 5 && !canSpendUlt(ball, HOOK_ULT.energyCost)) {
       return;
     }
     const aim = aimDirOf(ball, sample);
@@ -196,7 +218,18 @@ export function createHookCaster(): SkillCaster {
       return;
     }
     if (hookIsDisplace(slot) && isInEnemyTrap(ball)) {
-      punishDisplace(slot);
+      if (slot !== 5) {
+        punishDisplace(slot);
+      }
+      return;
+    }
+    if (slot === 5) {
+      if (!spendUltEnergy(ball, HOOK_ULT.energyCost)) {
+        return;
+      }
+      aimingSlot = 0;
+      cancelBrake();
+      effect = beginUltBack(ball, 1);
       return;
     }
     startCd(slot);
@@ -236,7 +269,11 @@ export function createHookCaster(): SkillCaster {
     if (sample.skillPress) {
       if (aimingSlot === sample.skillPress) {
         tryRelease(ball, sample, roster);
-      } else if (cds[sample.skillPress - 1] <= 0 && !isHardBusy(effect)) {
+      } else if (sample.skillPress === 5) {
+        if (canSpendUlt(ball, ULT_ENERGY_MAX) && !isHardBusy(effect)) {
+          aimingSlot = 5;
+        }
+      } else if ((cds[sample.skillPress - 1] ?? 1) <= 0 && !isHardBusy(effect)) {
         aimingSlot = sample.skillPress;
       }
     }
@@ -414,6 +451,9 @@ export function createHookCaster(): SkillCaster {
     ball.frictionMul = 1;
     ball.suppressCombat = false;
     if (!ball.inPlay) {
+      if (isUltEffect(effect)) {
+        finishUltThrust(ball);
+      }
       aimingSlot = 0;
       effect = null;
       cancelBrake();
@@ -421,6 +461,12 @@ export function createHookCaster(): SkillCaster {
     }
 
     const hits: CollisionHit[] = [];
+    if (isUltEffect(effect) && skillsBlocked(ball)) {
+      finishUltThrust(ball);
+      effect = null;
+      aimingSlot = 0;
+      return hits;
+    }
     if (effect?.kind === 'windup') {
       effect.remain -= step;
       if (effect.remain <= TIME_EPS) {
@@ -455,6 +501,21 @@ export function createHookCaster(): SkillCaster {
 
     applyHookFly(ball, roster);
     applyDashVel(ball);
+    if (effect?.kind === 'ultBack') {
+      effect.remain -= step;
+      applyUltBackVel(ball, effect);
+      if (effect.remain <= TIME_EPS) {
+        const nextStep = effect.step + 1;
+        if (nextStep <= HOOK_ULT.steps) {
+          effect = beginUltBack(ball, nextStep);
+          applyUltBackVel(ball, effect);
+        } else {
+          effect = beginUltCharge(ball);
+        }
+      }
+    } else if (effect?.kind === 'ultCharge') {
+      applyUltChargeVel(ball, effect, step);
+    }
     return hits;
   };
 
@@ -465,6 +526,9 @@ export function createHookCaster(): SkillCaster {
     wallHit: boolean,
   ): CollisionHit[] => {
     if (!ball.inPlay) {
+      if (isUltEffect(effect)) {
+        finishUltThrust(ball);
+      }
       effect = null;
       cancelBrake();
       return [];
@@ -482,6 +546,40 @@ export function createHookCaster(): SkillCaster {
         effect = null;
       }
       return [];
+    }
+    if (isUltEffect(effect) && skillsBlocked(ball)) {
+      finishUltThrust(ball);
+      effect = null;
+      aimingSlot = 0;
+      return [];
+    }
+    if (effect?.kind === 'ultBack') {
+      if (wallHit) {
+        effect.remainDist = 0;
+        ball.vx = 0;
+        ball.vy = 0;
+      } else {
+        effect.remainDist -= (HOOK_ULT.stepDist / HOOK_ULT.stepTime) * Math.max(0, dt);
+      }
+      keepUltFacing(ball, effect);
+      return [];
+    }
+    if (effect?.kind === 'ultCharge') {
+      const chargeHits = sweepUltHits(ball, roster, effect, dt);
+      if (
+        wallHit ||
+        ultOutOfBounds(ball) ||
+        !Number.isFinite(ball.vx) ||
+        !Number.isFinite(ball.vy) ||
+        effect.stall >= HOOK_ULT.stallAbortSec
+      ) {
+        finishUltThrust(ball);
+        effect = null;
+        return chargeHits;
+      }
+      restoreUltChargeVel(ball, effect);
+      keepUltFacing(ball, effect);
+      return chargeHits;
     }
     if (effect?.kind !== 'dash') {
       return [];
@@ -550,7 +648,18 @@ export function createHookCaster(): SkillCaster {
     },
     getAimingSlot: () => aimingSlot,
     getCds: () => [cds[0], cds[1], cds[2], cds[3]],
-    getWindup: () => (effect?.kind === 'windup' ? { slot: effect.slot, remain: effect.remain } : null),
+    getWindup: () => {
+      if (effect?.kind === 'windup') {
+        return { slot: effect.slot, remain: effect.remain };
+      }
+      if (effect?.kind === 'ultBack') {
+        return { slot: 5, remain: effect.remain };
+      }
+      if (effect?.kind === 'ultCharge') {
+        return { slot: 5, remain: 0 };
+      }
+      return null;
+    },
     isHardBusy: () => isHardBusy(effect),
     isDisplacing: () => isDisplacing(effect),
     getHero: (): HeroId => 'hook',

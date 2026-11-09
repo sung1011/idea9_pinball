@@ -117,6 +117,10 @@ export type BallBody = {
   /** 护盾药水剩余秒；吸收量见 potionShieldHp */
   potionShieldRemain: number;
   potionShieldHp: number;
+  /** 必杀能量 0–100；死亡保留、换英雄/重开清空 */
+  ultEnergy: number;
+  /** 未换成能量的有效伤害+治疗余量 */
+  ultCombatCredit: number;
 };
 
 export function createBallBody(init: {
@@ -205,6 +209,8 @@ export function createBallBody(init: {
     potionSpeedRemain: 0,
     potionShieldRemain: 0,
     potionShieldHp: 0,
+    ultEnergy: 0,
+    ultCombatCredit: 0,
   };
 }
 
