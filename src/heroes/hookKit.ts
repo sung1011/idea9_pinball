@@ -42,7 +42,7 @@ export const HOOK_BRAKE = {
   windup: 0,
   brakeTime: 2.6,
   frictionMul: 10,
-  popSpeed: 11,
+  popSpeed: 16.5,
 } as const;
 
 /** 对内仍是钩刺四槽：勾过来 / 方向捅 / 推过去 / 急停蓄弹 */

@@ -118,7 +118,7 @@ function controlPlay(
 
 function assertPopAlongSpear(ball: BallBody, expectX: number, expectY: number, label: string): void {
   const speed = Math.hypot(ball.vx, ball.vy);
-  assert(Math.abs(speed - HOOK_BRAKE.popSpeed) < 0.35, `${label}：弹出速度应为 11`);
+  assert(Math.abs(speed - HOOK_BRAKE.popSpeed) < 0.55, `${label}：弹出速度应为 16.5`);
   const spear = spearAimDir(ball);
   const len = Math.hypot(expectX, expectY) || 1;
   const nx = expectX / len;
@@ -347,16 +347,25 @@ export function verifyM5(): void {
     const speed = Math.hypot(brakeBall.vx, brakeBall.vy);
     if (speed > 8) {
       popped = true;
-      assert(Math.abs(speed - HOOK_BRAKE.popSpeed) < 0.35, 'M5：急停结束应按朝向 11 速弹出');
+      assert(Math.abs(speed - HOOK_BRAKE.popSpeed) < 0.55, 'M5：急停结束应按朝向 16.5 速弹出');
       assert(brakeBall.activeRamRemain > 0.2, 'M5：弹出后应开主动撞窗');
       assertPopAlongSpear(brakeBall, 1, 0, 'M5：不转向蓄势');
     }
   }
   assert(popped, 'M5：急停结束应弹出');
+  assert(HOOK_BRAKE.popSpeed === 16.5, 'M5：蓄势弹出速应为 16.5（约 1.5 倍旧 11）');
   assert(
-    HOOK_BRAKE.brakeTime === 2.6 && HOOK_BRAKE.frictionMul === 10 && HOOK_BRAKE.popSpeed === 11,
-    'M5：蓄势时长/摩擦/弹出速不应改',
+    HOOK_BRAKE.brakeTime === 2.6 && HOOK_BRAKE.frictionMul === 10 && HOOK_BRAKE.cd === 12,
+    'M5：蓄势时长/摩擦/CD 不应改',
   );
+  const xPop = brakeBall.x;
+  const coast = 0.5;
+  advance(brake, brakeBall, [brakeBall], coast);
+  const traveled = brakeBall.x - xPop;
+  const expectTravel = (HOOK_BRAKE.popSpeed / FRICTION) * (1 - Math.exp(-FRICTION * coast));
+  const oldTravel = (11 / FRICTION) * (1 - Math.exp(-FRICTION * coast));
+  assert(Math.abs(traveled - expectTravel) < 0.45, 'M5：蓄势弹出 0.5s 位移应随 16.5 速');
+  assert(traveled > oldTravel * 1.35, 'M5：蓄势弹出位移应约为旧 11 速的 1.5 倍');
 
   const steerCaster = createSkillCaster();
   const steerBall = createBallBody({
