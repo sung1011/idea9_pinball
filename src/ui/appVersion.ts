@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '右下本局伤害/治疗统计：双方全员、页签切换、可收到右侧；只记实际扣血回血，重开/切模式清零' },
   { title: '新增八杀模式（先到 8 杀、药水、地裂矛阵），占点保留旧领地规则；左上模式下落本地记住' },
   { title: '技能四键放大到约 60px；瞄准中「取消」出现在当前技能正上方' },
   { title: '锁死当前横屏侧：不再 CSS 转 90°，也不允许 180° 对调；无转屏提示' },

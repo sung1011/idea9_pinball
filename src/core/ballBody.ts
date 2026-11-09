@@ -66,6 +66,8 @@ export type BallBody = {
   /** 治疗链 HOT 剩余秒数；>0 时每秒回血 */
   healRemain: number;
   healDps: number;
+  /** HOT 实际回血归属；-1 表示无施法者（不记治疗榜） */
+  healSourceId: number;
   /** 愈链对敌 DoT 剩余秒数；>0 时每秒掉血 */
   burnRemain: number;
   burnDps: number;
@@ -170,6 +172,7 @@ export function createBallBody(init: {
     fieldRemain: 0,
     healRemain: 0,
     healDps: 0,
+    healSourceId: -1,
     burnRemain: 0,
     burnDps: 0,
     burnSourceId: -1,
@@ -295,9 +298,12 @@ export function tickStun(ball: BallBody, dt: number): void {
   ball.stunRemain = Math.max(0, ball.stunRemain - dt);
 }
 
-export function applyHealHot(ball: BallBody, dps: number, duration: number): void {
+export function applyHealHot(ball: BallBody, dps: number, duration: number, sourceId = -1): void {
   ball.healDps = dps;
   ball.healRemain = Math.max(ball.healRemain, duration);
+  if (sourceId >= 0) {
+    ball.healSourceId = sourceId;
+  }
 }
 
 export function applyBurn(ball: BallBody, dps: number, duration: number, sourceId: number): void {
@@ -334,6 +340,7 @@ export function tickHeal(ball: BallBody, dt: number): number {
   ball.healRemain = Math.max(0, ball.healRemain - step);
   if (ball.healRemain <= 0) {
     ball.healDps = 0;
+    ball.healSourceId = -1;
   }
   return gained;
 }
@@ -568,6 +575,7 @@ export function clearKitAuras(ball: BallBody): void {
   ball.fieldRemain = 0;
   ball.healRemain = 0;
   ball.healDps = 0;
+  ball.healSourceId = -1;
   clearBurn(ball);
   ball.shieldRemain = 0;
   ball.shieldMul = 1;

@@ -186,9 +186,16 @@ export function stepPhysics(
     tickInvincible(ball, stepDt);
     tickStun(ball, stepDt);
     tickSilence(ball, stepDt);
+    const healSourceId = ball.healSourceId;
     const healed = tickHeal(ball, stepDt);
     if (healed > 0) {
-      heals.push({ unitId: ball.id, amount: healed, x: ball.x, y: ball.y });
+      heals.push({
+        unitId: ball.id,
+        amount: healed,
+        x: ball.x,
+        y: ball.y,
+        sourceId: healSourceId,
+      });
     }
     const burner = live.find((item) => item.id === ball.burnSourceId);
     const burned = tickBurn(ball, stepDt, burner);
@@ -201,7 +208,13 @@ export function stepPhysics(
       item.hp = Math.min(item.maxHp, item.hp + NAIL_ARMOR.heal);
       const gained = item.hp - before;
       if (gained > 0) {
-        heals.push({ unitId: item.id, amount: gained, x: item.x, y: item.y });
+        heals.push({
+          unitId: item.id,
+          amount: gained,
+          x: item.x,
+          y: item.y,
+          sourceId: item.id,
+        });
       }
     });
     tickReflect(ball, stepDt);

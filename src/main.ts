@@ -29,6 +29,8 @@ import { verifyUiTheme } from './core/verifyUiTheme';
 import { verifyCombatFloat } from './core/verifyCombatFloat';
 import { resetBoomFlashes } from './core/boomFlashes';
 import { floatsFromHits, floatsFromShield, resetCombatFloatAcc, takeHealFloats } from './core/combatFloat';
+import { createCombatStats } from './core/combatStats';
+import { verifyCombatStats } from './core/verifyCombatStats';
 import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
@@ -47,6 +49,7 @@ import { createArenaView } from './render/arenaView';
 import { createBallView } from './render/ballView';
 import { createCombatFloatView } from './render/combatFloatView';
 import { applyWorldTransform, fitWorldToBox, type WorldTransform } from './render/worldTransform';
+import { createCombatStatsPanel } from './ui/combatStatsPanel';
 import { createHelpCard } from './ui/helpCard';
 import { createMatchHud } from './ui/matchHud';
 import { createResultPanel } from './ui/resultPanel';
@@ -78,6 +81,7 @@ async function boot(): Promise<void> {
   verifyTouchAim();
   verifyUiTheme();
   verifyCombatFloat();
+  verifyCombatStats();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -207,6 +211,10 @@ async function boot(): Promise<void> {
 
   let applyMatchMode = (_mode: MatchModeId): void => {};
 
+  const combatStats = createCombatStats();
+  const combatStatsPanel = createCombatStatsPanel(host, combatStats);
+  combatStatsPanel.sync(balls, player.id);
+
   const matchHud = createMatchHud(host, {
     hero: player.hero,
     allyHero: ally?.hero ?? 'chain',
@@ -226,6 +234,8 @@ async function boot(): Promise<void> {
     resetBoomFlashes();
     resetCombatFloatAcc();
     combatFloats.clear();
+    combatStats.reset();
+    combatStatsPanel.sync(balls, player.id);
     match.reset();
     control.reset();
     bus.reset();
@@ -386,12 +396,18 @@ async function boot(): Promise<void> {
     }
     const frameHits = [...step.hits, ...skillHits];
     match.tick(dt, frameHits);
+    const extraHits = match.takeExtraHits();
+    const potionHeals = match.takePotionHeals();
+    combatStats.applyHits(frameHits);
+    combatStats.applyHits(extraHits);
+    combatStats.applyHeals(step.heals);
     combatFloats.spawn([
-      ...floatsFromHits([...frameHits, ...match.takeExtraHits()], balls),
-      ...takeHealFloats([...step.heals, ...match.takePotionHeals()]),
+      ...floatsFromHits([...frameHits, ...extraHits], balls),
+      ...takeHealFloats([...step.heals, ...potionHeals]),
       ...floatsFromShield(takeShieldAbsorbs()),
     ]);
     combatFloats.tick(dt);
+    combatStatsPanel.sync(balls, player.id);
     const next = match.snapshot();
     const aimingSlot = control.getAimingSlot();
     const skillCds = control.getSkillCds();

@@ -53,6 +53,7 @@ body,
   --hud-safe-right: env(safe-area-inset-right, 0px);
   --hud-safe-bottom: env(safe-area-inset-bottom, 0px);
   --hud-safe-left: env(safe-area-inset-left, 0px);
+  --combat-stats-skill-clearance: 110px;
   --stage-left: 8px;
   --stage-top: 8px;
   --stage-right: calc(100% - 8px);
@@ -1237,4 +1238,222 @@ canvas {
 #app.isNarrowHud .matchHudHeroTag {
   font-size: 9px;
   padding: 0 3px 0 4px;
+}
+
+.combatStats {
+  position: absolute;
+  right: calc(var(--hud-safe-right, 0px) + var(--hud-pad, 8px));
+  bottom: calc(var(--hud-safe-bottom, 0px) + var(--hud-pad, 8px) + var(--combat-stats-skill-clearance, 110px));
+  z-index: 6;
+  pointer-events: none;
+  transform: none;
+}
+
+.combatStatsPanel,
+.combatStatsDock {
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.combatStatsPanel[hidden],
+.combatStatsDock[hidden] {
+  display: none;
+}
+
+.combatStatsPanel {
+  width: min(300px, 42vw);
+  min-width: 220px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background-color: var(--parchment-base);
+  background-image: linear-gradient(180deg, var(--parchment-highlight) 0%, transparent 36%);
+  border: 2px solid var(--wood-frame);
+  box-shadow:
+    0 0 0 1px var(--gold-spear),
+    inset 0 0 0 1px var(--gold-spear-highlight),
+    var(--hud-shadow);
+  color: var(--ink);
+  font: 12px/1.3 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+.combatStatsHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 8px;
+  background: linear-gradient(180deg, var(--wood-frame) 0%, var(--wood-frame-dark) 100%);
+}
+
+.combatStatsTabs {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.combatStatsTab {
+  flex: 1;
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--parchment-highlight);
+  font: 700 13px/1.1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.combatStatsTab.isOn {
+  background: var(--parchment-base);
+  color: var(--ink);
+  border-color: var(--gold-spear);
+  box-shadow: inset 0 1px 0 var(--parchment-highlight);
+}
+
+.combatStatsCollapse,
+.combatStatsDock {
+  box-sizing: border-box;
+  border: 2px solid var(--wood-frame);
+  background: var(--button-idle);
+  color: var(--ink);
+  font: 700 12px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--gold-spear), var(--hud-shadow);
+}
+
+.combatStatsCollapse {
+  flex: none;
+  min-width: 40px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+}
+
+.combatStatsCollapse:active,
+.combatStatsDock:active,
+.combatStatsTab:active {
+  background: var(--button-pressed);
+  border-color: var(--wood-frame-dark);
+}
+
+.combatStatsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px 10px;
+}
+
+.combatStatsRow {
+  display: grid;
+  grid-template-columns: 18px 8px minmax(4.6em, auto) minmax(48px, 1fr) 2.6em;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+}
+
+.combatStatsFace {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  color: var(--ink);
+}
+
+.combatStatsRow[data-team='red'] .combatStatsFace,
+.combatStatsRow[data-team='red'] .combatStatsDot,
+.combatStatsRow[data-team='red'] .combatStatsBarFill {
+  color: var(--team-red);
+}
+
+.combatStatsRow[data-team='blue'] .combatStatsFace,
+.combatStatsRow[data-team='blue'] .combatStatsDot,
+.combatStatsRow[data-team='blue'] .combatStatsBarFill {
+  color: var(--team-blue);
+}
+
+.combatStatsMarkSvg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.combatStatsSlot {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  min-width: 10px;
+  height: 10px;
+  padding: 0 2px;
+  border-radius: 999px;
+  background: var(--parchment-base);
+  color: var(--ink);
+  font: 700 8px/10px "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  text-align: center;
+  box-shadow: 0 0 0 1px var(--wood-frame);
+}
+
+.combatStatsDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 1px var(--wood-frame-dark);
+}
+
+.combatStatsName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.combatStatsBarTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--parchment-shadow);
+  overflow: hidden;
+}
+
+.combatStatsBarFill {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: currentColor;
+}
+
+.combatStatsVal {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+  color: var(--ink);
+}
+
+.combatStatsDock {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px 0 0 999px;
+  margin-right: calc(-1 * var(--hud-pad, 8px));
+}
+
+#app.isShortHud .combatStatsPanel {
+  width: min(260px, 46vw);
+}
+
+#app.isShortHud .combatStatsRow {
+  min-height: 18px;
+  gap: 4px;
+}
+
+#app.isShortHud .combatStatsTab {
+  min-height: 22px;
+  font-size: 12px;
 }

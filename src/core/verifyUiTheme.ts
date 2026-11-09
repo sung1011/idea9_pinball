@@ -3,6 +3,8 @@ import { createTouchPad } from '../input/touchPad';
 import type { AppVersions } from '../ui/appVersion';
 import { createHelpCard } from '../ui/helpCard';
 import { createMatchHud } from '../ui/matchHud';
+import { createCombatStats } from './combatStats';
+import { createCombatStatsPanel } from '../ui/combatStatsPanel';
 import { createResultPanel } from '../ui/resultPanel';
 import { createSettingsPanel } from '../ui/settingsPanel';
 import { createSkillTip } from '../ui/skillTip';
@@ -107,6 +109,7 @@ export function verifyUiTheme(): void {
   applyUiTheme(host);
   createMatchHud(host);
   createTouchPad(host, createActionBus(), { holdMs: 0 });
+  createCombatStatsPanel(host, createCombatStats());
   const help = createHelpCard(host);
   const settings = createSettingsPanel(host, {
     onRestart: () => {},
@@ -357,5 +360,25 @@ export function verifyUiTheme(): void {
   resultUi.sync(dummyResultSnap({ winner: 'blue', redScore: 42, blueScore: 100 }));
   assert(sameCssColor(color(resultTitle, 'color'), UI_THEME.teamRed), '失败标题：team_red');
   assert(sameCssColor(color(resultPanel, 'backgroundColor'), UI_THEME.parchmentBase), '失败结算板：仍羊皮纸');
+
+  const statsBoard = host.querySelector<HTMLElement>('.combatStatsPanel');
+  const statsDock = host.querySelector<HTMLButtonElement>('.combatStatsDock');
+  const statsTabOn = host.querySelector<HTMLElement>('.combatStatsTab.isOn');
+  if (!statsBoard || !statsDock || !statsTabOn) {
+    host.remove();
+    throw new Error('统计换皮：应有面板、页签与侧边钮');
+  }
+  const statsCs = getComputedStyle(statsBoard);
+  assert(sameCssColor(statsCs.backgroundColor, UI_THEME.parchmentBase), `统计面板：羊皮纸底（实际 ${statsCs.backgroundColor}）`);
+  assert(statsCs.borderTopStyle === 'solid', '统计面板：实线木框');
+  assert(borderPx(statsBoard) >= 1, `统计面板：木框可见（实际 ${statsCs.borderTopWidth}）`);
+  assert(
+    sameCssColor(statsCs.borderTopColor, UI_THEME.woodFrame),
+    `统计面板：wood_frame（实际 ${statsCs.borderTopColor}）`,
+  );
+  assert(cssColorHasGold(statsCs.boxShadow), '统计面板：木框外允许金边');
+  assert(sameCssColor(color(statsTabOn, 'color'), UI_THEME.ink), '统计页签选中：ink');
+  const dockCs = getComputedStyle(statsDock);
+  assert(sameCssColor(dockCs.backgroundColor, UI_THEME.buttonIdle) || statsDock.hidden, '统计侧边钮：button_idle');
   host.remove();
 }

@@ -7,6 +7,8 @@ import type { AppVersions } from '../ui/appVersion';
 import { createHelpCard } from '../ui/helpCard';
 import { landscapeLockType, lockLandscape } from '../ui/lockLandscape';
 import { createMatchHud } from '../ui/matchHud';
+import { createCombatStats } from './combatStats';
+import { createCombatStatsPanel } from '../ui/combatStatsPanel';
 import { createSettingsPanel } from '../ui/settingsPanel';
 import {
   applyStageVars,
@@ -301,6 +303,8 @@ export function verifyHudLayout(): void {
   const host = document.createElement('div');
   const hud = createMatchHud(host);
   const pad = createTouchPad(host, createActionBus());
+  const statsUi = createCombatStatsPanel(host, createCombatStats());
+  statsUi.sync([], 0);
   const cluster = host.querySelector<HTMLElement>('.matchHudCluster');
   const red = host.querySelector<HTMLElement>('.matchHudRed .matchHudScoreVal');
   const blue = host.querySelector<HTMLElement>('.matchHudBlue .matchHudScoreVal');
@@ -401,6 +405,18 @@ export function verifyHudLayout(): void {
   assert(cancelBox.bottom <= skill2Box.top - 4, 'HUD：取消键应在瞄准技能正上方');
   assert(skill2Box.top - cancelBox.bottom <= 12, 'HUD：取消键与技能键间距约 6–8px');
   assert(cancelBox.right < skill4Box.right - 4, 'HUD：取消键不应出现在技能行右侧');
+  const statsBoard = host.querySelector<HTMLElement>('.combatStatsPanel');
+  const statsDock = host.querySelector<HTMLButtonElement>('.combatStatsDock');
+  if (!statsBoard || !statsDock) {
+    throw new Error('HUD：右下应有统计面板');
+  }
+  assert(!statsBoard.hidden && statsDock.hidden, 'HUD：统计面板默认展开');
+  assert(statsUi.getTab() === 'damage', 'HUD：统计面板默认伤害页签');
+  const statsBox = localBox(statsBoard, host);
+  const skillBox = localBox(skills, host);
+  assert(statsBox.bottom <= skillBox.top - 4, 'HUD：统计面板应在技能键上方');
+  assert(statsBox.bottom <= cancelBox.top - 2, 'HUD：统计面板不应挡住取消键');
+  assert(noRotate(statsBoard), 'HUD：统计面板无旋转');
   pad.sync({
     aimingSlot: 0,
     skillCds: [0, 0, 0, 0],

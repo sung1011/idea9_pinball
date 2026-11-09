@@ -148,7 +148,7 @@ export function createChainCaster(): SkillCaster {
       return false;
     }
     if (sameTeam(ball, picked.target)) {
-      applyHealHot(picked.target, CHAIN_HEAL.dps, CHAIN_HEAL.duration);
+      applyHealHot(picked.target, CHAIN_HEAL.dps, CHAIN_HEAL.duration, ball.id);
     } else {
       applyBurn(picked.target, CHAIN_HEAL.dps, CHAIN_HEAL.duration, ball.id);
     }
@@ -164,7 +164,7 @@ export function createChainCaster(): SkillCaster {
     ball.leechRemain = leechRemain;
     ball.leechTargetId = target.id;
     target.leechRemain = leechRemain;
-    applyHealHot(ball, CHAIN_SHIELD.dps, CHAIN_SHIELD.duration);
+    applyHealHot(ball, CHAIN_SHIELD.dps, CHAIN_SHIELD.duration, ball.id);
     ball.suppressCombat = true;
     stickTo(ball, target, leechOffX, leechOffY);
   };
