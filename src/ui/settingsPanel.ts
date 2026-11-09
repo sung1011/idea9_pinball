@@ -19,6 +19,8 @@ export type SettingsActions = {
   onOpen?: () => void;
   onOpenHelp?: () => void;
   onRestart: () => void;
+  /** 硬刷新当前页；不清存档、不重开本局。 */
+  onReload: () => void;
   onCollision: (kind: CollisionTestKind) => void;
   onScore: (team: TeamId, points: number) => void;
   onAdvance: (sec: number) => void;
@@ -167,6 +169,14 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
       close();
     });
     body.appendChild(restart);
+    const reload = el('button', 'settingsWide', '刷新游戏');
+    reload.type = 'button';
+    reload.setAttribute('aria-label', '刷新游戏');
+    reload.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      actions.onReload();
+    });
+    body.appendChild(reload);
     const helpBtn = el('button', 'settingsWide', '怎么玩');
     helpBtn.type = 'button';
     helpBtn.addEventListener('click', (ev) => {

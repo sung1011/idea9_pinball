@@ -482,6 +482,7 @@ export function verifyCombatStats(): void {
   createHelpCard(host);
   createSettingsPanel(host, {
     onRestart: () => {},
+    onReload: () => {},
     onCollision: () => {},
     onScore: () => {},
     onAdvance: () => {},

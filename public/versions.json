@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.43-settings-reload",
+    "version": "0.0.43",
+    "date": "2026-11-09",
+    "summary": "设置常规页增加「刷新游戏」，点击硬刷新当前页；不清存档、不重开本局"
+  },
+  {
     "id": "v0.0.42-standalone-visible-lock",
     "version": "0.0.42",
     "date": "2026-11-09",

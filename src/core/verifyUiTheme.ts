@@ -113,6 +113,7 @@ export function verifyUiTheme(): void {
   const help = createHelpCard(host);
   const settings = createSettingsPanel(host, {
     onRestart: () => {},
+    onReload: () => {},
     onCollision: () => {},
     onScore: () => {},
     onAdvance: () => {},

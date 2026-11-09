@@ -59,7 +59,7 @@ import { createCombatStatsPanel } from './ui/combatStatsPanel';
 import { createHelpCard } from './ui/helpCard';
 import { createMatchHud } from './ui/matchHud';
 import { createResultPanel } from './ui/resultPanel';
-import { createAppVersions } from './ui/appVersion';
+import { createAppVersions, hardReload } from './ui/appVersion';
 import { createSettingsPanel } from './ui/settingsPanel';
 import { createUpdatePrompt } from './ui/updatePrompt';
 import { bindLandscapeLock, whenLandscapeLockSettled } from './ui/lockLandscape';
@@ -340,6 +340,7 @@ async function boot(): Promise<void> {
       restart();
       settings.close();
     },
+    onReload: hardReload,
     getHero: () => player.hero,
     onPickHero: applyPlayerHero,
     onSwapHero: swapPlayerHero,

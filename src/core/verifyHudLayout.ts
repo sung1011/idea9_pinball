@@ -353,10 +353,17 @@ export function verifyHudLayout(): void {
   const landStage = computeLandscapeStage(1600, 900, none);
   applyStageVars(host, landStage);
   const help = createHelpCard(host);
+  let restarts = 0;
+  let reloads = 0;
   const settings = createSettingsPanel(host, {
     onOpen: () => help.close(),
     onOpenHelp: () => help.open(),
-    onRestart: () => {},
+    onRestart: () => {
+      restarts += 1;
+    },
+    onReload: () => {
+      reloads += 1;
+    },
     onCollision: () => {},
     onScore: () => {},
     onAdvance: () => {},
@@ -388,6 +395,10 @@ export function verifyHudLayout(): void {
   assert(heroLabel === '我的英雄', 'HUD：常规页选择标签应为我的英雄');
   assert(isAimUiTarget(heroPick), 'HUD：点设置英雄选择不应抢 Aim');
   const settingsHint = [...host.querySelectorAll('.settingsHint')].map((el) => el.textContent ?? '').join('\n');
+  const reloadBtn = [...host.querySelectorAll('button')].find((btn) => btn.textContent === '刷新游戏');
+  assert(!!reloadBtn, 'HUD：设置常规应有刷新游戏');
+  reloadBtn?.click();
+  assert(reloads === 1 && restarts === 0, 'HUD：刷新游戏应硬刷新当前页，不重开本局、不清存档');
   const howTo = [...host.querySelectorAll('button')].find((btn) => btn.textContent === '怎么玩');
   howTo?.click();
   const helpOpenedBySettings = help.isOpen();

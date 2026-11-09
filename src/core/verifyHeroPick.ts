@@ -69,6 +69,7 @@ export function verifyHeroPick(): void {
   pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: state.hero });
   const settings = createSettingsPanel(host, {
     onRestart: () => {},
+    onReload: () => {},
     onCollision: () => {},
     onScore: () => {},
     onAdvance: () => {},
