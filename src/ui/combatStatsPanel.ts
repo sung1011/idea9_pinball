@@ -64,17 +64,11 @@ function makeTab(tab: CombatStatTab, label: string): HTMLButtonElement {
 function makeRow(): {
   root: HTMLDivElement;
   name: HTMLSpanElement;
-  slot: HTMLSpanElement;
   fill: HTMLSpanElement;
   value: HTMLSpanElement;
 } {
   const root = document.createElement('div');
   root.className = 'combatStatsRow';
-  const slot = document.createElement('span');
-  slot.className = 'combatStatsSlot';
-  const dot = document.createElement('span');
-  dot.className = 'combatStatsDot';
-  dot.setAttribute('aria-hidden', 'true');
   const name = document.createElement('span');
   name.className = 'combatStatsName';
   const track = document.createElement('span');
@@ -84,8 +78,8 @@ function makeRow(): {
   track.appendChild(fill);
   const value = document.createElement('span');
   value.className = 'combatStatsVal';
-  root.append(slot, dot, name, track, value);
-  return { root, name, slot, fill, value };
+  root.append(name, track, value);
+  return { root, name, fill, value };
 }
 
 function paintRows(list: HTMLElement, rows: readonly CombatStatRow[], tab: CombatStatTab): void {
@@ -104,26 +98,24 @@ function paintRows(list: HTMLElement, rows: readonly CombatStatRow[], tab: Comba
       list.appendChild(node);
     }
     const name = node.querySelector<HTMLElement>('.combatStatsName');
-    const slot = node.querySelector<HTMLElement>('.combatStatsSlot');
     const fill = node.querySelector<HTMLElement>('.combatStatsBarFill');
     const value = node.querySelector<HTMLElement>('.combatStatsVal');
-    if (!name || !slot || !fill || !value) {
+    if (!name || !fill || !value) {
       continue;
     }
     node.dataset.unitId = String(row.unitId);
     node.dataset.team = row.team ?? '';
     node.dataset.tab = tab;
     name.textContent = formatStatLabel(row.label);
-    slot.textContent = String(row.teamSlot);
     value.textContent = formatStatValue(row.value);
     fill.style.width = `${statBarRatio(row.value, maxValue) * 100}%`;
   }
 }
 
-/** 右下技能键上方的本局伤害/治疗榜；羊皮纸木框金边，默认为伤害且展开。 */
+/** 右下技能键上方的本局伤害/治疗榜；羊皮纸木框金边，默认为伤害且收起。 */
 export function createCombatStatsPanel(host: HTMLElement, stats: CombatStats): CombatStatsPanel {
   let tab: CombatStatTab = 'damage';
-  let collapsed = false;
+  let collapsed = true;
 
   const root = document.createElement('div');
   root.className = 'combatStats';

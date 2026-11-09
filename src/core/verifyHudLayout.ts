@@ -84,6 +84,13 @@ function noRotate(el: HTMLElement): boolean {
   return transform === 'none' || transform === 'matrix(1, 0, 0, 1, 0, 0)';
 }
 
+function overlaps(
+  a: { left: number; top: number; right: number; bottom: number },
+  b: { left: number; top: number; right: number; bottom: number },
+): boolean {
+  return a.left < b.right - 0.5 && a.right > b.left + 0.5 && a.top < b.bottom - 0.5 && a.bottom > b.top + 0.5;
+}
+
 function dummyVersions(): AppVersions {
   return {
     getState: () => ({
@@ -410,10 +417,15 @@ export function verifyHudLayout(): void {
   if (!statsBoard || !statsDock) {
     throw new Error('HUD：右下应有统计面板');
   }
-  assert(!statsBoard.hidden && statsDock.hidden, 'HUD：统计面板默认展开');
+  assert(statsBoard.hidden && !statsDock.hidden, 'HUD：统计面板默认收起');
   assert(statsUi.getTab() === 'damage', 'HUD：统计面板默认伤害页签');
-  const statsBox = localBox(statsBoard, host);
   const skillBox = localBox(skills, host);
+  const dockBox = localBox(statsDock, host);
+  assert(dockBox.bottom <= skillBox.top - 2, 'HUD：统计侧边钮应在技能键上方');
+  assert(!overlaps(dockBox, skillBox), 'HUD：统计侧边钮不应叠技能');
+  assert(noRotate(statsDock), 'HUD：统计侧边钮无旋转');
+  statsUi.expand();
+  const statsBox = localBox(statsBoard, host);
   assert(statsBox.bottom <= skillBox.top - 4, 'HUD：统计面板应在技能键上方');
   assert(statsBox.bottom <= cancelBox.top - 2, 'HUD：统计面板不应挡住取消键');
   assert(noRotate(statsBoard), 'HUD：统计面板无旋转');

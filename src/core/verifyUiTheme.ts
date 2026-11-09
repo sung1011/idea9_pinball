@@ -109,7 +109,7 @@ export function verifyUiTheme(): void {
   applyUiTheme(host);
   createMatchHud(host);
   createTouchPad(host, createActionBus(), { holdMs: 0 });
-  createCombatStatsPanel(host, createCombatStats());
+  const statsUi = createCombatStatsPanel(host, createCombatStats());
   const help = createHelpCard(host);
   const settings = createSettingsPanel(host, {
     onRestart: () => {},
@@ -368,6 +368,7 @@ export function verifyUiTheme(): void {
     host.remove();
     throw new Error('统计换皮：应有面板、页签与侧边钮');
   }
+  statsUi.expand();
   const statsCs = getComputedStyle(statsBoard);
   assert(sameCssColor(statsCs.backgroundColor, UI_THEME.parchmentBase), `统计面板：羊皮纸底（实际 ${statsCs.backgroundColor}）`);
   assert(statsCs.borderTopStyle === 'solid', '统计面板：实线木框');

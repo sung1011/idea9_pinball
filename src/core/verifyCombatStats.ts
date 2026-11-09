@@ -504,9 +504,11 @@ export function verifyCombatStats(): void {
     host.remove();
     throw new Error('统计：应有面板、页签、收起与侧边按钮');
   }
-  assert(!panel.isCollapsed() && panel.getTab() === 'damage', '统计：默认展开且伤害页签');
+  assert(panel.isCollapsed() && panel.getTab() === 'damage', '统计：默认收起且伤害页签');
+  assert(board.hidden && !dock.hidden, '统计：进入时应只显示右侧展开钮');
   assert(damageTab.classList.contains('isOn') && !healTab.classList.contains('isOn'), '统计：默认伤害页签应选中');
-  assert(getComputedStyle(dock).display === 'none', '统计：展开时侧边钮应完全隐藏，不能露在面板下');
+  assert(getComputedStyle(board).display === 'none', '统计：默认收起后面板应完全隐藏');
+  assert(getComputedStyle(dock).display !== 'none', '统计：默认收起后侧边钮应可见');
   assert(board.getAttribute('data-touch-control') === 'stats', '统计：面板点击应标 touch-control，不穿透战场');
   assert(isAimUiTarget(board) && isAimUiTarget(dock), '统计：点面板/侧边钮不应当成瞄准空白');
   const names = [...board.querySelectorAll('.combatStatsName')].map((el) => el.textContent);
@@ -514,10 +516,16 @@ export function verifyCombatStats(): void {
   assert(names.includes('蓝1') && names.includes('红2') && names.includes('蓝2'), '统计：应列出双方所有人');
   assert(names.every((name) => !!name && !name.includes('我')), '统计：名称不应带我标记');
   assert(!board.querySelector('.combatStatsFace, .combatStatsMarkSvg, svg'), '统计：行首不应再有图标');
+  assert(!board.querySelector('.combatStatsSlot, .combatStatsDot'), '统计：行内不应再有排名序号或队色圆点');
   assert(!board.querySelector('[data-me]'), '统计：不应再留自我标签');
   assert(!(board.textContent ?? '').includes('· 我'), '统计：面板文案不应出现我');
-  const slots = [...board.querySelectorAll('.combatStatsSlot')].map((el) => el.textContent);
-  assert(slots.includes('1') && slots.includes('2'), '统计：应保留编号');
+  assert(
+    [...board.querySelectorAll('.combatStatsRow')].every((row) => !/^\s*\d/.test(row.textContent ?? '')),
+    '统计：行首不应再是排名数字',
+  );
+  fireOn(dock, 'pointerdown');
+  assert(!panel.isCollapsed() && !board.hidden && dock.hidden, '统计：点侧边钮应展开面板');
+  assert(getComputedStyle(dock).display === 'none', '统计：展开时侧边钮应完全隐藏，不能露在面板下');
   const redName = board.querySelector<HTMLElement>('.combatStatsRow[data-team="red"] .combatStatsName');
   const redVal = board.querySelector<HTMLElement>('.combatStatsRow[data-team="red"] .combatStatsVal');
   const blueName = board.querySelector<HTMLElement>('.combatStatsRow[data-team="blue"] .combatStatsName');
@@ -530,7 +538,12 @@ export function verifyCombatStats(): void {
   assert(sameCssColor(getComputedStyle(redVal).color, UI_THEME.teamRedShadow), '统计：红方数值应为深红');
   assert(sameCssColor(getComputedStyle(blueName).color, UI_THEME.teamBlueShadow), '统计：蓝方名称应为深蓝');
   assert(sameCssColor(getComputedStyle(blueVal).color, UI_THEME.teamBlueShadow), '统计：蓝方数值应为深蓝');
+  assert(!!board.querySelector('.combatStatsBarFill'), '统计：应保留数值条');
   assert(!board.textContent?.includes('示例数据'), '统计：不应照抄 demo 示例数据');
+  const reopenHost = document.createElement('div');
+  const reopenPanel = createCombatStatsPanel(reopenHost, uiStats);
+  assert(reopenPanel.isCollapsed(), '统计：再次进入应默认收起，不沿用上次打开');
+  reopenHost.remove();
   panel.sync(roster, ally.id);
   const swapped = [...board.querySelectorAll('.combatStatsName')].map((el) => el.textContent);
   assert(swapped.includes('红1') && swapped.includes('红2'), '统计：切到队友仍应显示红1/红2 身份');
@@ -540,9 +553,12 @@ export function verifyCombatStats(): void {
   fireOn(healTab, 'pointerdown');
   assert(panel.getTab() === 'heal', '统计：触控点治疗页签应切换');
   panel.sync(roster, red.id);
-  const healFirst = board.querySelector('.combatStatsName')?.textContent;
+  const healNames = [...board.querySelectorAll('.combatStatsName')].map((el) => el.textContent);
+  const healFirst = healNames[0];
   assert(healFirst === '红1', '统计：治疗页应按治疗量降序且保留红1 身份');
   assert(!healFirst?.includes('我'), '统计：治疗页也不应标我');
+  assert(healNames.includes('蓝1') && healNames.includes('红2'), '统计：治疗页仍应保留队伍编号文字');
+  assert(!board.querySelector('.combatStatsSlot, .combatStatsDot'), '统计：治疗页也不应有排名序号或队色圆点');
   fireOn(collapseBtn, 'pointerdown');
   assert(panel.isCollapsed() && board.hidden && !dock.hidden, '统计：收起后只留侧边统计钮');
   assert(getComputedStyle(board).display === 'none', '统计：收起后面板应完全隐藏');
@@ -551,6 +567,10 @@ export function verifyCombatStats(): void {
   fireOn(dock, 'pointerdown');
   assert(!panel.isCollapsed() && panel.getTab() === 'heal', '统计：展开应保留当前页签');
   panel.sync(roster, red.id);
+  const healedVal = [...board.querySelectorAll('.combatStatsRow')]
+    .find((row) => row.querySelector('.combatStatsName')?.textContent === '红1')
+    ?.querySelector('.combatStatsVal')?.textContent;
+  assert(healedVal === '9', '统计：收起后再展开治疗页应看到累计治疗');
   fireOn(damageTab, 'pointerdown');
   panel.sync(roster, red.id);
   const afterCollapse = uiStats.totalsOf(red.id).damage;
@@ -572,6 +592,8 @@ export function verifyCombatStats(): void {
   unbind();
 
   const none: SafeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+  panel.expand();
+  panel.sync(roster, red.id);
   assertLayout(host, pad, 1920, 1080, none, '1920x1080');
   host.style.width = '2340px';
   host.style.height = '1080px';
@@ -584,6 +606,7 @@ export function verifyCombatStats(): void {
   panel.sync(roster, red.id);
   const zeroVal = [...board.querySelectorAll('.combatStatsVal')].every((el) => el.textContent === '0');
   assert(zeroVal, '统计：重开后面板应显示 0');
+  assert(!panel.isCollapsed(), '统计：重开清零不应额外收起或展开');
   host.remove();
 }
 
@@ -608,10 +631,10 @@ function assertLayout(
   pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false });
   const skillBox = localBox(skills, host);
   const boardBox = localBox(board, host);
-  const texts = [...board.querySelectorAll<HTMLElement>('.combatStatsName, .combatStatsVal, .combatStatsSlot')];
+  const texts = [...board.querySelectorAll<HTMLElement>('.combatStatsName, .combatStatsVal')];
   assert(
     texts.every((el) => el.scrollWidth <= el.clientWidth + 1),
-    `统计：${label} 名称/编号/数值不应溢出`,
+    `统计：${label} 名称/数值不应溢出`,
   );
   assert(boardBox.right <= host.clientWidth + 1 && boardBox.left >= -1, `统计：${label} 面板不应溢出视窗`);
   assert(boardBox.bottom <= skillBox.top - 4, `统计：${label} 展开面板应在技能键上方，不遮挡`);

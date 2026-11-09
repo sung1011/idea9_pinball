@@ -1370,46 +1370,28 @@ canvas {
 
 .combatStatsRow {
   display: grid;
-  grid-template-columns: 1em 7px minmax(3.2em, auto) minmax(40px, 1fr) 2.4em;
+  grid-template-columns: minmax(3.2em, auto) minmax(40px, 1fr) 2.4em;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   min-height: 20px;
 }
 
-.combatStatsRow[data-team='red'] .combatStatsDot,
 .combatStatsRow[data-team='red'] .combatStatsBarFill {
   color: var(--team-red);
 }
 
-.combatStatsRow[data-team='blue'] .combatStatsDot,
 .combatStatsRow[data-team='blue'] .combatStatsBarFill {
   color: var(--team-blue);
 }
 
-.combatStatsRow[data-team='red'] .combatStatsSlot,
 .combatStatsRow[data-team='red'] .combatStatsName,
 .combatStatsRow[data-team='red'] .combatStatsVal {
   color: var(--team-red-shadow);
 }
 
-.combatStatsRow[data-team='blue'] .combatStatsSlot,
 .combatStatsRow[data-team='blue'] .combatStatsName,
 .combatStatsRow[data-team='blue'] .combatStatsVal {
   color: var(--team-blue-shadow);
-}
-
-.combatStatsSlot {
-  min-width: 0;
-  font: 700 12px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  text-align: center;
-}
-
-.combatStatsDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 1px var(--wood-frame-dark);
 }
 
 .combatStatsName {
