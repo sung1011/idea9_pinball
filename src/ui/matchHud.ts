@@ -10,7 +10,7 @@ import {
 } from '../core/matchMode';
 
 export type MatchHud = {
-  sync: (snap: MatchSnapshot, balls: readonly BallBody[]) => void;
+  sync: (snap: MatchSnapshot, balls: readonly BallBody[], selfId?: number) => void;
   setMode: (mode: MatchModeId) => void;
 };
 
@@ -24,6 +24,11 @@ const HELMET_SVG =
 
 function stopHudUi(ev: Event): void {
   ev.stopPropagation();
+}
+
+/** Stall / 自身回场大号秒：与开局倒计时同一套 ceil，至少显示 1。 */
+export function formatHudCount(remain: number): string {
+  return String(Math.max(1, Math.ceil(remain)));
 }
 
 function formatClock(snap: MatchSnapshot): string {
@@ -139,7 +144,7 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
     setMode(mode) {
       modePick.value = mode;
     },
-    sync(snap, balls) {
+    sync(snap, balls, selfId) {
       const redVal = isEightKill(snap.mode) ? snap.redKills : snap.redScore;
       const blueVal = isEightKill(snap.mode) ? snap.blueKills : snap.blueScore;
       red.value.textContent = String(redVal);
@@ -152,7 +157,7 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
       modePick.value = snap.mode;
 
       const waiting = balls
-        .filter((ball) => !ball.inPlay)
+        .filter((ball) => !ball.inPlay && ball.id !== selfId)
         .map((ball) => {
           const left = snap.respawns[ball.id] ?? 0;
           return `${ball.label}回场 ${left.toFixed(1)}s`;
@@ -168,11 +173,22 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
       toast.textContent = tip?.text ?? (waiting.length > 0 ? waiting.join(' · ') : '');
 
       const counting = snap.phase === 'countdown';
-      opening.classList.toggle('isOn', counting);
+      const self = selfId !== undefined ? balls.find((ball) => ball.id === selfId) : undefined;
+      const selfRemain = self && !self.inPlay ? (snap.respawns[self.id] ?? 0) : 0;
+      const selfRespawn =
+        !counting && snap.phase !== 'result' && !!self && !self.inPlay && selfRemain > 0;
+      opening.classList.toggle('isOn', counting || selfRespawn);
+      opening.classList.toggle('isRespawn', selfRespawn);
       if (counting) {
-        openingNum.textContent = String(Math.max(1, Math.ceil(snap.timeLeft)));
+        opening.dataset.kind = 'stall';
+        openingNum.textContent = formatHudCount(snap.timeLeft);
         openingHint.textContent = '栏内待命 · Esc / 点空白跳过';
+      } else if (selfRespawn) {
+        opening.dataset.kind = 'respawn';
+        openingNum.textContent = formatHudCount(selfRemain);
+        openingHint.textContent = '回场';
       } else {
+        delete opening.dataset.kind;
         openingNum.textContent = '';
         openingHint.textContent = '';
       }

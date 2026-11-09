@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.35-self-respawn-count",
+    "version": "0.0.35",
+    "date": "2026-11-09",
+    "summary": "自己离场时场中显示大号回场倒计时（仅本人、整数秒）；5s 回场与 2s 无敌不变，他人仍短 toast"
+  },
+  {
     "id": "v0.0.34-settings-self-hero",
     "version": "0.0.34",
     "date": "2026-11-09",

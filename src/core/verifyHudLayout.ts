@@ -7,6 +7,7 @@ import type { AppVersions } from '../ui/appVersion';
 import { createHelpCard } from '../ui/helpCard';
 import { landscapeLockType, lockLandscape } from '../ui/lockLandscape';
 import { createMatchHud } from '../ui/matchHud';
+import { createBallBody } from './ballBody';
 import { createCombatStats } from './combatStats';
 import { createCombatStatsPanel } from '../ui/combatStatsPanel';
 import { createSettingsPanel } from '../ui/settingsPanel';
@@ -491,6 +492,7 @@ export function verifyHudLayout(): void {
   }
   hud.sync(dummySnap({ phase: 'countdown', timeLeft: 5, stallsOn: true, skillsLocked: true }), []);
   assert(opening.classList.contains('isOn'), 'HUD：Stall 应显示大号倒计时');
+  assert(opening.dataset.kind === 'stall', 'HUD：Stall 应标 stall');
   assert(openingNum.textContent === '5', 'HUD：Stall 倒计时应显示秒数');
   hud.sync(
     dummySnap({
@@ -504,5 +506,23 @@ export function verifyHudLayout(): void {
   assert(!opening.classList.contains('isOn'), 'HUD：冲锋阶段不应出说明板');
   assert(openingNum.textContent === '', 'HUD：冲锋阶段不应写冲锋字');
   assert(toast.textContent !== '冲锋', 'HUD：冲锋阶段 toast 不应解释冲锋');
+
+  const self = createBallBody({
+    x: 2,
+    y: 4,
+    color: 0xe24a4a,
+    team: 'red',
+    teamSlot: 1,
+    label: '红1',
+  });
+  self.inPlay = false;
+  hud.sync(dummySnap({ respawns: { [self.id]: 4.2 } }), [self], self.id);
+  assert(opening.classList.contains('isOn') && opening.dataset.kind === 'respawn', 'HUD：自己离场应出场中回场倒计时');
+  assert(openingNum.textContent === '5', 'HUD：自身回场应显示整数秒');
+  const respawnBox = localBox(opening, host);
+  const skillHudBox = localBox(skills, host);
+  assert(respawnBox.left >= -1 && respawnBox.top >= -1, 'HUD：回场倒计时不应溢出左上');
+  assert(respawnBox.right <= 1600 + 1 && respawnBox.bottom <= 900 + 1, 'HUD：回场倒计时不应溢出右下');
+  assert(!overlaps(respawnBox, skillHudBox), 'HUD：回场倒计时不应挡住技能键');
   host.remove();
 }

@@ -33,6 +33,7 @@ import { createCombatStats } from './core/combatStats';
 import { verifyCombatStats } from './core/verifyCombatStats';
 import { verifySelfMark } from './core/verifySelfMark';
 import { verifyWorldViewLock } from './core/verifyWorldViewLock';
+import { verifyRespawnHud } from './core/verifyRespawnHud';
 import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
@@ -88,6 +89,7 @@ async function boot(): Promise<void> {
   verifyCombatStats();
   verifySelfMark();
   verifyWorldViewLock();
+  verifyRespawnHud();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -227,7 +229,7 @@ async function boot(): Promise<void> {
     mode: matchMode,
     onPickMode: (mode) => applyMatchMode(mode),
   });
-  matchHud.sync(match.snapshot(), balls);
+    matchHud.sync(match.snapshot(), balls, player.id);
   arena.syncStalls(match.snapshot().stalls);
 
   const restart = (): void => {
@@ -416,7 +418,7 @@ async function boot(): Promise<void> {
     const skillCds = control.getSkillCds();
     const windup = control.getWindup();
     const aimHint = control.getAimHint();
-    matchHud.sync(next, balls);
+    matchHud.sync(next, balls, player.id);
     resultPanel.sync(next);
     arena.syncHold(next.midpoint);
     arena.syncStalls(next.stalls);
