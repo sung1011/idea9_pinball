@@ -6,6 +6,13 @@ export type WorldTransform = {
   offsetY: number;
 };
 
+/** 进入时锁定的战场像素尺寸；之后只平移，不改比例。 */
+export type WorldViewLock = {
+  scale: number;
+  pixelW: number;
+  pixelH: number;
+};
+
 /** 将逻辑世界等比适配到屏幕（不拉伸）。 */
 export function fitWorldToScreen(
   screenWidth: number,
@@ -34,6 +41,33 @@ export function fitWorldToBox(
     scale,
     offsetX: boxX + (boxW - worldWidth * scale) / 2,
     offsetY: boxY + (boxH - worldHeight * scale) / 2,
+  };
+}
+
+export function captureWorldViewLock(
+  transform: WorldTransform,
+  worldWidth: number,
+  worldHeight: number,
+): WorldViewLock {
+  return {
+    scale: transform.scale,
+    pixelW: worldWidth * transform.scale,
+    pixelH: worldHeight * transform.scale,
+  };
+}
+
+/** 把已锁定像素尺寸的世界放进当前盒：只居中，不拉伸。盒外裁切，盒内空余留给背景。 */
+export function placeLockedWorld(
+  boxX: number,
+  boxY: number,
+  boxW: number,
+  boxH: number,
+  lock: WorldViewLock,
+): WorldTransform {
+  return {
+    scale: lock.scale,
+    offsetX: boxX + (boxW - lock.pixelW) / 2,
+    offsetY: boxY + (boxH - lock.pixelH) / 2,
   };
 }
 

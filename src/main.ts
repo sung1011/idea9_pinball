@@ -1,5 +1,4 @@
 import { Application, Container } from 'pixi.js';
-import { MAP_HEIGHT, MAP_WIDTH } from './core/constants';
 import { takeShieldAbsorbs } from './core/hpLoss';
 import { isControlPointMode, type MatchModeId } from './core/matchMode';
 import { loadLastModeId, saveLastModeId } from './core/lastModeId';
@@ -33,6 +32,7 @@ import { floatsFromHits, floatsFromShield, resetCombatFloatAcc, takeHealFloats }
 import { createCombatStats } from './core/combatStats';
 import { verifyCombatStats } from './core/verifyCombatStats';
 import { verifySelfMark } from './core/verifySelfMark';
+import { verifyWorldViewLock } from './core/verifyWorldViewLock';
 import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
@@ -50,7 +50,8 @@ import { createAimPreview } from './render/aimPreview';
 import { createArenaView } from './render/arenaView';
 import { createBallView } from './render/ballView';
 import { createCombatFloatView } from './render/combatFloatView';
-import { applyWorldTransform, fitWorldToBox, type WorldTransform } from './render/worldTransform';
+import { createWorldViewSession } from './render/worldViewLock';
+import { applyWorldTransform, type WorldTransform } from './render/worldTransform';
 import { createCombatStatsPanel } from './ui/combatStatsPanel';
 import { createHelpCard } from './ui/helpCard';
 import { createMatchHud } from './ui/matchHud';
@@ -59,7 +60,7 @@ import { createAppVersions } from './ui/appVersion';
 import { createSettingsPanel } from './ui/settingsPanel';
 import { createUpdatePrompt } from './ui/updatePrompt';
 import { bindLandscapeLock } from './ui/lockLandscape';
-import { applyStageVars, computeLandscapeStage, readSafeInsets } from './ui/stageLayout';
+import { applyStageVars, readSafeInsets } from './ui/stageLayout';
 import { applyUiTheme } from './ui/uiTheme';
 import './style.css';
 
@@ -86,6 +87,7 @@ async function boot(): Promise<void> {
   verifyCombatFloat();
   verifyCombatStats();
   verifySelfMark();
+  verifyWorldViewLock();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -132,31 +134,40 @@ async function boot(): Promise<void> {
   world.addChild(combatFloats.root);
   app.stage.addChild(world);
 
-  const layoutWorld = (): WorldTransform => {
+  const worldView = createWorldViewSession();
+
+  const readViewBox = (): { width: number; height: number } => {
     const viewW = window.innerWidth;
     const viewH = window.innerHeight;
     const frame = { width: host.clientWidth || viewW, height: host.clientHeight || viewH };
     if (Math.abs(app.screen.width - frame.width) > 1 || Math.abs(app.screen.height - frame.height) > 1) {
       app.renderer.resize(frame.width, frame.height);
     }
-    const stage = computeLandscapeStage(app.screen.width, app.screen.height, readSafeInsets());
-    applyStageVars(host, stage);
-    return fitWorldToBox(stage.x, stage.y, stage.width, stage.height, MAP_WIDTH, MAP_HEIGHT);
+    return { width: app.screen.width, height: app.screen.height };
   };
 
-  let transform: WorldTransform = layoutWorld();
-  applyWorldTransform(world, transform);
-
-  const layout = (): void => {
-    transform = layoutWorld();
+  const applyViewLayout = (enter: boolean): void => {
+    const box = readViewBox();
+    const insets = readSafeInsets();
+    const layout = enter ? worldView.enter(box.width, box.height, insets) : worldView.follow(box.width, box.height, insets);
+    transform = layout.transform;
+    host.dataset.worldScale = String(layout.lock.scale);
+    applyStageVars(host, layout.stage);
     applyWorldTransform(world, transform);
   };
 
-  app.renderer.on('resize', layout);
-  window.addEventListener('resize', layout);
-  window.addEventListener('orientationchange', layout);
-  window.visualViewport?.addEventListener('resize', layout);
-  window.screen.orientation?.addEventListener('change', layout);
+  let transform!: WorldTransform;
+  applyViewLayout(true);
+
+  const followView = (): void => {
+    applyViewLayout(false);
+  };
+
+  app.renderer.on('resize', followView);
+  window.addEventListener('resize', followView);
+  window.addEventListener('orientationchange', followView);
+  window.visualViewport?.addEventListener('resize', followView);
+  window.screen.orientation?.addEventListener('change', followView);
   bindLandscapeLock();
 
   const bus = createActionBus();
