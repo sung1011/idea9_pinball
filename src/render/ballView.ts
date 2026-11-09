@@ -5,6 +5,8 @@ import { BALL_RADIUS, SPEAR_TIP_DIST } from '../core/constants';
 
 export type BallViewSyncOpts = {
   charging?: boolean;
+  /** 仅本地玩家脚下双环；队友/敌方不要传 true */
+  selfMark?: boolean;
 };
 
 export type BallView = {
@@ -14,6 +16,20 @@ export type BallView = {
 
 const SPEAR_GOLD = 0xffe08a;
 const SHIELD_RIM = 0xf4f0e4;
+/** 本人脚下双环：奶黄环 + 深棕细描边。外环约盾径 1.3 倍，略大于主体、不放大碰撞。 */
+export const SELF_MARK = {
+  innerRadius: BALL_RADIUS * 1.16,
+  outerRadius: BALL_RADIUS * 1.3,
+  milk: 0xf6e7a3,
+  brown: 0x3a2210,
+  band: 0.045 * (BALL_RADIUS / 0.5),
+  outline: 0.016 * (BALL_RADIUS / 0.5),
+} as const;
+
+export function selfMarkActive(isSelf: boolean, inPlay: boolean): boolean {
+  return isSelf && inPlay;
+}
+
 const SLOT_FILL = 0xf8f4ea;
 const SLOT_STROKE = 0x1a1410;
 const SLOT_FONT = 72;
@@ -169,6 +185,23 @@ function drawHpBar(g: Graphics, hp: number, maxHp: number, spearCdRemain: number
 
 const TRAIL_MAX = 10;
 
+function strokeMilkRing(g: Graphics, radius: number): void {
+  g.circle(0, 0, radius);
+  g.stroke({
+    color: SELF_MARK.brown,
+    width: SELF_MARK.band + SELF_MARK.outline * 2,
+    cap: 'round',
+  });
+  g.circle(0, 0, radius);
+  g.stroke({ color: SELF_MARK.milk, width: SELF_MARK.band, cap: 'round' });
+}
+
+/** 本人脚下双环。画在主体之下，不进冲锋残影。 */
+export function drawSelfMarkRings(g: Graphics): void {
+  strokeMilkRing(g, SELF_MARK.innerRadius);
+  strokeMilkRing(g, SELF_MARK.outerRadius);
+}
+
 /** 冲锋残影：队色拖线 + 淡盾影 + 少量金尘。 */
 function drawChargeFx(
   g: Graphics,
@@ -208,22 +241,30 @@ function drawChargeFx(
   }
 }
 
-export function createBallView(ball: BallBody): BallView {
+export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): BallView {
   const root = new Container();
+  const mark = new Graphics();
+  mark.eventMode = 'none';
   const fx = new Graphics();
   const body = new Graphics();
   const slotLabel = makeSlotLabel(ball.teamSlot);
   const hpBar = new Graphics();
   const spear = new Graphics();
-  root.addChild(fx, body, slotLabel, hpBar, spear);
+  root.addChild(mark, fx, body, slotLabel, hpBar, spear);
   const trail: Array<{ x: number; y: number }> = [];
+  let marked = !!init.selfMark;
 
   const sync = (next: BallBody, opts: BallViewSyncOpts = {}): void => {
+    if (typeof opts.selfMark === 'boolean') {
+      marked = opts.selfMark;
+    }
     root.visible = next.inPlay;
     root.position.set(next.x, next.y);
     if (!next.inPlay) {
       trail.length = 0;
       fx.clear();
+      mark.clear();
+      mark.visible = false;
       slotLabel.visible = false;
       return;
     }
@@ -240,6 +281,13 @@ export function createBallView(ball: BallBody): BallView {
     fx.clear();
     if (opts.charging) {
       drawChargeFx(fx, next, trail);
+    }
+
+    mark.clear();
+    const showMark = selfMarkActive(marked, true);
+    mark.visible = showMark;
+    if (showMark) {
+      drawSelfMarkRings(mark);
     }
 
     body.clear();
@@ -316,6 +364,6 @@ export function createBallView(ball: BallBody): BallView {
     }
   };
 
-  sync(ball);
+  sync(ball, init);
   return { root, sync };
 }

@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.29-player-self-mark-rings",
+    "version": "0.0.29",
+    "date": "2026-11-09",
+    "summary": "本地玩家脚下奶黄色双环+深棕描边，仅本人、随人移动；无头顶小牌、不改碰撞"
+  },
+  {
     "id": "v0.0.28-hook-brake-pop-spear",
     "version": "0.0.28",
     "date": "2026-11-09",

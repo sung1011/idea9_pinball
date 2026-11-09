@@ -31,6 +31,7 @@ import { resetBoomFlashes } from './core/boomFlashes';
 import { floatsFromHits, floatsFromShield, resetCombatFloatAcc, takeHealFloats } from './core/combatFloat';
 import { createCombatStats } from './core/combatStats';
 import { verifyCombatStats } from './core/verifyCombatStats';
+import { verifySelfMark } from './core/verifySelfMark';
 import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
@@ -82,6 +83,7 @@ async function boot(): Promise<void> {
   verifyUiTheme();
   verifyCombatFloat();
   verifyCombatStats();
+  verifySelfMark();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -116,7 +118,7 @@ async function boot(): Promise<void> {
   };
   applyWorldRules(matchMode);
   const match = createMatchSession(balls, { mode: matchMode });
-  const views = balls.map((ball) => createBallView(ball));
+  const views = balls.map((ball) => createBallView(ball, { selfMark: ball.id === player.id }));
   for (const view of views) {
     world.addChild(view.root);
   }
@@ -428,7 +430,10 @@ async function boot(): Promise<void> {
     fields.sync(balls, { potion: next.potion, rift: next.rift });
     aimPreview.sync(player, aimingSlot, sample, windup, aimHint);
     for (let i = 0; i < balls.length; i += 1) {
-      views[i].sync(balls[i], { charging: next.openingChargeRemain > 0 });
+      views[i].sync(balls[i], {
+        charging: next.openingChargeRemain > 0,
+        selfMark: balls[i].id === player.id,
+      });
     }
   });
 }

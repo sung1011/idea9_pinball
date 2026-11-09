@@ -63,7 +63,7 @@
 - `src/heroes/arcKit.ts`：闪弧四技能数值与瞄准圆；对外显示侧闪 / 掠刃 / 回印 / 虚影
 - `src/heroes/wellKit.ts`：井绳四技能数值与瞄准圆/桩线；对外显示索爆 / 易位 / 索桩 / 回索
 - `src/heroes/mirrorKit.ts`：镜卫四技能数值与瞄准圆/扇/短墙；对外显示折光 / 反照 / 裂镜 / 镜壁
-- `src/render`：逻辑→屏幕变换（`worldTransform.ts` 的 `fitWorldToBox`）、场地与领地纹章 / 木栏 Stall（`arenaView.ts`，默认无调试网格/出生圈）、骑士圆盾队内编号 / 羽冠（长度约六成）矛尖与冲锋残影（`ballView.ts`，残影为圆盾/圆影、不随羽冠缩放）、磁场/困圈/索桩/索爆圈/镜壁（`fieldOverlay.ts`）、战斗飘字（`combatFloatView.ts`）
+- `src/render`：逻辑→屏幕变换（`worldTransform.ts` 的 `fitWorldToBox`）、场地与领地纹章 / 木栏 Stall（`arenaView.ts`，默认无调试网格/出生圈）、骑士圆盾队内编号 / 羽冠（长度约六成）矛尖与冲锋残影（`ballView.ts`，残影为圆盾/圆影、不随羽冠缩放；本地玩家脚下奶黄双环+深棕描边，不进残影）、磁场/困圈/索桩/索爆圈/镜壁（`fieldOverlay.ts`）、战斗飘字（`combatFloatView.ts`）
 - `src/debug/debugVelocity.ts`：`Z` 背刺 / `X` 侧身圆蹭不掉血 / `C` 枪尖对戳 / `V` 同向轻蹭（在场才生效；仅 GM 开）；`R` 只重开一局（正式也可用）
 - `src/debug/debugMatch.ts`：`F`/`G` ±分，`T` 跳 30s，`Y` 当前阶段剩 1s，`H` 红方循环钩刺/磁环/链生/钉壳/闪弧/井绳/镜卫（仅 GM 开）
 - `src/debug/gmState.ts`：GM 开关，默认开，记本地
