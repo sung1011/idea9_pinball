@@ -139,7 +139,7 @@ export function createHelpCard(host: HTMLElement, opts?: HelpCardOpts): HelpCard
         '再平则看下一次击破。',
       ]);
     }
-    addBlock(body, '回场', ['击破后 5 秒回场，回场 2 秒无敌。自己离场时场中显示回场倒计时，队友和敌人仍用短提示。']);
+    addBlock(body, '回场', ['击破后 5 秒回场，回场 2 秒无敌。自己离场时屏幕中央偏上显示「复活还需 X 秒」，无遮罩；队友和敌人仍用短提示。']);
   };
 
   fillBody('hook', DEFAULT_MATCH_MODE);

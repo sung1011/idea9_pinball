@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.36-respawn-need-copy",
+    "version": "0.0.36",
+    "date": "2026-11-09",
+    "summary": "自己阵亡时屏幕中央偏上显示「复活还需 X 秒」（仅本人、无遮罩）；5s 回场与 2s 无敌不变"
+  },
+  {
     "id": "v0.0.35-self-respawn-count",
     "version": "0.0.35",
     "date": "2026-11-09",

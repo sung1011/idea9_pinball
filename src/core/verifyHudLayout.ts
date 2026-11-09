@@ -486,8 +486,9 @@ export function verifyHudLayout(): void {
 
   const opening = host.querySelector<HTMLElement>('.openingHud');
   const openingNum = host.querySelector<HTMLElement>('.openingHudNum');
+  const openingHint = host.querySelector<HTMLElement>('.openingHudHint');
   const toast = host.querySelector<HTMLElement>('.matchHudToast');
-  if (!opening || !openingNum || !toast) {
+  if (!opening || !openingNum || !openingHint || !toast) {
     throw new Error('HUD：应有 Stall 倒计时层与短 toast');
   }
   hud.sync(dummySnap({ phase: 'countdown', timeLeft: 5, stallsOn: true, skillsLocked: true }), []);
@@ -517,12 +518,24 @@ export function verifyHudLayout(): void {
   });
   self.inPlay = false;
   hud.sync(dummySnap({ respawns: { [self.id]: 4.2 } }), [self], self.id);
-  assert(opening.classList.contains('isOn') && opening.dataset.kind === 'respawn', 'HUD：自己离场应出场中回场倒计时');
-  assert(openingNum.textContent === '5', 'HUD：自身回场应显示整数秒');
+  assert(opening.classList.contains('isOn') && opening.dataset.kind === 'respawn', 'HUD：自己离场应出复活倒计时');
+  assert(openingNum.textContent === '复活还需 5 秒', 'HUD：自身阵亡应显示复活还需 X 秒');
+  assert(openingHint.textContent === '', 'HUD：阵亡层不应再写回场');
+  const openingPaint = getComputedStyle(opening);
+  assert(openingPaint.pointerEvents === 'none', 'HUD：复活倒计时不应抢点击');
+  assert(
+    openingPaint.backgroundColor === 'rgba(0, 0, 0, 0)' || openingPaint.backgroundColor === 'transparent',
+    'HUD：复活倒计时不应铺全屏遮罩',
+  );
   const respawnBox = localBox(opening, host);
   const skillHudBox = localBox(skills, host);
-  assert(respawnBox.left >= -1 && respawnBox.top >= -1, 'HUD：回场倒计时不应溢出左上');
-  assert(respawnBox.right <= 1600 + 1 && respawnBox.bottom <= 900 + 1, 'HUD：回场倒计时不应溢出右下');
-  assert(!overlaps(respawnBox, skillHudBox), 'HUD：回场倒计时不应挡住技能键');
+  const hostMidY = 900 / 2;
+  const respawnMidY = (respawnBox.top + respawnBox.bottom) / 2;
+  const respawnMidX = (respawnBox.left + respawnBox.right) / 2;
+  assert(respawnBox.left >= -1 && respawnBox.top >= -1, 'HUD：复活倒计时不应溢出左上');
+  assert(respawnBox.right <= 1600 + 1 && respawnBox.bottom <= 900 + 1, 'HUD：复活倒计时不应溢出右下');
+  assert(!overlaps(respawnBox, skillHudBox), 'HUD：复活倒计时不应挡住技能键');
+  assert(respawnMidY < hostMidY - 20, 'HUD：复活倒计时应在屏幕中央偏上');
+  assert(Math.abs(respawnMidX - 800) < 80, 'HUD：复活倒计时应水平居中');
   host.remove();
 }

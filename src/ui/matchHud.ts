@@ -26,9 +26,14 @@ function stopHudUi(ev: Event): void {
   ev.stopPropagation();
 }
 
-/** Stall / 自身回场大号秒：与开局倒计时同一套 ceil，至少显示 1。 */
+/** Stall / 自身复活秒：与开局倒计时同一套 ceil，至少显示 1。 */
 export function formatHudCount(remain: number): string {
   return String(Math.max(1, Math.ceil(remain)));
+}
+
+/** 自身阵亡倒计时完整句，X 为真实剩余向上取整。 */
+export function formatRespawnNeed(remain: number): string {
+  return `复活还需 ${formatHudCount(remain)} 秒`;
 }
 
 function formatClock(snap: MatchSnapshot): string {
@@ -185,8 +190,8 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
         openingHint.textContent = '栏内待命 · Esc / 点空白跳过';
       } else if (selfRespawn) {
         opening.dataset.kind = 'respawn';
-        openingNum.textContent = formatHudCount(selfRemain);
-        openingHint.textContent = '回场';
+        openingNum.textContent = formatRespawnNeed(selfRemain);
+        openingHint.textContent = '';
       } else {
         delete opening.dataset.kind;
         openingNum.textContent = '';

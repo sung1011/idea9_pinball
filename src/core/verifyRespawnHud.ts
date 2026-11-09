@@ -1,5 +1,5 @@
 import { createBallBody } from './ballBody';
-import { createMatchHud, formatHudCount } from '../ui/matchHud';
+import { createMatchHud, formatHudCount, formatRespawnNeed } from '../ui/matchHud';
 import type { MatchSnapshot } from './matchSession';
 
 function assert(cond: boolean, message: string): void {
@@ -38,12 +38,19 @@ function dummySnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
   };
 }
 
-/** 自身离场时场中大号回场倒计时；只本人、不改 5s/2s、Stall 优先。 */
+function wantRespawnHudQa(): boolean {
+  return typeof location !== 'undefined' && new URLSearchParams(location.search).has('respawnHudQa');
+}
+
+/** 自身离场时屏幕中央偏上「复活还需 X 秒」；只本人、不改 5s/2s、Stall 优先。 */
 export function verifyRespawnHud(): void {
-  assert(formatHudCount(5) === '5', '回场倒计时：满 5s 应显示 5');
-  assert(formatHudCount(4.2) === '5', '回场倒计时：4.2s 应 ceil 成 5');
-  assert(formatHudCount(4) === '4', '回场倒计时：整 4s 应显示 4');
-  assert(formatHudCount(0.2) === '1', '回场倒计时：不足 1s 应显示 1');
+  assert(formatHudCount(5) === '5', '复活倒计时：满 5s 应显示 5');
+  assert(formatHudCount(4.2) === '5', '复活倒计时：4.2s 应 ceil 成 5');
+  assert(formatHudCount(4) === '4', '复活倒计时：整 4s 应显示 4');
+  assert(formatHudCount(0.2) === '1', '复活倒计时：不足 1s 应显示 1');
+  assert(formatRespawnNeed(4.2) === '复活还需 5 秒', '复活倒计时：4.2s 完整句应为复活还需 5 秒');
+  assert(formatRespawnNeed(0.8) === '复活还需 1 秒', '复活倒计时：0.8s 完整句应为复活还需 1 秒');
+  assert(!formatRespawnNeed(3).includes('回场'), '复活倒计时：完整句不应写成回场');
 
   const host = document.createElement('div');
   document.body.appendChild(host);
@@ -54,9 +61,9 @@ export function verifyRespawnHud(): void {
   const toast = host.querySelector<HTMLElement>('.matchHudToast');
   if (!opening || !openingNum || !openingHint || !toast) {
     host.remove();
-    throw new Error('回场倒计时：应有场中大号数字层');
+    throw new Error('复活倒计时：应有场中倒计时层');
   }
-  assert(getComputedStyle(opening).pointerEvents === 'none', '回场倒计时：场中数字不应抢点击');
+  assert(getComputedStyle(opening).pointerEvents === 'none', '复活倒计时：倒计时层不应抢点击');
 
   const self = createBallBody({
     x: 2,
@@ -84,9 +91,9 @@ export function verifyRespawnHud(): void {
   });
 
   hud.sync(dummySnap(), [self, ally, foe], self.id);
-  assert(!opening.classList.contains('isOn'), '回场倒计时：自己在场不应出大号数字');
-  assert(openingNum.textContent === '', '回场倒计时：自己在场数字应空');
-  assert(toast.textContent === '', '回场倒计时：无人离场 toast 应空');
+  assert(!opening.classList.contains('isOn'), '复活倒计时：自己在场不应出倒计时');
+  assert(openingNum.textContent === '', '复活倒计时：自己在场文案应空');
+  assert(toast.textContent === '', '复活倒计时：无人离场 toast 应空');
 
   ally.inPlay = false;
   foe.inPlay = false;
@@ -97,9 +104,9 @@ export function verifyRespawnHud(): void {
     [self, ally, foe],
     self.id,
   );
-  assert(!opening.classList.contains('isOn'), '回场倒计时：仅队友/敌人离场不应出自己的大号数字');
-  assert(toast.textContent.includes('红2回场') && toast.textContent.includes('蓝1回场'), '回场倒计时：他人离场仍走短 toast');
-  assert(!toast.textContent.includes('红1回场'), '回场倒计时：自己在场 toast 不应写自己');
+  assert(!opening.classList.contains('isOn'), '复活倒计时：仅队友/敌人离场不应出自己的倒计时');
+  assert(toast.textContent.includes('红2回场') && toast.textContent.includes('蓝1回场'), '复活倒计时：他人离场仍走短 toast');
+  assert(!toast.textContent.includes('红1回场'), '复活倒计时：自己在场 toast 不应写自己');
 
   self.inPlay = false;
   hud.sync(
@@ -109,12 +116,16 @@ export function verifyRespawnHud(): void {
     [self, ally, foe],
     self.id,
   );
-  assert(opening.classList.contains('isOn'), '回场倒计时：自己离场应出大号数字');
-  assert(opening.dataset.kind === 'respawn', '回场倒计时：应标 respawn');
-  assert(opening.classList.contains('isRespawn'), '回场倒计时：应加 isRespawn');
-  assert(openingNum.textContent === '5', '回场倒计时：4.2s 应显示 5');
-  assert(openingHint.textContent === '回场', '回场倒计时：提示应为回场');
-  assert(toast.textContent.includes('红2回场') && !toast.textContent.includes('红1回场'), '回场倒计时：自己改走场中数字，toast 只留他人');
+  assert(opening.classList.contains('isOn'), '复活倒计时：自己离场应出倒计时');
+  assert(opening.dataset.kind === 'respawn', '复活倒计时：应标 respawn');
+  assert(opening.classList.contains('isRespawn'), '复活倒计时：应加 isRespawn');
+  assert(openingNum.textContent === '复活还需 5 秒', '复活倒计时：4.2s 应显示复活还需 5 秒');
+  assert(openingHint.textContent === '', '复活倒计时：不应再写回场');
+  assert(!openingNum.textContent.includes('回场'), '复活倒计时：主文案不应写成回场');
+  const respawnStyle = getComputedStyle(opening);
+  assert(respawnStyle.pointerEvents === 'none', '复活倒计时：阵亡层仍不抢点击');
+  assert(respawnStyle.backgroundColor === 'rgba(0, 0, 0, 0)' || respawnStyle.backgroundColor === 'transparent', '复活倒计时：不应铺全屏遮罩');
+  assert(toast.textContent.includes('红2回场') && !toast.textContent.includes('红1回场'), '复活倒计时：自己改走场中句，toast 只留他人');
 
   hud.sync(
     dummySnap({
@@ -126,8 +137,8 @@ export function verifyRespawnHud(): void {
     [self, ally, foe],
     self.id,
   );
-  assert(opening.classList.contains('isOn') && openingNum.textContent === '1', '回场倒计时：占点自己离场同样显示');
-  assert(openingHint.textContent === '回场', '回场倒计时：占点提示仍为回场');
+  assert(opening.classList.contains('isOn') && openingNum.textContent === '复活还需 1 秒', '复活倒计时：占点自己离场同样显示完整句');
+  assert(openingHint.textContent === '', '复活倒计时：占点也不写回场');
 
   hud.sync(
     dummySnap({
@@ -138,7 +149,7 @@ export function verifyRespawnHud(): void {
     [self, ally, foe],
     self.id,
   );
-  assert(opening.classList.contains('isOn') && openingNum.textContent === '2', '回场倒计时：加时自己离场仍显示');
+  assert(opening.classList.contains('isOn') && openingNum.textContent === '复活还需 2 秒', '复活倒计时：加时自己离场仍显示完整句');
 
   hud.sync(
     dummySnap({
@@ -148,8 +159,8 @@ export function verifyRespawnHud(): void {
     [self, ally, foe],
     self.id,
   );
-  assert(opening.classList.contains('isOn') && openingNum.textContent === '4', '回场倒计时：击破 toast 不应盖掉自己的大号数字');
-  assert(toast.textContent === '红1击破蓝1', '回场倒计时：击破短 toast 仍可出');
+  assert(opening.classList.contains('isOn') && openingNum.textContent === '复活还需 4 秒', '复活倒计时：击破 toast 不应盖掉自己的倒计时');
+  assert(toast.textContent === '红1击破蓝1', '复活倒计时：击破短 toast 仍可出');
 
   self.inPlay = true;
   hud.sync(
@@ -163,11 +174,11 @@ export function verifyRespawnHud(): void {
     [self, ally, foe],
     self.id,
   );
-  assert(opening.classList.contains('isOn'), '回场倒计时：Stall 大号倒计时应仍在');
-  assert(opening.dataset.kind === 'stall', '回场倒计时：开局应标 stall');
-  assert(!opening.classList.contains('isRespawn'), '回场倒计时：Stall 不应标回场');
-  assert(openingNum.textContent === '5', '回场倒计时：Stall 秒数应仍显示');
-  assert(openingHint.textContent?.includes('栏内待命'), '回场倒计时：Stall 提示不应被回场替换');
+  assert(opening.classList.contains('isOn'), '复活倒计时：Stall 大号倒计时应仍在');
+  assert(opening.dataset.kind === 'stall', '复活倒计时：开局应标 stall');
+  assert(!opening.classList.contains('isRespawn'), '复活倒计时：Stall 不应标复活');
+  assert(openingNum.textContent === '5', '复活倒计时：Stall 秒数应仍显示');
+  assert(openingHint.textContent?.includes('栏内待命'), '复活倒计时：Stall 提示不应被复活句替换');
 
   self.inPlay = false;
   hud.sync(
@@ -180,7 +191,7 @@ export function verifyRespawnHud(): void {
     [self, ally, foe],
     self.id,
   );
-  assert(opening.dataset.kind === 'stall' && openingHint.textContent?.includes('栏内待命'), '回场倒计时：Stall 优先于自身回场');
+  assert(opening.dataset.kind === 'stall' && openingHint.textContent?.includes('栏内待命'), '复活倒计时：Stall 优先于自身复活');
 
   hud.sync(
     dummySnap({
@@ -192,13 +203,32 @@ export function verifyRespawnHud(): void {
     [self, ally, foe],
     self.id,
   );
-  assert(!opening.classList.contains('isOn'), '回场倒计时：结算不应再出回场数字');
-  assert(openingNum.textContent === '', '回场倒计时：结算数字应空');
+  assert(!opening.classList.contains('isOn'), '复活倒计时：结算不应再出复活句');
+  assert(openingNum.textContent === '', '复活倒计时：结算文案应空');
 
   self.inPlay = true;
   hud.sync(dummySnap(), [self, ally, foe], self.id);
-  assert(!opening.classList.contains('isOn'), '回场倒计时：回场后应收起');
-  assert(!opening.classList.contains('isRespawn') && !opening.dataset.kind, '回场倒计时：回场后应清标记');
+  assert(!opening.classList.contains('isOn'), '复活倒计时：回场后应收起');
+  assert(!opening.classList.contains('isRespawn') && !opening.dataset.kind, '复活倒计时：回场后应清标记');
+
+  if (wantRespawnHudQa()) {
+    self.inPlay = false;
+    hud.sync(
+      dummySnap({
+        respawns: { [self.id]: 4.2 },
+      }),
+      [self, ally, foe],
+      self.id,
+    );
+    const app = document.querySelector<HTMLElement>('#app');
+    const root = host.querySelector<HTMLElement>('.matchHud');
+    if (root) {
+      root.style.display = 'none';
+    }
+    host.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:20';
+    (app ?? document.body).appendChild(host);
+    return;
+  }
 
   host.remove();
 }

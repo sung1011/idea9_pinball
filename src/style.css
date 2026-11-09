@@ -303,11 +303,22 @@ canvas {
   display: block;
 }
 
+.openingHud.isRespawn {
+  top: 34%;
+  background: none;
+}
+
 .openingHudNum {
   font-size: clamp(72px, 18vmin, 140px);
   font-weight: 800;
   letter-spacing: 0.04em;
   line-height: 0.95;
+}
+
+.openingHud.isRespawn .openingHudNum {
+  font-size: clamp(28px, 5.6vmin, 44px);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
 }
 
 .openingHudHint {
