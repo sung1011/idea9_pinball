@@ -50,7 +50,7 @@ export const HOOK_ULT = {
   slot: 5,
   energyCost: 100,
   steps: 3,
-  stepTime: 0.2,
+  stepTime: 0.4,
   stepDist: 0.8,
   chargeSpeed0: 8,
   chargeAccel: 12,

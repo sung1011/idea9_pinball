@@ -201,7 +201,7 @@ export function kitHelpSkills(hero: HeroId): string {
   if (hero === 'mirror') {
     return '技能 1–4：1 折光（受伤减半入账） / 2 反照 / 3 裂镜 / 4 镜壁。第五键必杀占位。';
   }
-  return '技能 1–4：1 钩矛 / 2 连刺×3 / 3 盾冲 / 4 蓄势。第五键无畏冲锋（满能量后退三步后沿枪尖穿刺）。';
+  return '技能 1–4：1 钩矛 / 2 连刺×3 / 3 盾冲 / 4 蓄势。第五键无畏冲锋（满能量后退三步，每步 0.4 秒 / 0.8 格，再沿枪尖穿刺）。';
 }
 
 export function kitSettingsHint(hero: HeroId): string {

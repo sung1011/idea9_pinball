@@ -101,7 +101,8 @@ function firePointer(el: Element, type: string): void {
 
 /** 钩刺无畏冲锋 + 全英雄第五键能量 UI。四技能 CD 元组仍为 4。 */
 export function verifyUlt(): void {
-  assert(HOOK_ULT.steps === 3 && HOOK_ULT.stepTime === 0.2 && HOOK_ULT.stepDist === 0.8, '必杀：三步各 0.2s / 0.8 格');
+  assert(HOOK_ULT.steps === 3 && HOOK_ULT.stepTime === 0.4 && HOOK_ULT.stepDist === 0.8, '必杀：三步各 0.4s / 0.8 格');
+  assert(HOOK_ULT.energyCost === 100, '必杀：能量消耗仍为 100');
   assert(HOOK_ULT.chargeSpeed0 === 8 && HOOK_ULT.chargeAccel === 12 && HOOK_ULT.chargeSpeedCap === 16, '必杀：冲锋 8 加速 12 封顶 16');
   assert(HOOK_ULT.damage === 36 && HOOK_ULT.turnDegPerSec === 90, '必杀：36 伤、转向 90°/s');
   assert(Number(HOOK_ULT.damage) !== Number(HOOK_SHOVE.damage), '必杀：伤害应与盾冲不同');
@@ -178,7 +179,11 @@ export function verifyUlt(): void {
   red.hasAim = true;
   red.aimX = 1;
   red.aimY = 0;
-  advance(caster, red, [red, blue, extra], HOOK_ULT.stepTime - 0.02, { x: 1, y: 0 });
+  advance(caster, red, [red, blue, extra], 0.25, { x: 1, y: 0 });
+  const backSpeed = Math.hypot(red.vx, red.vy);
+  assert(backSpeed > 1.6 && backSpeed < 2.6, `必杀：后撤 0.25s 时应仍是 0.8/0.4 格每秒，实际 ${backSpeed}`);
+  assert(red.x < x0 - 0.4 && red.x > x0 - 0.7, '必杀：0.25s 应走完约半步 0.5 格，尚未冲出');
+  advance(caster, red, [red, blue, extra], HOOK_ULT.stepTime - 0.02 - 0.25, { x: 1, y: 0 });
   assert(red.x < x0 - 0.5, '必杀：第一步应沿枪尖反向后退');
   assert(red.facingX > 0.7, '必杀：后退时朝向仍跟枪尖，不翻成后退');
 
@@ -237,14 +242,14 @@ export function verifyUlt(): void {
   wallBall.hasAim = true;
   wallBall.aimX = -1;
   wallBall.aimY = 0;
-  advance(wallC, wallBall, [wallBall], 1.6, { x: -1, y: 0 });
+  advance(wallC, wallBall, [wallBall], 2.2, { x: -1, y: 0 });
   assert(!wallC.isDisplacing(), '必杀：撞实墙应结束冲力');
   assert(Math.hypot(wallBall.vx, wallBall.vy) <= 8.2, '必杀：结束后应撤掉必杀冲力');
 
   const ccC = createSkillCaster('hook');
   const [ccRed, ccBlue] = redBlue(16, 4, 24, 4);
   fireUlt(ccC, ccRed, 1, 0);
-  advance(ccC, ccRed, [ccRed, ccBlue], 0.65, { x: 1, y: 0 });
+  advance(ccC, ccRed, [ccRed, ccBlue], HOOK_ULT.steps * HOOK_ULT.stepTime + 0.05, { x: 1, y: 0 });
   const energyAfterCast = ccRed.ultEnergy;
   applyHardCc(ccRed, 0.6, 10);
   play(ccC, ccRed, [ccRed, ccBlue], 1 / 60);
