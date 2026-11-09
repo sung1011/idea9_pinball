@@ -35,7 +35,7 @@ export function verifySkillIcons(): void {
   const files = Object.values(SKILL_ICON_FILES).flat();
   assert(files.length === SKILL_ICON_COUNT, '技能图标：应为 28 张');
   assert(new Set(files).size === SKILL_ICON_COUNT, '技能图标：文件名应互不重复');
-  assert(SKILL_ICON_BYTES === 253850, '技能图标：成品总量应为 253850 字节');
+  assert(SKILL_ICON_BYTES === 96134, '技能图标：圆形 v1 成品总量应为 96134 字节');
 
   for (const hero of HERO_IDS) {
     const names = skillNames(hero);
@@ -64,6 +64,8 @@ export function verifySkillIcons(): void {
   const pad = createTouchPad(host, bus, { holdMs: 0 });
   const btns = host.querySelectorAll<HTMLButtonElement>('button.touchSkillBtn');
   assert(btns.length === 4, '技能图标：仍为四键');
+  const ultBtn = host.querySelector<HTMLButtonElement>('button.touchUltBtn');
+  assert(!!ultBtn && !ultBtn.querySelector('img.touchSkillIcon'), '技能图标：第五键必杀不接头像包、不改能量键');
   pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: 'hook' });
   const hookImgs = [...btns].map((btn) => btn.querySelector<HTMLImageElement>('img.touchSkillIcon'));
   assert(hookImgs.every((img) => !!img), '技能图标：每键应有 img');
