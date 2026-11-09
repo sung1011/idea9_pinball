@@ -313,18 +313,18 @@ export function verifyEightKill(): void {
   const hud = createMatchHud(host, { mode: 'eightKill' });
   const modePick = host.querySelector<HTMLSelectElement>('select.matchHudMode');
   const left = host.querySelector<HTMLElement>('.matchHudLeft');
-  const heroRow = host.querySelector<HTMLElement>('.matchHudHeroRow');
   const redVal = host.querySelector<HTMLElement>('.matchHudRed .matchHudScoreVal');
   const blueVal = host.querySelector<HTMLElement>('.matchHudBlue .matchHudScoreVal');
-  if (!modePick || !left || !heroRow || !redVal || !blueVal) {
-    throw new Error('八杀：左上应有模式与我/队友下拉');
+  if (!modePick || !left || !redVal || !blueVal) {
+    throw new Error('八杀：左上应有模式下拉');
   }
   assert(
     [...modePick.options].map((opt) => opt.textContent).join('/') === '八杀/占点',
     '八杀：模式下拉文案应为八杀/占点',
   );
   assert(modePick.value === 'eightKill', '八杀：模式下拉缺省应为八杀');
-  assert(left.firstElementChild === modePick.parentElement, '八杀：模式下拉应在我/队友之上');
+  assert(left.firstElementChild === modePick.parentElement, '八杀：左上首位应为模式下拉');
+  assert(!host.querySelector('.matchHudHeroRow'), '八杀：左上不应再有我/队友下拉');
   hud.sync(
     {
       phase: 'playing',

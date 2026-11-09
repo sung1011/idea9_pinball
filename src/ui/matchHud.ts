@@ -8,21 +8,14 @@ import {
   MATCH_MODE_LABEL,
   type MatchModeId,
 } from '../core/matchMode';
-import { HERO_IDS, heroZh, isHeroId, type HeroId } from '../heroes/heroIds';
 
 export type MatchHud = {
   sync: (snap: MatchSnapshot, balls: readonly BallBody[]) => void;
-  setHero: (hero: HeroId) => void;
-  setAllyHero: (hero: HeroId) => void;
   setMode: (mode: MatchModeId) => void;
 };
 
 export type MatchHudOpts = {
-  hero?: HeroId;
-  allyHero?: HeroId;
   mode?: MatchModeId;
-  onPickHero?: (hero: HeroId) => void;
-  onPickAllyHero?: (hero: HeroId) => void;
   onPickMode?: (mode: MatchModeId) => void;
 };
 
@@ -80,7 +73,7 @@ function makeScoreSide(team: 'red' | 'blue'): { root: HTMLSpanElement; value: HT
   return { root, value };
 }
 
-/** 顶中比分胶囊贴窗顶；我/队友下拉贴视窗左上，略 inset。 */
+/** 顶中比分胶囊贴窗顶；模式下拉贴视窗左上，略 inset。 */
 export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): MatchHud {
   const root = document.createElement('div');
   root.className = 'matchHud';
@@ -92,63 +85,6 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   clock.className = 'matchHudClock';
   const blue = makeScoreSide('blue');
   cluster.append(red.root, makeSep(), clock, makeSep(), blue.root);
-
-  const makeHeroPick = (
-    className: string,
-    ariaLabel: string,
-    initial: HeroId,
-    onPick?: (hero: HeroId) => void,
-  ): HTMLSelectElement => {
-    const pick = document.createElement('select');
-    pick.className = className;
-    pick.setAttribute('data-touch-control', 'hero');
-    pick.setAttribute('aria-label', ariaLabel);
-    for (const id of HERO_IDS) {
-      const option = document.createElement('option');
-      option.value = id;
-      option.textContent = heroZh(id);
-      pick.appendChild(option);
-    }
-    pick.value = initial;
-    for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'keydown', 'keyup'] as const) {
-      pick.addEventListener(type, stopHudUi);
-    }
-    pick.addEventListener('change', (ev) => {
-      ev.stopPropagation();
-      if (!isHeroId(pick.value)) {
-        pick.value = initial;
-        return;
-      }
-      onPick?.(pick.value);
-    });
-    return pick;
-  };
-
-  const makeHeroWrap = (tag: string, pick: HTMLSelectElement): HTMLLabelElement => {
-    const wrap = document.createElement('label');
-    wrap.className = 'matchHudHeroWrap';
-    wrap.dataset.team = 'red';
-    const stripe = document.createElement('span');
-    stripe.className = 'matchHudHeroStripe';
-    stripe.setAttribute('aria-hidden', 'true');
-    const name = document.createElement('span');
-    name.className = 'matchHudHeroTag';
-    name.textContent = tag;
-    wrap.append(stripe, name, pick);
-    return wrap;
-  };
-
-  const pick = makeHeroPick('matchHudHero', '切换自己英雄', opts.hero ?? 'hook', opts.onPickHero);
-  const allyPick = makeHeroPick(
-    'matchHudHero matchHudAllyHero',
-    '切换队友英雄',
-    opts.allyHero ?? 'chain',
-    opts.onPickAllyHero,
-  );
-  const heroRow = document.createElement('div');
-  heroRow.className = 'matchHudHeroRow';
-  heroRow.dataset.hud = 'heroPicks';
-  heroRow.append(makeHeroWrap('我', pick), makeHeroWrap('队友', allyPick));
 
   const modePick = document.createElement('select');
   modePick.className = 'matchHudHero matchHudMode';
@@ -182,8 +118,8 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
 
   const leftStack = document.createElement('div');
   leftStack.className = 'matchHudLeft';
-  leftStack.dataset.hud = 'modeHero';
-  leftStack.append(modeWrap, heroRow);
+  leftStack.dataset.hud = 'mode';
+  leftStack.append(modeWrap);
 
   const toast = document.createElement('div');
   toast.className = 'matchHudToast';
@@ -200,12 +136,6 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   host.append(root, opening);
 
   return {
-    setHero(hero) {
-      pick.value = hero;
-    },
-    setAllyHero(hero) {
-      allyPick.value = hero;
-    },
     setMode(mode) {
       modePick.value = mode;
     },

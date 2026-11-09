@@ -1,8 +1,7 @@
 import { loadGmEnabled, saveGmEnabled } from '../debug/gmState';
 import type { CollisionTestKind } from '../debug/debugVelocity';
 import type { TeamId } from '../core/ballBody';
-import type { HeroId } from '../heroes/heroIds';
-import { heroZh } from '../heroes/heroIds';
+import { HERO_IDS, heroZh, isHeroId, type HeroId } from '../heroes/heroIds';
 import { kitSettingsHint } from '../heroes/kitLabels';
 import { APP_VERSION, CHANGE_LOG, type AppVersions } from './appVersion';
 
@@ -13,6 +12,7 @@ export type SettingsPanel = {
   close: () => void;
   isOpen: () => boolean;
   isGmOn: () => boolean;
+  setHero: (hero: HeroId) => void;
 };
 
 export type SettingsActions = {
@@ -25,6 +25,7 @@ export type SettingsActions = {
   onJumpClock: (sec: number) => void;
   onForceRespawn: () => void;
   getHero?: () => HeroId;
+  onPickHero?: (hero: HeroId) => void;
   onSwapHero?: () => void;
   versions: AppVersions;
 };
@@ -128,6 +129,36 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
   };
 
   const renderGeneral = (): void => {
+    const currentHero = actions.getHero?.() ?? 'hook';
+    const heroRow = el('label', 'settingsHeroRow');
+    heroRow.appendChild(el('span', 'settingsHeroLabel', '我的英雄'));
+    const heroPick = document.createElement('select');
+    heroPick.className = 'settingsHeroPick';
+    heroPick.setAttribute('data-touch-control', 'hero');
+    heroPick.setAttribute('aria-label', '我的英雄');
+    for (const id of HERO_IDS) {
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = heroZh(id);
+      heroPick.appendChild(option);
+    }
+    heroPick.value = currentHero;
+    for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'keydown', 'keyup'] as const) {
+      heroPick.addEventListener(type, (ev) => {
+        ev.stopPropagation();
+      });
+    }
+    heroPick.addEventListener('change', (ev) => {
+      ev.stopPropagation();
+      if (!isHeroId(heroPick.value)) {
+        heroPick.value = actions.getHero?.() ?? 'hook';
+        return;
+      }
+      actions.onPickHero?.(heroPick.value);
+    });
+    heroRow.appendChild(heroPick);
+    body.appendChild(heroRow);
+
     const restart = el('button', 'settingsWide', '重开本局 · R');
     restart.type = 'button';
     restart.addEventListener('click', (ev) => {
@@ -144,9 +175,9 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
       actions.onOpenHelp?.();
     });
     body.appendChild(helpBtn);
-    addHint(body, kitSettingsHint(actions.getHero?.() ?? 'hook'));
+    addHint(body, kitSettingsHint(currentHero));
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。瞄准中触屏点空白即瞄向并释放，滑动只改朝向。右键 / Esc 取消瞄准。');
-    addHint(body, '本机固定 2v2。开局与每次 R：队友和两名敌方从含镜卫全池均匀随机（可重复）。左上可换自己或队友英雄（只换技能组）；换自己会记住下次缺省，换队友不会。无记录时你默认钩刺。始终横屏对局：竖持时整屏转 90°（家庭键在右时正向），不提示转屏。GM 开时按 H 只循环红1：钩刺 → 磁环 → 链生 → 钉壳 → 闪弧 → 井绳 → 镜卫。');
+    addHint(body, '本机固定 2v2。开局与每次 R：队友和两名敌方从含镜卫全池均匀随机（可重复）。常规页「我的英雄」可换自己（只换技能组）并记住下次缺省；不能换队友。无记录时你默认钩刺。始终横屏对局：竖持时整屏转 90°（家庭键在右时正向），不提示转屏。GM 开时按 H 只循环红1：钩刺 → 磁环 → 链生 → 钉壳 → 闪弧 → 井绳 → 镜卫。');
   };
 
   const renderVersion = (): void => {
@@ -331,5 +362,14 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     close,
     isOpen,
     isGmOn: () => gmOn,
+    setHero(hero) {
+      const pick = body.querySelector<HTMLSelectElement>('select.settingsHeroPick');
+      if (pick) {
+        pick.value = hero;
+      }
+      if (tab === 'general') {
+        render();
+      }
+    },
   };
 }

@@ -1,9 +1,15 @@
-import { isAimUiTarget } from '../input/actionBus';
+import { createActionBus, isAimUiTarget } from '../input/actionBus';
+import { bindPcInput } from '../input/pcInput';
 import { createPlayerControl } from '../input/playerControl';
+import { createTouchPad } from '../input/touchPad';
 import type { ActionSample } from '../input/actionTypes';
 import { HERO_IDS, heroZh, isHeroId, nextHero, pickRandomHero, type HeroId } from '../heroes/heroIds';
 import { LAST_HERO_STORAGE_KEY, loadLastHeroId, saveLastHeroId } from '../heroes/lastHeroId';
+import { skillNames } from '../heroes/kitLabels';
+import { SKILL_ICON_FILES } from '../heroes/skillIcons';
+import type { AppVersions } from '../ui/appVersion';
 import { createMatchHud } from '../ui/matchHud';
+import { createSettingsPanel } from '../ui/settingsPanel';
 import { createBallBody } from './ballBody';
 import { createMatchRoster, pickMatchRosterKits } from './matchSession';
 import { createSimpleBot } from './simpleBot';
@@ -12,6 +18,24 @@ function assert(cond: boolean, message: string): void {
   if (!cond) {
     throw new Error(message);
   }
+}
+
+function dummyVersions(): AppVersions {
+  return {
+    getState: () => ({
+      entries: [],
+      grouped: [],
+      history: [],
+      installed: null,
+      pending: [],
+      flash: '',
+    }),
+    subscribe: () => () => {},
+    refresh: async () => {},
+    checkUpdate: async () => {},
+    applyUpdate: async () => {},
+    dispose: () => {},
+  };
 }
 
 function sample(partial: Partial<ActionSample> = {}): ActionSample {
@@ -27,7 +51,7 @@ function sample(partial: Partial<ActionSample> = {}): ActionSample {
   };
 }
 
-/** 左上双下拉指定自己/队友英雄；H 循环只跟自己；换 kit 不清血量/位置/编号。 */
+/** 设置常规页只换自己英雄；无队友入口；H 循环只跟自己；换 kit 不清血量/位置/编号。 */
 export function verifyHeroPick(): void {
   assert(HERO_IDS.length === 7, '换英雄：池应为 7 人');
   assert(HERO_IDS.every((id) => isHeroId(id)), '换英雄：池内 id 应全部合法');
@@ -37,12 +61,20 @@ export function verifyHeroPick(): void {
   );
 
   const host = document.createElement('div');
+  document.body.appendChild(host);
   const state = { hero: 'hook' as HeroId, ally: 'chain' as HeroId };
   let picks = 0;
-  let allyPicks = 0;
-  const hud = createMatchHud(host, {
-    hero: state.hero,
-    allyHero: state.ally,
+  createMatchHud(host);
+  const pad = createTouchPad(host, createActionBus());
+  pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: state.hero });
+  const settings = createSettingsPanel(host, {
+    onRestart: () => {},
+    onCollision: () => {},
+    onScore: () => {},
+    onAdvance: () => {},
+    onJumpClock: () => {},
+    onForceRespawn: () => {},
+    getHero: () => state.hero,
     onPickHero: (next) => {
       picks += 1;
       if (state.hero === next) {
@@ -50,46 +82,101 @@ export function verifyHeroPick(): void {
       }
       state.hero = next;
     },
-    onPickAllyHero: (next) => {
-      allyPicks += 1;
-      if (state.ally === next) {
-        return;
-      }
-      state.ally = next;
-    },
+    versions: dummyVersions(),
   });
-  const pick = host.querySelector<HTMLSelectElement>('select.matchHudHero:not(.matchHudAllyHero):not(.matchHudMode)');
-  const allyPick = host.querySelector<HTMLSelectElement>('select.matchHudAllyHero');
-  if (!pick || !allyPick) {
-    throw new Error('换英雄：战场应有自己与队友两个下拉');
+  assert(!host.querySelector('.matchHudHeroRow'), '换英雄：左上不应再有我/队友下拉');
+  assert(!host.querySelector('select.matchHudAllyHero'), '换英雄：不应再有队友选择入口');
+  assert(
+    !host.querySelector('select.matchHudHero:not(.matchHudMode)'),
+    '换英雄：局内不应再有自己英雄下拉',
+  );
+  assert(!!host.querySelector('select.matchHudMode'), '换英雄：左上模式入口应仍在');
+
+  settings.open();
+  const overlay = host.querySelector<HTMLElement>('.settingsOverlay');
+  const pick = host.querySelector<HTMLSelectElement>('select.settingsHeroPick');
+  if (!overlay || !pick) {
+    host.remove();
+    throw new Error('换英雄：常规页应有我的英雄选择');
   }
   assert(pick.getAttribute('data-touch-control') === 'hero', '换英雄：下拉应标 data-touch-control');
-  assert(isAimUiTarget(pick) && isAimUiTarget(allyPick), '换英雄：点下拉不应抢 Aim');
-  assert(pick.options.length === 7 && allyPick.options.length === 7, '换英雄：下拉应列出 7 人');
+  assert(isAimUiTarget(pick) && isAimUiTarget(overlay), '换英雄：点设置选择不应抢 Aim');
+  assert(pick.options.length === 7, '换英雄：下拉应列出 7 人');
+  assert(
+    [...pick.options].map((opt) => opt.textContent).join('/') === '钩刺/磁环/链生/钉壳/闪弧/井绳/镜卫',
+    '换英雄：选项文案应为七英雄中文名',
+  );
   assert(pick.value === 'hook', '换英雄：自己默认应选钩刺');
-  assert(allyPick.value === 'chain', '换英雄：队友默认应选链生');
+  const canvas = document.createElement('canvas');
+  host.appendChild(canvas);
+  const bus = createActionBus();
+  const unbind = bindPcInput({
+    bus,
+    canvas,
+    getTransform: () => ({ scale: 1, offsetX: 0, offsetY: 0 }),
+    getAimingSlot: () => 0,
+  });
+  pick.dispatchEvent(
+    new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 1,
+      pointerType: 'touch',
+      button: 0,
+      buttons: 1,
+      clientX: 40,
+      clientY: 40,
+    }),
+  );
+  const blocked = bus.sample(0, 0);
+  assert(!blocked.confirmRelease && blocked.skillPress === 0, '换英雄：点设置选择不应误触技能');
+  unbind();
 
-  pick.value = 'nail';
-  pick.dispatchEvent(new Event('change', { bubbles: true }));
-  assert(picks === 1 && state.hero === 'nail', '换英雄：改下拉应指定钉壳');
-  assert(pick.value === 'nail' && allyPick.value === 'chain' && state.ally === 'chain', '换英雄：换自己不应改队友');
+  const skillBtns = [...host.querySelectorAll<HTMLButtonElement>('button.touchSkillBtn')];
+  assert(skillBtns.length === 4, '换英雄：四技能键应仍在');
+  for (const id of HERO_IDS) {
+    const livePick = host.querySelector<HTMLSelectElement>('select.settingsHeroPick');
+    if (!livePick) {
+      host.remove();
+      throw new Error('换英雄：切换中应保持我的英雄选择');
+    }
+    livePick.value = id;
+    livePick.dispatchEvent(new Event('change', { bubbles: true }));
+    assert(state.hero === id, `换英雄：选 ${heroZh(id)} 应只改自己`);
+    assert(state.ally === 'chain', `换英雄：选 ${heroZh(id)} 不应改队友`);
+    pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: state.hero });
+    const names = skillNames(state.hero);
+    for (let i = 0; i < 4; i += 1) {
+      const btn = skillBtns[i];
+      if (!btn) {
+        host.remove();
+        throw new Error(`换英雄：缺技能键 ${i + 1}`);
+      }
+      const img = btn.querySelector<HTMLImageElement>('img.touchSkillIcon');
+      assert(!!img?.src.includes(SKILL_ICON_FILES[state.hero][i]), `换英雄：${heroZh(id)} 技能图应跟着换`);
+      assert(btn.getAttribute('aria-label') === names[i], `换英雄：${heroZh(id)} 技能名应跟着换`);
+    }
+  }
+  assert(picks === HERO_IDS.length, '换英雄：七英雄都应能切换');
 
   const before = picks;
-  pick.value = 'nail';
-  pick.dispatchEvent(new Event('change', { bubbles: true }));
-  assert(state.hero === 'nail' && picks === before + 1, '换英雄：再选当前英雄应是空操作');
+  const samePick = host.querySelector<HTMLSelectElement>('select.settingsHeroPick');
+  if (!samePick) {
+    host.remove();
+    throw new Error('换英雄：再选当前英雄时选择应仍在');
+  }
+  samePick.value = 'mirror';
+  samePick.dispatchEvent(new Event('change', { bubbles: true }));
+  assert(state.hero === 'mirror' && picks === before + 1, '换英雄：再选当前英雄应是空操作');
+  assert(state.ally === 'chain', '换英雄：再选自己仍不应改队友');
 
   state.hero = nextHero(state.hero);
-  hud.setHero(state.hero);
-  assert(state.hero === 'arc' && pick.value === 'arc', '换英雄：H 循环后下拉应跟到闪弧');
-  assert(allyPick.value === 'chain' && state.ally === 'chain', '换英雄：H 循环只跟自己');
-
-  allyPick.value = 'nail';
-  allyPick.dispatchEvent(new Event('change', { bubbles: true }));
-  assert(allyPicks === 1 && state.ally === 'nail', '换英雄：队友下拉应指定钉壳');
-  assert(state.hero === 'arc' && pick.value === 'arc', '换英雄：换队友不应改自己');
-  hud.setAllyHero(state.ally);
-  assert(allyPick.value === 'nail', '换英雄：队友下拉选中应保持钉壳');
+  settings.setHero(state.hero);
+  const afterSwap = host.querySelector<HTMLSelectElement>('select.settingsHeroPick');
+  assert(state.hero === 'hook' && afterSwap?.value === 'hook', '换英雄：H 循环后选择应跟到钩刺');
+  assert(state.ally === 'chain', '换英雄：H 循环只跟自己');
+  assert(!host.querySelector('[aria-label="切换队友英雄"]'), '换英雄：不应提供队友选择');
+  host.remove();
 
   const ball = createBallBody({
     x: 4.2,

@@ -1,5 +1,5 @@
 import { IPHONE_LANDSCAPE_LOGICAL_HEIGHT, IPHONE_LANDSCAPE_LOGICAL_WIDTH, MAP_HEIGHT, MAP_WIDTH } from './constants';
-import { createActionBus } from '../input/actionBus';
+import { createActionBus, isAimUiTarget } from '../input/actionBus';
 import { bindPcInput } from '../input/pcInput';
 import { createTouchPad } from '../input/touchPad';
 import { fitWorldToBox, screenToLogical } from '../render/worldTransform';
@@ -164,17 +164,17 @@ function assertCornerHud(
   const clusterBox = localBox(cluster, host);
   const midX = hostW / 2;
   const midY = hostH / 2;
-  assert(heroBox.left < 24, `${label}：换英雄应贴视窗左上`);
-  assert(heroBox.top < 24, `${label}：换英雄应贴视窗顶`);
-  assert(heroBox.right < hostW * 0.48, `${label}：换英雄不应伸进中场`);
-  assert(heroBox.bottom < midY, `${label}：换英雄应留在上半屏`);
+  assert(heroBox.left < 24, `${label}：模式下拉应贴视窗左上`);
+  assert(heroBox.top < 24, `${label}：模式下拉应贴视窗顶`);
+  assert(heroBox.right < hostW * 0.48, `${label}：模式下拉不应伸进中场`);
+  assert(heroBox.bottom < midY, `${label}：模式下拉应留在上半屏`);
   assert(hostW - skillBox.right < 24, `${label}：技能应贴视窗右侧`);
   assert(hostH - skillBox.bottom < 24, `${label}：技能应贴视窗底`);
   assert(skillBox.left > hostW * 0.28, `${label}：技能应偏右下，不挡中场领地`);
   assert(skillBox.top > midY, `${label}：技能应留在下半屏`);
   assert(clusterBox.top < 24, `${label}：比分胶囊应贴窗顶`);
   assert(Math.abs((clusterBox.left + clusterBox.right) / 2 - midX) < 24, `${label}：比分胶囊应顶中`);
-  assert(heroBox.right <= clusterBox.left + 4 || heroBox.bottom <= clusterBox.top + 1, `${label}：换英雄不应挡住顶中胶囊`);
+  assert(heroBox.right <= clusterBox.left + 4 || heroBox.bottom <= clusterBox.top + 1, `${label}：模式下拉不应挡住顶中胶囊`);
   if (helpFab && settingsFab) {
     const helpBox = localBox(helpFab, host);
     const gearBox = localBox(settingsFab, host);
@@ -316,34 +316,30 @@ export function verifyHudLayout(): void {
   const red = host.querySelector<HTMLElement>('.matchHudRed .matchHudScoreVal');
   const blue = host.querySelector<HTMLElement>('.matchHudBlue .matchHudScoreVal');
   const clock = host.querySelector<HTMLElement>('.matchHudClock');
-  const hero = host.querySelector<HTMLSelectElement>('select.matchHudHero:not(.matchHudAllyHero):not(.matchHudMode)');
-  const allyHero = host.querySelector<HTMLSelectElement>('select.matchHudAllyHero');
   const modePick = host.querySelector<HTMLSelectElement>('select.matchHudMode');
   const leftStack = host.querySelector<HTMLElement>('.matchHudLeft');
-  const heroRow = host.querySelector<HTMLElement>('.matchHudHeroRow');
   const skills = host.querySelector<HTMLElement>('.touchSkills');
   const skillBtns = [...host.querySelectorAll<HTMLButtonElement>('button.touchSkillBtn')];
   const cancelBtn = host.querySelector<HTMLButtonElement>('button.touchCancel');
-  if (!cluster || !red || !blue || !clock || !hero || !allyHero || !heroRow || !skills || !cancelBtn || !modePick || !leftStack) {
-    throw new Error('HUD：应有顶中比分计时胶囊、模式/自己/队友下拉、技能键与取消键');
+  if (!cluster || !red || !blue || !clock || !skills || !cancelBtn || !modePick || !leftStack) {
+    throw new Error('HUD：应有顶中比分计时胶囊、模式下拉、技能键与取消键');
   }
   assert(
     [...modePick.options].map((opt) => opt.textContent).join('/') === '八杀/占点',
     'HUD：模式下拉应为八杀/占点',
   );
   assert(modePick.value === 'eightKill', 'HUD：模式下拉缺省应为八杀');
-  assert(leftStack.contains(modePick) && leftStack.contains(heroRow), 'HUD：模式与英雄下拉应同组在左上');
-  assert(leftStack.firstElementChild?.contains(modePick) ?? false, 'HUD：模式下拉应在我/队友之上');
+  assert(leftStack.contains(modePick), 'HUD：模式下拉应在左上');
+  assert(leftStack.firstElementChild?.contains(modePick) ?? false, 'HUD：左上首位应为模式下拉');
+  assert(!host.querySelector('.matchHudHeroRow'), 'HUD：左上不应再有我/队友下拉');
+  assert(!host.querySelector('select.matchHudAllyHero'), 'HUD：不应再有队友选择');
+  assert(!host.querySelector('select.matchHudHero:not(.matchHudMode)'), 'HUD：局内不应再有自己英雄下拉');
   assert(!host.querySelector('.matchHudPill'), 'HUD：不应再有角落独立比分胶囊');
   assert(cluster.contains(red) && cluster.contains(clock) && cluster.contains(blue), 'HUD：红分/计时/蓝分应同在一颗胶囊');
   const sides = [...cluster.querySelectorAll('.matchHudSide')];
   assert(sides[0]?.classList.contains('matchHudRed') && sides[1]?.classList.contains('matchHudBlue'), 'HUD：胶囊顺序应为红 | 计时 | 蓝');
   assert(cluster.querySelectorAll('.matchHudMark').length === 2, 'HUD：红蓝两侧应有小队标');
-  assert(cluster.contains(hero) === false && cluster.contains(allyHero) === false, 'HUD：英雄下拉应留在边缘，不进顶中胶囊');
-  assert(heroRow.contains(hero) && heroRow.contains(allyHero), 'HUD：自己/队友下拉应同组');
-  assert(heroRow.dataset.hud === 'heroPicks', 'HUD：双下拉应标 heroPicks');
-  const tags = [...heroRow.querySelectorAll('.matchHudHeroTag')].map((el) => el.textContent);
-  assert(tags[0] === '我' && tags[1] === '队友', 'HUD：双下拉标签应为我/队友');
+  assert(cluster.contains(modePick) === false, 'HUD：模式下拉应留在边缘，不进顶中胶囊');
   assert(skillBtns.length === 4, 'HUD：应为横排四技能键');
   assert(skillBtns.map((btn) => btn.dataset.slot).join('') === '1234', 'HUD：技能键从左到右应为 Skill1–4');
   assert(cancelBtn.textContent === '取消', 'HUD：取消键文案应为取消');
@@ -372,7 +368,7 @@ export function verifyHudLayout(): void {
   }
   assert(helpFab.textContent === '?', 'HUD：说明钮应为 ?');
   const hostTransform = getComputedStyle(host).transform;
-  const heroDir = getComputedStyle(heroRow).flexDirection;
+  const leftDir = getComputedStyle(leftStack).flexDirection;
   const skillsDisplay = getComputedStyle(skills).display;
   const skillsDir = getComputedStyle(skills).flexDirection;
   helpFab.click();
@@ -380,6 +376,14 @@ export function verifyHudLayout(): void {
   const helpCopy = host.querySelector('.helpCardBody')?.textContent ?? '';
   help.close();
   settings.open();
+  const heroPick = host.querySelector<HTMLSelectElement>('select.settingsHeroPick');
+  const heroLabel = host.querySelector('.settingsHeroLabel')?.textContent;
+  if (!heroPick) {
+    throw new Error('HUD：设置常规页应有我的英雄选择');
+  }
+  assert(heroPick.options.length === 7, 'HUD：设置常规页应有我的英雄七人选择');
+  assert(heroLabel === '我的英雄', 'HUD：常规页选择标签应为我的英雄');
+  assert(isAimUiTarget(heroPick), 'HUD：点设置英雄选择不应抢 Aim');
   const settingsHint = [...host.querySelectorAll('.settingsHint')].map((el) => el.textContent ?? '').join('\n');
   const howTo = [...host.querySelectorAll('button')].find((btn) => btn.textContent === '怎么玩');
   howTo?.click();
@@ -391,9 +395,12 @@ export function verifyHudLayout(): void {
   assert(!host.querySelector('.rotatePrompt'), 'HUD：不应有转屏遮罩');
   assert(!hasRotatePromptCopy(helpCopy), 'HUD：说明卡不应写竖屏/转屏提示');
   assert(!hasRotatePromptCopy(settingsHint), 'HUD：设置页不应写竖屏/转屏提示');
-  assert(heroDir === 'column', 'HUD：我/队友应竖叠');
+  assert(!helpCopy.includes('左上可换自己或队友'), 'HUD：说明卡不应再写左上换自己/队友');
+  assert(helpCopy.includes('设置常规页可换自己的英雄'), 'HUD：说明卡应写从常规页换自己');
+  assert(!settingsHint.includes('左上可换自己或队友'), 'HUD：常规页提示不应再写左上换队友');
+  assert(leftDir === 'column', 'HUD：左上模式应竖排');
   assert(skillsDisplay === 'flex' && skillsDir === 'row', 'HUD：四键应一行横排');
-  assertCornerHud(host, heroRow, skills, cluster, helpFab, settingsFab, 'HUD：横窗');
+  assertCornerHud(host, leftStack, skills, cluster, helpFab, settingsFab, 'HUD：横窗');
   const skillSize = skillBtns[0].getBoundingClientRect();
   assert(skillSize.width >= 56 && skillSize.width <= 64, `HUD：技能键应约 60px（实际 ${skillSize.width}）`);
   assert(Math.abs(skillSize.width - skillSize.height) < 1, 'HUD：技能键应保持圆形');
@@ -436,7 +443,7 @@ export function verifyHudLayout(): void {
   });
   assert(cancelBtn.hidden, 'HUD：退出瞄准应隐藏取消键');
   assert(hostTransform === 'none', 'HUD：宿主 transform 无旋转');
-  assert(noRotate(host) && noRotate(heroRow) && noRotate(skills), 'HUD：技能/下拉无旋转');
+  assert(noRotate(host) && noRotate(leftStack) && noRotate(skills), 'HUD：技能/下拉无旋转');
   assert(helpOpenedByFab, 'HUD：点 ? 应打开同一份说明卡');
   assert(!!howTo, 'HUD：设置常规应仍有怎么玩');
   assert(helpOpenedBySettings && settingsClosedAfterHowTo, 'HUD：设置怎么玩应打开同一份说明卡');

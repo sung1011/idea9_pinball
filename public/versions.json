@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.34-settings-self-hero",
+    "version": "0.0.34",
+    "date": "2026-11-09",
+    "summary": "局内左上英雄选择改到设置常规页「我的英雄」，只换本地玩家；队友仍按开局随机，模式下落保留"
+  },
+  {
     "id": "v0.0.33-stats-rank-dot-collapse",
     "version": "0.0.33",
     "date": "2026-11-09",

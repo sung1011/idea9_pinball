@@ -223,6 +223,10 @@ canvas {
   background: var(--team-red);
 }
 
+.matchHudHeroStripe.matchHudModeStripe {
+  background: var(--wood-frame);
+}
+
 .matchHudHeroTag {
   display: flex;
   align-items: center;
@@ -723,6 +727,60 @@ canvas {
   color: var(--ink-muted);
   font-size: 13px;
   line-height: 1.5;
+}
+
+.settingsHeroRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 2px solid var(--wood-frame);
+  border-radius: 10px;
+  background: var(--parchment-base);
+  box-shadow: var(--hud-shadow);
+}
+
+.settingsHeroLabel {
+  flex: none;
+  color: var(--ink);
+  font: 700 15px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+}
+
+.settingsHeroPick {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 32px;
+  min-width: 6.5em;
+  padding: 4px 28px 4px 8px;
+  border: 2px solid var(--wood-frame);
+  border-radius: 8px;
+  background-color: var(--button-idle);
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%),
+    linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 12px) calc(50% - 2px), calc(100% - 7px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  color: var(--ink);
+  font: 700 15px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  cursor: pointer;
+  user-select: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.settingsHeroPick:hover,
+.settingsHeroPick:focus-visible {
+  background-color: var(--button-pressed);
+  border-color: var(--wood-frame-dark);
+  outline: 2px solid var(--outline-ui);
+  outline-offset: -2px;
+}
+
+.settingsHeroPick option {
+  background: var(--parchment-base);
+  color: var(--ink);
 }
 
 .settingsVerCard {

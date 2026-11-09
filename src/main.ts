@@ -191,14 +191,6 @@ async function boot(): Promise<void> {
     syncHeroUi();
   };
 
-  const applyAllyHero = (hero: HeroId): void => {
-    if (ally && ally.hero !== hero) {
-      const handle = botHandles.find((item) => item.ball === ally);
-      handle?.ai.setHero(ally, hero);
-    }
-    syncHeroUi();
-  };
-
   const applyBotKit = (ball: BallBody | null | undefined, hero: HeroId): void => {
     if (!ball || ball.hero === hero) {
       return;
@@ -230,12 +222,9 @@ async function boot(): Promise<void> {
   const combatStatsPanel = createCombatStatsPanel(host, combatStats);
   combatStatsPanel.sync(balls, player.id);
 
+  let settingsSetHero: (hero: HeroId) => void = () => {};
   const matchHud = createMatchHud(host, {
-    hero: player.hero,
-    allyHero: ally?.hero ?? 'chain',
     mode: matchMode,
-    onPickHero: applyPlayerHero,
-    onPickAllyHero: applyAllyHero,
     onPickMode: (mode) => applyMatchMode(mode),
   });
   matchHud.sync(match.snapshot(), balls);
@@ -303,11 +292,8 @@ async function boot(): Promise<void> {
   syncHeroUi = () => {
     help.setHero(player.hero);
     help.setMode(matchMode);
-    matchHud.setHero(player.hero);
     matchHud.setMode(matchMode);
-    if (ally) {
-      matchHud.setAllyHero(ally.hero);
-    }
+    settingsSetHero(player.hero);
   };
   syncHeroUi();
   const appVersions = createAppVersions();
@@ -321,6 +307,7 @@ async function boot(): Promise<void> {
       settings.close();
     },
     getHero: () => player.hero,
+    onPickHero: applyPlayerHero,
     onSwapHero: swapPlayerHero,
     onCollision: (kind) => {
       debug.runCollision(kind);
@@ -340,6 +327,7 @@ async function boot(): Promise<void> {
   });
   settingsIsGmOn = () => settings.isGmOn();
   settingsClose = settings.close;
+  settingsSetHero = (hero) => settings.setHero(hero);
 
   const trySkipOpening = (): void => {
     if (settings.isOpen() || help.isOpen()) {
