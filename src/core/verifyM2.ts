@@ -260,8 +260,11 @@ export function verifyM2(): void {
     facingX: -1,
   });
   const firstCd = applyCollisionCombat(cdA, cdB, 1, 0, 8);
+  if (SPEAR_TIP_CD !== 1.5) {
+    throw new Error('M2：枪尖普攻 CD 应为 1.5s，不是 1s 或 2s');
+  }
   if (firstCd.length === 0 || cdA.spearCdRemain !== SPEAR_TIP_CD || cdB.spearCdRemain !== SPEAR_TIP_CD) {
-    throw new Error('M2：枪尖成功掉血后应进 1s CD');
+    throw new Error('M2：枪尖成功掉血后应进 1.5s CD');
   }
   const hpA = cdA.hp;
   const hpB = cdB.hp;
@@ -276,11 +279,11 @@ export function verifyM2(): void {
   tickSpearCd(cdA, 0.4);
   tickSpearCd(cdB, 0.4);
   applyCollisionCombat(cdA, cdB, 1, 0, 8);
-  if (Math.abs(cdA.spearCdRemain - 0.6) > 1e-6 || Math.abs(cdB.spearCdRemain - 0.6) > 1e-6) {
+  if (Math.abs(cdA.spearCdRemain - 1.1) > 1e-6 || Math.abs(cdB.spearCdRemain - 1.1) > 1e-6) {
     throw new Error('M2：CD 未结束戳中仍不应刷新');
   }
-  tickSpearCd(cdA, 0.6);
-  tickSpearCd(cdB, 0.6);
+  tickSpearCd(cdA, 1.1);
+  tickSpearCd(cdB, 1.1);
   const afterCd = applyCollisionCombat(cdA, cdB, 1, 0, 8);
   if (afterCd.length === 0 || cdA.hp === hpA || cdB.hp === hpB) {
     throw new Error('M2：CD 结束后枪尖应能再掉血');

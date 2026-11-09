@@ -218,6 +218,9 @@ export function selfCheckCollisionDamage(): void {
   if (Math.abs(kb - KNOCKBACK_SCALE) > 1e-6) {
     throw new Error('弹开：满额应只按速度顶在 2.0，不再乘朝向');
   }
+  if (SPEAR_TIP_CD !== 1.5) {
+    throw new Error('枪尖 CD：应为 1.5s，不是 1s 或 2s');
+  }
   if (spearCdFill(0) !== 1 || spearCdFill(SPEAR_TIP_CD) !== 0) {
     throw new Error('枪尖 CD：满=可戳，刚进 CD 应为空');
   }

@@ -86,8 +86,8 @@ export const ACTIVE_RAM_SPEED_THRESHOLD = 2.5;
 export const COLLISION_DAMAGE_SCALE = 6;
 export const COLLISION_DAMAGE_CAP = 28;
 
-/** 枪尖普攻 CD（秒）；仅成功掉血后进入 */
-export const SPEAR_TIP_CD = 1;
+/** 枪尖普攻 CD（秒）；仅成功掉血后进入。1.5，不是 2。 */
+export const SPEAR_TIP_CD = 1.5;
 
 /**
  * 枪尖距圆心（格），对齐 `ballView.drawTargetSpear` 的 tip（2.24）。

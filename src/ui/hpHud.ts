@@ -43,7 +43,7 @@ export function createHpHud(host: HTMLElement): HpHud {
   const fineTune = document.createElement('div');
   fineTune.className = 'hpHudFineTune';
   fineTune.textContent = '弱拧';
-  const hintText = '碰撞：枪尖戳中才掉血，6×相对速度 cap28；成功掉血后 1s CD；身子蹭只弹开';
+  const hintText = '碰撞：枪尖戳中才掉血，6×相对速度 cap28；成功掉血后 1.5s CD；身子蹭只弹开';
   const log = document.createElement('div');
   log.className = 'hpHudLog';
   log.textContent = hintText;

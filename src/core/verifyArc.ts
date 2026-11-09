@@ -169,7 +169,7 @@ export function verifyArc(): void {
   assert(Math.abs((spear?.damage ?? 0) - (raw + ARC_GRAZE.extra)) < 1e-6, '闪弧：成功枪尖应 +6');
   assert(Math.abs(grazeBlue.hp - (before - raw - ARC_GRAZE.extra)) < 0.08, '闪弧：荼毒加伤应加在那一次戳上');
   assert(grazeRed.grazeRemain === 0, '闪弧：触发后应清毒');
-  assert(grazeRed.spearCdRemain > SPEAR_TIP_CD - 0.05, '闪弧：荼毒加伤仍走枪尖 1s CD');
+  assert(grazeRed.spearCdRemain > SPEAR_TIP_CD - 0.05, '闪弧：荼毒加伤仍走枪尖 1.5s CD');
 
   resetTrapZones();
   const [cdRed, cdBlue] = redBlue(10 - BALL_RADIUS * 1.1, 6, 10 + BALL_RADIUS * 1.1, 6);
