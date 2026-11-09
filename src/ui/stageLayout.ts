@@ -14,6 +14,13 @@ export type StageRect = {
   height: number;
 };
 
+export type VisibleViewBox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 const WORLD_ASPECT = MAP_WIDTH / MAP_HEIGHT;
 
 /** 读 notch / 圆角安全区，没有则全 0。 */
@@ -35,6 +42,69 @@ export function readSafeInsets(): SafeInsets {
 
 export function isPortraitViewport(width = window.innerWidth, height = window.innerHeight): boolean {
   return height > width;
+}
+
+/** iPhone/iPad 加到主屏幕、Chrome/Edge 安装应用等独立窗。网页标签为 false。 */
+export function isStandaloneDisplay(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  try {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      return true;
+    }
+    if (window.matchMedia('(display-mode: fullscreen)').matches) {
+      return true;
+    }
+    if (window.matchMedia('(display-mode: minimal-ui)').matches) {
+      return true;
+    }
+  } catch {
+    /* matchMedia 不可用时不算独立窗 */
+  }
+  const nav = window.navigator as Navigator & { standalone?: boolean };
+  return nav.standalone === true;
+}
+
+/**
+ * 真正可见盒：取 inner / client / visualViewport 的较小边，避免 100dvh 大于可见区。
+ * visualViewport 的 offset 映射到宿主坐标，供战场原点使用。
+ */
+export function visibleViewSize(
+  innerW: number,
+  innerH: number,
+  clientW: number,
+  clientH: number,
+  visual?: { width: number; height: number; offsetLeft?: number; offsetTop?: number } | null,
+): VisibleViewBox {
+  let width = Math.min(Math.max(1, innerW), Math.max(1, clientW));
+  let height = Math.min(Math.max(1, innerH), Math.max(1, clientH));
+  let x = 0;
+  let y = 0;
+  if (visual) {
+    width = Math.min(width, Math.max(1, visual.width));
+    height = Math.min(height, Math.max(1, visual.height));
+    x = visual.offsetLeft ?? 0;
+    y = visual.offsetTop ?? 0;
+  }
+  return { x, y, width, height };
+}
+
+export function readVisibleViewBox(host: HTMLElement): VisibleViewBox {
+  const innerW = window.innerWidth;
+  const innerH = window.innerHeight;
+  const clientW = host.clientWidth || innerW;
+  const clientH = host.clientHeight || innerH;
+  const vv = window.visualViewport;
+  return visibleViewSize(
+    innerW,
+    innerH,
+    clientW,
+    clientH,
+    vv
+      ? { width: vv.width, height: vv.height, offsetLeft: vv.offsetLeft, offsetTop: vv.offsetTop }
+      : null,
+  );
 }
 
 /**
@@ -79,18 +149,18 @@ export function computeLandscapeStage(viewW: number, viewH: number, insets: Safe
   };
 }
 
-export function applyStageVars(host: HTMLElement, stage: StageRect): void {
+export function applyStageVars(host: HTMLElement, stage: StageRect, layoutW?: number, layoutH?: number): void {
   host.style.setProperty('--stage-left', `${stage.x}px`);
   host.style.setProperty('--stage-top', `${stage.y}px`);
   host.style.setProperty('--stage-right', `${stage.x + stage.width}px`);
   host.style.setProperty('--stage-bottom', `${stage.y + stage.height}px`);
   host.style.setProperty('--stage-center-x', `${stage.x + stage.width / 2}px`);
   host.style.setProperty('--stage-center-y', `${stage.y + stage.height * 0.42}px`);
-  const layoutW = host.clientWidth;
-  const layoutH = host.clientHeight;
-  const portrait = isPortraitViewport(layoutW, layoutH);
+  const width = layoutW ?? host.clientWidth;
+  const height = layoutH ?? host.clientHeight;
+  const portrait = isPortraitViewport(width, height);
   host.classList.toggle('isPortrait', portrait);
   host.classList.toggle('isLandscape', !portrait);
-  host.classList.toggle('isShortHud', layoutH <= 430);
-  host.classList.toggle('isNarrowHud', layoutW <= 420);
+  host.classList.toggle('isShortHud', height <= 430);
+  host.classList.toggle('isNarrowHud', width <= 420);
 }

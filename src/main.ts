@@ -53,7 +53,7 @@ import { createAimPreview } from './render/aimPreview';
 import { createArenaView } from './render/arenaView';
 import { createBallView } from './render/ballView';
 import { createCombatFloatView } from './render/combatFloatView';
-import { createWorldViewSession } from './render/worldViewLock';
+import { createVisibleLockGate, createWorldViewSession, shiftWorldViewLayout } from './render/worldViewLock';
 import { applyWorldTransform, type WorldTransform } from './render/worldTransform';
 import { createCombatStatsPanel } from './ui/combatStatsPanel';
 import { createHelpCard } from './ui/helpCard';
@@ -62,8 +62,8 @@ import { createResultPanel } from './ui/resultPanel';
 import { createAppVersions } from './ui/appVersion';
 import { createSettingsPanel } from './ui/settingsPanel';
 import { createUpdatePrompt } from './ui/updatePrompt';
-import { bindLandscapeLock } from './ui/lockLandscape';
-import { applyStageVars, readSafeInsets } from './ui/stageLayout';
+import { bindLandscapeLock, whenLandscapeLockSettled } from './ui/lockLandscape';
+import { applyStageVars, isStandaloneDisplay, readSafeInsets, readVisibleViewBox } from './ui/stageLayout';
 import { applyUiTheme } from './ui/uiTheme';
 import './style.css';
 
@@ -139,34 +139,54 @@ async function boot(): Promise<void> {
   world.addChild(combatFloats.root);
   app.stage.addChild(world);
 
-  const worldView = createWorldViewSession();
+  const standalone = isStandaloneDisplay();
+  if (standalone) {
+    document.documentElement.classList.add('isStandalone');
+  }
+  const lockGate = createVisibleLockGate(standalone);
+  const worldView = createWorldViewSession({ shouldLock: (viewW, viewH) => lockGate.shouldLock(viewW, viewH) });
 
-  const readViewBox = (): { width: number; height: number } => {
-    const viewW = window.innerWidth;
-    const viewH = window.innerHeight;
-    const frame = { width: host.clientWidth || viewW, height: host.clientHeight || viewH };
-    if (Math.abs(app.screen.width - frame.width) > 1 || Math.abs(app.screen.height - frame.height) > 1) {
-      app.renderer.resize(frame.width, frame.height);
+  const syncHostCanvas = (): void => {
+    const frameW = host.clientWidth || window.innerWidth;
+    const frameH = host.clientHeight || window.innerHeight;
+    if (Math.abs(app.screen.width - frameW) > 1 || Math.abs(app.screen.height - frameH) > 1) {
+      app.renderer.resize(frameW, frameH);
     }
-    return { width: app.screen.width, height: app.screen.height };
   };
 
   const applyViewLayout = (enter: boolean): void => {
-    const box = readViewBox();
+    syncHostCanvas();
+    const box = readVisibleViewBox(host);
     const insets = readSafeInsets();
-    const layout = enter ? worldView.enter(box.width, box.height, insets) : worldView.follow(box.width, box.height, insets);
+    const raw = enter ? worldView.enter(box.width, box.height, insets) : worldView.follow(box.width, box.height, insets);
+    const layout = shiftWorldViewLayout(raw, box.x, box.y);
     transform = layout.transform;
     host.dataset.worldScale = String(layout.lock.scale);
     host.dataset.worldLocked = worldView.getLock() ? '1' : '0';
-    applyStageVars(host, layout.stage);
+    host.dataset.worldVisibleW = String(box.width);
+    host.dataset.worldVisibleH = String(box.height);
+    applyStageVars(host, layout.stage, box.width, box.height);
     applyWorldTransform(world, transform);
   };
 
   let transform!: WorldTransform;
   applyViewLayout(true);
 
+  let settleRaf = 0;
   const followView = (): void => {
     applyViewLayout(false);
+    if (standalone && !worldView.getLock() && !settleRaf) {
+      let pumps = 0;
+      const pump = (): void => {
+        settleRaf = 0;
+        applyViewLayout(false);
+        pumps += 1;
+        if (standalone && !worldView.getLock() && pumps < 120) {
+          settleRaf = requestAnimationFrame(pump);
+        }
+      };
+      settleRaf = requestAnimationFrame(pump);
+    }
   };
 
   app.renderer.on('resize', followView);
@@ -175,6 +195,14 @@ async function boot(): Promise<void> {
   window.visualViewport?.addEventListener('resize', followView);
   window.screen.orientation?.addEventListener('change', followView);
   bindLandscapeLock();
+  if (standalone) {
+    void whenLandscapeLockSettled().then(() => {
+      lockGate.markOrientReady();
+      followView();
+    });
+  } else {
+    lockGate.markOrientReady();
+  }
 
   const bus = createActionBus();
   const touchPad = createTouchPad(host, bus);

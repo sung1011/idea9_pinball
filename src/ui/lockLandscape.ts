@@ -14,17 +14,27 @@ export function landscapeLockType(type?: string | null): LandscapeLockType {
 }
 
 /** 向系统申请锁当前横屏侧。失败（PC / 未授权 / 非 standalone）静默，不弹提示；不靠 CSS 旋转补救，也不回退竖屏可玩布局。 */
-export function lockLandscape(): void {
+export function lockLandscape(): Promise<void> {
   try {
     const orientation = window.screen?.orientation as OrientationLockable | undefined;
     if (typeof orientation?.lock !== 'function') {
-      return;
+      return Promise.resolve();
     }
     const lockType = landscapeLockType(orientation.type);
-    void orientation.lock(lockType).catch(() => {});
+    return Promise.resolve(orientation.lock(lockType)).catch(() => {});
   } catch {
-    /* 静默 */
+    return Promise.resolve();
   }
+}
+
+/** 独立窗启动：等 lock 结束或超时，再按可见区锁比例。网页不必等。 */
+export function whenLandscapeLockSettled(timeoutMs = 400): Promise<void> {
+  return Promise.race([
+    lockLandscape(),
+    new Promise<void>((resolve) => {
+      window.setTimeout(resolve, timeoutMs);
+    }),
+  ]).then(() => undefined);
 }
 
 /** 启动时锁一次；首次点击或触摸后再锁一次（部分浏览器要用户手势）；朝向变化再试。 */

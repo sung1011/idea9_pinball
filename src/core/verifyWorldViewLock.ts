@@ -1,9 +1,16 @@
 import { BALL_RADIUS, MAP_HEIGHT, MAP_WIDTH } from './constants';
 import { createActionBus } from '../input/actionBus';
 import { bindPcInput } from '../input/pcInput';
-import { canLockWorldView, createWorldViewSession, enterWorldView, followWorldView } from '../render/worldViewLock';
+import {
+  canLockWorldView,
+  createVisibleLockGate,
+  createWorldViewSession,
+  enterWorldView,
+  followWorldView,
+  shiftWorldViewLayout,
+} from '../render/worldViewLock';
 import { logicalToScreen, screenToLogical } from '../render/worldTransform';
-import { applyStageVars, clientToHostLocal, computeLandscapeStage } from '../ui/stageLayout';
+import { applyStageVars, clientToHostLocal, computeLandscapeStage, visibleViewSize } from '../ui/stageLayout';
 
 function assert(cond: boolean, message: string): void {
   if (!cond) {
@@ -126,6 +133,48 @@ export function verifyWorldViewLock(): void {
   const refreshLand = refreshWait.follow(1280, 720);
   assert(near(refreshLand.lock.scale, 720 / 20), '锁定视野：刷新后第一次横屏应按新窗 cover');
   assert(refreshLand.lock.scale !== phoneScale, '锁定视野：刷新重适配不应沿用上一横屏锁');
+
+  const visEq = visibleViewSize(1920, 1080, 1920, 1080, { width: 1920, height: 1080 });
+  assert(visEq.width === 1920 && visEq.height === 1080 && visEq.x === 0 && visEq.y === 0, '可见盒：三边一致时应用该尺寸');
+  const visMin = visibleViewSize(1920, 1200, 1920, 1201, { width: 1920, height: 900, offsetLeft: 0, offsetTop: 12 });
+  assert(visMin.width === 1920 && visMin.height === 900 && visMin.y === 12, '可见盒：应取 inner/client/visualViewport 较小高，保留 offset');
+  const visInner = visibleViewSize(1600, 900, 1920, 1200, null);
+  assert(visInner.width === 1600 && visInner.height === 900, '可见盒：无 visualViewport 时应取 inner 与 client 较小边');
+
+  const shifted = shiftWorldViewLayout(enterWorldView(1920, 900), 0, 20);
+  assert(near(shifted.lock.scale, 900 / 20), '可见盒原点：平移不得改 scale');
+  assert(near(shifted.transform.offsetY, enterWorldView(1920, 900).transform.offsetY + 20), '可见盒原点：offsetY 应加上 visualViewport.offsetTop');
+
+  const webGate = createVisibleLockGate(false);
+  const webSess = createWorldViewSession({ shouldLock: (w, h) => webGate.shouldLock(w, h) });
+  const webEnter = webSess.enter(1920, 1080);
+  assert(webSess.getLock() !== null && near(webEnter.lock.scale, 1080 / 20), '可见盒：网页横屏直进仍一次适配即锁');
+  webSess.follow(1600, 900);
+  assert(webSess.getLock()?.scale === webEnter.lock.scale, '可见盒：网页锁后仍只 follow');
+
+  const appGate = createVisibleLockGate(true);
+  const appSess = createWorldViewSession({ shouldLock: (w, h) => appGate.shouldLock(w, h) });
+  appSess.enter(1920, 1200);
+  assert(appSess.getLock() === null, '独立窗：orientation 就绪前横屏也不应锁死过大盒');
+  assert(near(enterWorldView(1920, 1200).lock.scale, 1200 / 20), '独立窗：未锁前仍可按当前盒临时 cover');
+  appGate.markOrientReady();
+  appSess.follow(1920, 1200);
+  assert(appSess.getLock() === null, '独立窗：过大盒第一帧仍不锁');
+  appSess.follow(1920, 900);
+  assert(appSess.getLock() === null, '独立窗：可见区刚变到 900 的第一帧仍不锁');
+  const appLocked = appSess.follow(1920, 900);
+  assert(appSess.getLock() !== null, '独立窗：可见区稳定横屏两帧后应锁定');
+  assert(near(appLocked.lock.scale, 900 / 20), '独立窗：应锁在真正可见高 900，而不是启动瞬间 1200');
+  assert(appLocked.lock.scale < 1200 / 20 - 5, '独立窗：稳定可见区 scale 应低于过大盒');
+  const appFollow = appSess.follow(1920, 860);
+  assert(appFollow.lock.scale === appLocked.lock.scale, '独立窗：锁后变矮只 follow、不改比例');
+  const appVis = 1920 / appLocked.lock.scale;
+  const overVis = 1920 / (1200 / 20);
+  assert(appVis > overVis + 2, '独立窗：按可见高锁定后左右应比锁在 1200 时看到更多');
+
+  const portApp = createWorldViewSession({ shouldLock: () => true });
+  portApp.enter(390, 844);
+  assert(portApp.getLock() === null, '独立窗：竖进仍不得按竖屏比例锁死');
 
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:0;top:0;width:800px;height:400px';

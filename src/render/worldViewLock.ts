@@ -57,17 +57,80 @@ export type WorldViewSession = {
   getLock: () => WorldViewLock | null;
 };
 
+export type WorldViewSessionOpts = {
+  /** 独立窗可延后到可见区稳定再锁；默认允许，网页横屏直进仍一次即锁。 */
+  shouldLock?: (viewW: number, viewH: number) => boolean;
+};
+
+/** 把相对可见盒的布局平移到宿主坐标（visualViewport.offset）。不改 scale。 */
+export function shiftWorldViewLayout(layout: WorldViewLayout, originX: number, originY: number): WorldViewLayout {
+  if (originX === 0 && originY === 0) {
+    return layout;
+  }
+  return {
+    transform: {
+      scale: layout.transform.scale,
+      offsetX: layout.transform.offsetX + originX,
+      offsetY: layout.transform.offsetY + originY,
+    },
+    lock: layout.lock,
+    stage: {
+      x: layout.stage.x + originX,
+      y: layout.stage.y + originY,
+      width: layout.stage.width,
+      height: layout.stage.height,
+    },
+  };
+}
+
+/**
+ * 独立窗：orientation 就绪前不锁；同一可见尺寸连续两帧才锁，避免启动瞬间过大盒。
+ * 网页：始终允许，横屏直进一次即锁。
+ */
+export function createVisibleLockGate(standalone: boolean, stableNeeded = 2): {
+  markOrientReady: () => void;
+  shouldLock: (viewW: number, viewH: number) => boolean;
+} {
+  let lastW = Number.NaN;
+  let lastH = Number.NaN;
+  let same = 0;
+  let orientReady = !standalone;
+  return {
+    markOrientReady: () => {
+      orientReady = true;
+    },
+    shouldLock: (viewW, viewH) => {
+      if (!standalone) {
+        return true;
+      }
+      if (!orientReady) {
+        return false;
+      }
+      if (viewW === lastW && viewH === lastH) {
+        same += 1;
+      } else {
+        lastW = viewW;
+        lastH = viewH;
+        same = 1;
+      }
+      return same >= stableNeeded;
+    },
+  };
+}
+
 /**
  * 首次稳定横屏才锁 scale/pixelW/pixelH。
  * 竖窗只做临时 cover、不锁死；横屏直进一次适配即锁。
  * 锁后 resize / visualViewport 只 follow；再次 enter（刷新）才重新走首次适配。
  */
-export function createWorldViewSession(): WorldViewSession {
+export function createWorldViewSession(opts: WorldViewSessionOpts = {}): WorldViewSession {
   let lock: WorldViewLock | null = null;
+  const allowLock = (viewW: number, viewH: number): boolean =>
+    canLockWorldView(viewW, viewH) && (opts.shouldLock?.(viewW, viewH) ?? true);
   return {
     enter: (viewW, viewH, insets = NONE) => {
       const layout = enterWorldView(viewW, viewH, insets);
-      if (canLockWorldView(viewW, viewH)) {
+      if (allowLock(viewW, viewH)) {
         lock = layout.lock;
       } else {
         lock = null;
@@ -77,7 +140,7 @@ export function createWorldViewSession(): WorldViewSession {
     follow: (viewW, viewH, insets = NONE) => {
       if (!lock) {
         const layout = enterWorldView(viewW, viewH, insets);
-        if (canLockWorldView(viewW, viewH)) {
+        if (allowLock(viewW, viewH)) {
           lock = layout.lock;
         }
         return layout;

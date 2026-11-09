@@ -16,6 +16,13 @@ body,
   -webkit-touch-callout: none;
 }
 
+html.isStandalone,
+html.isStandalone body,
+html.isStandalone #app {
+  width: 100svw;
+  height: 100svh;
+}
+
 :root,
 #app {
   --parchment-base: #F3E6C8;
