@@ -1,7 +1,9 @@
 import type { SkillCds } from '../core/skillCaster';
 import type { HeroId } from '../heroes/heroIds';
-import { skillShorts, skillTipCopy } from '../heroes/kitLabels';
+import { skillNames, skillShorts, skillTipCopy } from '../heroes/kitLabels';
+import { skillIconUrl } from '../heroes/skillIcons';
 import {
+  bindSkillIcon,
   createSkillCdFace,
   nextSkillCdTotal,
   syncSkillCdFace,
@@ -160,11 +162,14 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
       root.classList.toggle('isFineTune', status.fineTuneOn);
       placeCancel(status.aimingSlot);
       const shorts = skillShorts(hero);
+      const names = skillNames(hero);
       for (let i = 0; i < buttons.length; i += 1) {
-        const slot = i + 1;
+        const slot = (i + 1) as SkillSlot;
         const remain = status.skillCds[i] ?? 0;
         cdTotals[i] = nextSkillCdTotal(remain, cdTotals[i]);
         faces[i].name.textContent = shorts[i] ?? String(slot);
+        buttons[i].setAttribute('aria-label', names[i] ?? shorts[i] ?? String(slot));
+        bindSkillIcon(faces[i], skillIconUrl(hero, slot));
         buttons[i].classList.toggle('isAiming', status.aimingSlot === slot || status.windupSlot === slot);
         syncSkillCdFace(buttons[i], faces[i], remain, cdTotals[i]);
       }

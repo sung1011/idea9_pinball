@@ -23,6 +23,7 @@ import { verifyMirror } from './core/verifyMirror';
 import { verifyHeroPick } from './core/verifyHeroPick';
 import { verifyHudLayout } from './core/verifyHudLayout';
 import { verifySkillCd } from './core/verifySkillCd';
+import { verifySkillIcons } from './core/verifySkillIcons';
 import { verifySkillTip } from './core/verifySkillTip';
 import { verifyTouchAim } from './core/verifyTouchAim';
 import { verifyUiTheme } from './core/verifyUiTheme';
@@ -79,6 +80,7 @@ async function boot(): Promise<void> {
   verifyHudLayout();
   verifySkillTip();
   verifySkillCd();
+  verifySkillIcons();
   verifyTouchAim();
   verifyUiTheme();
   verifyCombatFloat();

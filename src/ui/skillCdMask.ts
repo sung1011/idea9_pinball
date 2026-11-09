@@ -1,6 +1,7 @@
 /** 技能键 CD：12 点起顺时针径向遮罩，剩余秒一位小数。不改 kit 数值。 */
 
 export type SkillCdFace = {
+  icon: HTMLImageElement;
   name: HTMLElement;
   wipe: HTMLElement;
   time: HTMLElement;
@@ -26,6 +27,13 @@ export function skillCdRemainRatio(remain: number, total: number): number {
 }
 
 export function createSkillCdFace(btn: HTMLButtonElement, label: string): SkillCdFace {
+  const icon = document.createElement('img');
+  icon.className = 'touchSkillIcon';
+  icon.alt = '';
+  icon.draggable = false;
+  icon.decoding = 'async';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.style.pointerEvents = 'none';
   const name = document.createElement('span');
   name.className = 'touchSkillName';
   name.textContent = label;
@@ -35,8 +43,27 @@ export function createSkillCdFace(btn: HTMLButtonElement, label: string): SkillC
   const time = document.createElement('span');
   time.className = 'touchSkillCdTime';
   time.setAttribute('aria-hidden', 'true');
-  btn.replaceChildren(name, wipe, time);
-  return { name, wipe, time };
+  btn.replaceChildren(icon, name, wipe, time);
+  return { icon, name, wipe, time };
+}
+
+/** 换图时只改 src；失败则藏图标，短名兜底。 */
+export function bindSkillIcon(face: SkillCdFace, url: string): void {
+  if (face.icon.dataset.iconUrl === url) {
+    return;
+  }
+  face.icon.dataset.iconUrl = url;
+  face.icon.classList.remove('isMiss');
+  face.icon.hidden = false;
+  face.icon.onload = () => {
+    face.icon.hidden = false;
+    face.icon.classList.remove('isMiss');
+  };
+  face.icon.onerror = () => {
+    face.icon.hidden = true;
+    face.icon.classList.add('isMiss');
+  };
+  face.icon.src = url;
 }
 
 export function syncSkillCdFace(

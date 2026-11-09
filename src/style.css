@@ -1065,9 +1065,32 @@ canvas {
   -webkit-tap-highlight-color: transparent;
 }
 
+.touchSkillIcon {
+  position: absolute;
+  inset: 3px;
+  width: auto;
+  height: auto;
+  max-width: calc(100% - 6px);
+  max-height: calc(100% - 6px);
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.touchSkillIcon.isMiss,
+.touchSkillIcon[hidden] {
+  display: none;
+}
+
 .touchSkillName {
   position: relative;
   z-index: 1;
+  pointer-events: none;
+  user-select: none;
+  text-shadow: 0 1px 2px var(--outline-ui);
 }
 
 .touchSkillCdWipe {
