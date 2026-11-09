@@ -21,7 +21,7 @@ import { createHelpCard } from '../ui/helpCard';
 import { createSettingsPanel } from '../ui/settingsPanel';
 import { createCombatStatsPanel } from '../ui/combatStatsPanel';
 import { applyStageVars, clientToHostLocal, computeLandscapeStage, type SafeInsets } from '../ui/stageLayout';
-import { applyUiTheme } from '../ui/uiTheme';
+import { applyUiTheme, sameCssColor, UI_THEME } from '../ui/uiTheme';
 import type { AppVersions } from '../ui/appVersion';
 import { CHAIN_HEAL, CHAIN_SHIELD } from '../heroes/chainKit';
 import { NAIL_ARMOR } from '../heroes/nailKit';
@@ -175,8 +175,8 @@ function redBlue(): [BallBody, BallBody] {
 
 /** 本局伤害/治疗榜：实际扣血回血、归属、收起累计、页签、重开清零、不挡技能。 */
 export function verifyCombatStats(): void {
-  assert(formatStatLabel('红1', true) === '红1 · 我', '统计：当前玩家应标 我');
-  assert(formatStatLabel('蓝1', false) === '蓝1', '统计：非玩家不应标 我');
+  assert(formatStatLabel('红1') === '红1', '统计：名称应保留文字编号，不附加我');
+  assert(formatStatLabel('蓝1') === '蓝1', '统计：非玩家名称应原样');
   assert(formatStatValue(12.4) === '12', '统计：累计值应四舍五入显示');
   assert(statBarRatio(50, 100) === 0.5 && statBarRatio(0, 0) === 0, '统计：数值条应按当前页签最大值比例');
 
@@ -437,8 +437,8 @@ export function verifyCombatStats(): void {
   assert(dmgRows.length === 3, '统计：人数应随阵容，不写死 2v2');
   assert(dmgRows[0].value === 10 && dmgRows[1].value === 10, '统计：应按当前页签降序');
   assert(dmgRows[0].unitId === tieA.id && dmgRows[1].unitId === tieB.id, '统计：同值应稳定按阵容顺序');
-  assert(dmgRows[0].isMe && !dmgRows[1].isMe, '统计：应标当前玩家，不把玩家改成蓝队');
-  assert(formatStatLabel(dmgRows[0].label, dmgRows[0].isMe) === '红1 · 我', '统计：我应跟既有红1归属');
+  assert(dmgRows[0].isMe && !dmgRows[1].isMe, '统计：账本仍应认出当前玩家，不把玩家改成蓝队');
+  assert(formatStatLabel(dmgRows[0].label) === '红1', '统计：显示名应跟既有红1归属，不改身份');
   const healRows = sortStats.snapshot([tieA, tieB, tieC], tieA.id, 'heal');
   assert(
     healRows[0].unitId === tieA.id && healRows[1].unitId === tieB.id && healRows[2].unitId === tieC.id,
@@ -510,15 +510,39 @@ export function verifyCombatStats(): void {
   assert(board.getAttribute('data-touch-control') === 'stats', '统计：面板点击应标 touch-control，不穿透战场');
   assert(isAimUiTarget(board) && isAimUiTarget(dock), '统计：点面板/侧边钮不应当成瞄准空白');
   const names = [...board.querySelectorAll('.combatStatsName')].map((el) => el.textContent);
-  assert(names[0] === '红1 · 我', '统计：面板应按既有归属标我，不改成蓝队');
+  assert(names[0] === '红1', '统计：面板应显示红1 文字编号，不改成蓝队');
   assert(names.includes('蓝1') && names.includes('红2') && names.includes('蓝2'), '统计：应列出双方所有人');
+  assert(names.every((name) => !!name && !name.includes('我')), '统计：名称不应带我标记');
+  assert(!board.querySelector('.combatStatsFace, .combatStatsMarkSvg, svg'), '统计：行首不应再有图标');
+  assert(!board.querySelector('[data-me]'), '统计：不应再留自我标签');
+  assert(!(board.textContent ?? '').includes('· 我'), '统计：面板文案不应出现我');
+  const slots = [...board.querySelectorAll('.combatStatsSlot')].map((el) => el.textContent);
+  assert(slots.includes('1') && slots.includes('2'), '统计：应保留编号');
+  const redName = board.querySelector<HTMLElement>('.combatStatsRow[data-team="red"] .combatStatsName');
+  const redVal = board.querySelector<HTMLElement>('.combatStatsRow[data-team="red"] .combatStatsVal');
+  const blueName = board.querySelector<HTMLElement>('.combatStatsRow[data-team="blue"] .combatStatsName');
+  const blueVal = board.querySelector<HTMLElement>('.combatStatsRow[data-team="blue"] .combatStatsVal');
+  if (!redName || !redVal || !blueName || !blueVal) {
+    host.remove();
+    throw new Error('统计：红蓝行应有名称与数值');
+  }
+  assert(sameCssColor(getComputedStyle(redName).color, UI_THEME.teamRedShadow), '统计：红方名称应为深红');
+  assert(sameCssColor(getComputedStyle(redVal).color, UI_THEME.teamRedShadow), '统计：红方数值应为深红');
+  assert(sameCssColor(getComputedStyle(blueName).color, UI_THEME.teamBlueShadow), '统计：蓝方名称应为深蓝');
+  assert(sameCssColor(getComputedStyle(blueVal).color, UI_THEME.teamBlueShadow), '统计：蓝方数值应为深蓝');
   assert(!board.textContent?.includes('示例数据'), '统计：不应照抄 demo 示例数据');
+  panel.sync(roster, ally.id);
+  const swapped = [...board.querySelectorAll('.combatStatsName')].map((el) => el.textContent);
+  assert(swapped.includes('红1') && swapped.includes('红2'), '统计：切到队友仍应显示红1/红2 身份');
+  assert(swapped.every((name) => !!name && !name.includes('我')), '统计：切英雄/切玩家后仍不应标我');
+  panel.sync(roster, red.id);
 
   fireOn(healTab, 'pointerdown');
   assert(panel.getTab() === 'heal', '统计：触控点治疗页签应切换');
   panel.sync(roster, red.id);
   const healFirst = board.querySelector('.combatStatsName')?.textContent;
-  assert(healFirst === '红1 · 我', '统计：治疗页应按治疗量降序且标我');
+  assert(healFirst === '红1', '统计：治疗页应按治疗量降序且保留红1 身份');
+  assert(!healFirst?.includes('我'), '统计：治疗页也不应标我');
   fireOn(collapseBtn, 'pointerdown');
   assert(panel.isCollapsed() && board.hidden && !dock.hidden, '统计：收起后只留侧边统计钮');
   assert(getComputedStyle(board).display === 'none', '统计：收起后面板应完全隐藏');
@@ -584,6 +608,12 @@ function assertLayout(
   pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false });
   const skillBox = localBox(skills, host);
   const boardBox = localBox(board, host);
+  const texts = [...board.querySelectorAll<HTMLElement>('.combatStatsName, .combatStatsVal, .combatStatsSlot')];
+  assert(
+    texts.every((el) => el.scrollWidth <= el.clientWidth + 1),
+    `统计：${label} 名称/编号/数值不应溢出`,
+  );
+  assert(boardBox.right <= host.clientWidth + 1 && boardBox.left >= -1, `统计：${label} 面板不应溢出视窗`);
   assert(boardBox.bottom <= skillBox.top - 4, `统计：${label} 展开面板应在技能键上方，不遮挡`);
   assert(!overlaps(boardBox, skillBox), `统计：${label} 面板不应叠技能`);
   assert(host.clientWidth - boardBox.right < 24, `统计：${label} 面板应贴右侧`);

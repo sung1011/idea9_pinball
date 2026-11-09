@@ -102,8 +102,8 @@ export function createCombatStats(): CombatStats {
   };
 }
 
-export function formatStatLabel(label: string, isMe: boolean): string {
-  return isMe ? `${label} · 我` : label;
+export function formatStatLabel(label: string): string {
+  return label;
 }
 
 export function formatStatValue(amount: number): string {

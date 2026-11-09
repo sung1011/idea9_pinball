@@ -17,9 +17,6 @@ export type CombatStatsPanel = {
   setTab: (tab: CombatStatTab) => void;
 };
 
-const HELMET_SVG =
-  '<svg class="combatStatsMarkSvg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3c-3.2 0-6 1.7-7.4 4.2L3 11.2c.8.4 1.4 1.1 1.7 2V16c0 1.4 1.1 2.6 2.5 2.8l1.3.2v1.5h2.2v-1.7h2.6V20.5h2.2v-1.5l1.3-.2c1.4-.2 2.5-1.4 2.5-2.8v-2.8c.3-.9.9-1.6 1.7-2l-1.6-4C18 4.7 15.2 3 12 3Zm0 2c2.3 0 4.3 1.1 5.5 2.8L18.4 10H5.6L6.5 7.8C7.7 6.1 9.7 5 12 5Zm-3.2 7.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 1 1 0-2.6Zm6.4 0a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 1 1 0-2.6Z"/></svg>';
-
 function stopHudUi(ev: Event): void {
   ev.stopPropagation();
 }
@@ -73,13 +70,8 @@ function makeRow(): {
 } {
   const root = document.createElement('div');
   root.className = 'combatStatsRow';
-  const face = document.createElement('span');
-  face.className = 'combatStatsFace';
-  face.setAttribute('aria-hidden', 'true');
-  face.innerHTML = HELMET_SVG;
   const slot = document.createElement('span');
   slot.className = 'combatStatsSlot';
-  face.appendChild(slot);
   const dot = document.createElement('span');
   dot.className = 'combatStatsDot';
   dot.setAttribute('aria-hidden', 'true');
@@ -92,7 +84,7 @@ function makeRow(): {
   track.appendChild(fill);
   const value = document.createElement('span');
   value.className = 'combatStatsVal';
-  root.append(face, dot, name, track, value);
+  root.append(slot, dot, name, track, value);
   return { root, name, slot, fill, value };
 }
 
@@ -120,9 +112,8 @@ function paintRows(list: HTMLElement, rows: readonly CombatStatRow[], tab: Comba
     }
     node.dataset.unitId = String(row.unitId);
     node.dataset.team = row.team ?? '';
-    node.dataset.me = row.isMe ? '1' : '0';
     node.dataset.tab = tab;
-    name.textContent = formatStatLabel(row.label, row.isMe);
+    name.textContent = formatStatLabel(row.label);
     slot.textContent = String(row.teamSlot);
     value.textContent = formatStatValue(row.value);
     fill.style.width = `${statBarRatio(row.value, maxValue) * 100}%`;

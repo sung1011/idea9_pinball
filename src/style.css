@@ -1370,57 +1370,43 @@ canvas {
 
 .combatStatsRow {
   display: grid;
-  grid-template-columns: 18px 8px minmax(4.6em, auto) minmax(48px, 1fr) 2.6em;
+  grid-template-columns: 1em 7px minmax(3.2em, auto) minmax(40px, 1fr) 2.4em;
   align-items: center;
-  gap: 6px;
-  min-height: 22px;
+  gap: 5px;
+  min-height: 20px;
 }
 
-.combatStatsFace {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  color: var(--ink);
-}
-
-.combatStatsRow[data-team='red'] .combatStatsFace,
 .combatStatsRow[data-team='red'] .combatStatsDot,
 .combatStatsRow[data-team='red'] .combatStatsBarFill {
   color: var(--team-red);
 }
 
-.combatStatsRow[data-team='blue'] .combatStatsFace,
 .combatStatsRow[data-team='blue'] .combatStatsDot,
 .combatStatsRow[data-team='blue'] .combatStatsBarFill {
   color: var(--team-blue);
 }
 
-.combatStatsMarkSvg {
-  display: block;
-  width: 16px;
-  height: 16px;
+.combatStatsRow[data-team='red'] .combatStatsSlot,
+.combatStatsRow[data-team='red'] .combatStatsName,
+.combatStatsRow[data-team='red'] .combatStatsVal {
+  color: var(--team-red-shadow);
+}
+
+.combatStatsRow[data-team='blue'] .combatStatsSlot,
+.combatStatsRow[data-team='blue'] .combatStatsName,
+.combatStatsRow[data-team='blue'] .combatStatsVal {
+  color: var(--team-blue-shadow);
 }
 
 .combatStatsSlot {
-  position: absolute;
-  right: -3px;
-  bottom: -3px;
-  min-width: 10px;
-  height: 10px;
-  padding: 0 2px;
-  border-radius: 999px;
-  background: var(--parchment-base);
-  color: var(--ink);
-  font: 700 8px/10px "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  min-width: 0;
+  font: 700 12px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   text-align: center;
-  box-shadow: 0 0 0 1px var(--wood-frame);
 }
 
 .combatStatsDot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: currentColor;
   box-shadow: 0 0 0 1px var(--wood-frame-dark);
@@ -1432,7 +1418,6 @@ canvas {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 700;
-  color: var(--ink);
 }
 
 .combatStatsBarTrack {
@@ -1454,7 +1439,6 @@ canvas {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   text-align: right;
-  color: var(--ink);
 }
 
 .combatStatsDock {
