@@ -271,11 +271,9 @@ async function boot(): Promise<void> {
   combatStatsPanel.sync(balls, player.id);
 
   let settingsSetHero: (hero: HeroId) => void = () => {};
-  const matchHud = createMatchHud(host, {
-    mode: matchMode,
-    onPickMode: (mode) => applyMatchMode(mode),
-  });
-    matchHud.sync(match.snapshot(), balls, player.id);
+  let settingsSetMode: (mode: MatchModeId) => void = () => {};
+  const matchHud = createMatchHud(host);
+  matchHud.sync(match.snapshot(), balls, player.id);
   arena.syncStalls(match.snapshot().stalls);
 
   const restart = (): void => {
@@ -339,14 +337,14 @@ async function boot(): Promise<void> {
     match.setMode(mode);
     applyWorldRules(mode);
     help.setMode(mode);
-    matchHud.setMode(mode);
+    settingsSetMode(mode);
     restart();
   };
   syncHeroUi = () => {
     help.setHero(player.hero);
     help.setMode(matchMode);
-    matchHud.setMode(matchMode);
     settingsSetHero(player.hero);
+    settingsSetMode(matchMode);
   };
   syncHeroUi();
   const appVersions = createAppVersions();
@@ -362,6 +360,8 @@ async function boot(): Promise<void> {
     onReload: hardReload,
     getHero: () => player.hero,
     onPickHero: applyPlayerHero,
+    getMode: () => matchMode,
+    onPickMode: (mode) => applyMatchMode(mode),
     onSwapHero: swapPlayerHero,
     onCollision: (kind) => {
       debug.runCollision(kind);
@@ -382,6 +382,7 @@ async function boot(): Promise<void> {
   settingsIsGmOn = () => settings.isGmOn();
   settingsClose = settings.close;
   settingsSetHero = (hero) => settings.setHero(hero);
+  settingsSetMode = (mode) => settings.setMode(mode);
 
   const trySkipOpening = (): void => {
     if (settings.isOpen() || help.isOpen()) {

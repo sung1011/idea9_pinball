@@ -1,30 +1,13 @@
 import type { MatchSnapshot } from '../core/matchSession';
 import type { BallBody } from '../core/ballBody';
-import {
-  DEFAULT_MATCH_MODE,
-  isEightKill,
-  isMatchModeId,
-  MATCH_MODE_IDS,
-  MATCH_MODE_LABEL,
-  type MatchModeId,
-} from '../core/matchMode';
+import { isEightKill } from '../core/matchMode';
 
 export type MatchHud = {
   sync: (snap: MatchSnapshot, balls: readonly BallBody[], selfId?: number) => void;
-  setMode: (mode: MatchModeId) => void;
-};
-
-export type MatchHudOpts = {
-  mode?: MatchModeId;
-  onPickMode?: (mode: MatchModeId) => void;
 };
 
 const HELMET_SVG =
   '<svg class="matchHudMarkSvg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3c-3.2 0-6 1.7-7.4 4.2L3 11.2c.8.4 1.4 1.1 1.7 2V16c0 1.4 1.1 2.6 2.5 2.8l1.3.2v1.5h2.2v-1.7h2.6V20.5h2.2v-1.5l1.3-.2c1.4-.2 2.5-1.4 2.5-2.8v-2.8c.3-.9.9-1.6 1.7-2l-1.6-4C18 4.7 15.2 3 12 3Zm0 2c2.3 0 4.3 1.1 5.5 2.8L18.4 10H5.6L6.5 7.8C7.7 6.1 9.7 5 12 5Zm-3.2 7.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6Zm6.4 0a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6Z"/></svg>';
-
-function stopHudUi(ev: Event): void {
-  ev.stopPropagation();
-}
 
 /** Stall / 自身复活秒：与开局倒计时同一套 ceil，至少显示 1。 */
 export function formatHudCount(remain: number): string {
@@ -83,8 +66,8 @@ function makeScoreSide(team: 'red' | 'blue'): { root: HTMLSpanElement; value: HT
   return { root, value };
 }
 
-/** 顶中比分胶囊贴窗顶；模式下拉贴视窗左上，略 inset。 */
-export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): MatchHud {
+/** 顶中比分胶囊贴窗顶。玩法选择在设置常规页。 */
+export function createMatchHud(host: HTMLElement): MatchHud {
   const root = document.createElement('div');
   root.className = 'matchHud';
 
@@ -95,41 +78,6 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   clock.className = 'matchHudClock';
   const blue = makeScoreSide('blue');
   cluster.append(red.root, makeSep(), clock, makeSep(), blue.root);
-
-  const modePick = document.createElement('select');
-  modePick.className = 'matchHudHero matchHudMode';
-  modePick.setAttribute('data-touch-control', 'mode');
-  modePick.setAttribute('aria-label', '切换对局模式');
-  for (const id of MATCH_MODE_IDS) {
-    const option = document.createElement('option');
-    option.value = id;
-    option.textContent = MATCH_MODE_LABEL[id];
-    modePick.appendChild(option);
-  }
-  const initialMode = opts.mode ?? DEFAULT_MATCH_MODE;
-  modePick.value = initialMode;
-  for (const type of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'keydown', 'keyup'] as const) {
-    modePick.addEventListener(type, stopHudUi);
-  }
-  modePick.addEventListener('change', (ev) => {
-    ev.stopPropagation();
-    if (!isMatchModeId(modePick.value)) {
-      modePick.value = initialMode;
-      return;
-    }
-    opts.onPickMode?.(modePick.value);
-  });
-  const modeWrap = document.createElement('label');
-  modeWrap.className = 'matchHudHeroWrap matchHudModeWrap';
-  const modeStripe = document.createElement('span');
-  modeStripe.className = 'matchHudHeroStripe matchHudModeStripe';
-  modeStripe.setAttribute('aria-hidden', 'true');
-  modeWrap.append(modeStripe, modePick);
-
-  const leftStack = document.createElement('div');
-  leftStack.className = 'matchHudLeft';
-  leftStack.dataset.hud = 'mode';
-  leftStack.append(modeWrap);
 
   const toast = document.createElement('div');
   toast.className = 'matchHudToast';
@@ -142,13 +90,10 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
   openingHint.className = 'openingHudHint';
   opening.append(openingNum, openingHint);
 
-  root.append(cluster, leftStack, toast);
+  root.append(cluster, toast);
   host.append(root, opening);
 
   return {
-    setMode(mode) {
-      modePick.value = mode;
-    },
     sync(snap, balls, selfId) {
       const redVal = isEightKill(snap.mode) ? snap.redKills : snap.redScore;
       const blueVal = isEightKill(snap.mode) ? snap.blueKills : snap.blueScore;
@@ -159,7 +104,6 @@ export function createMatchHud(host: HTMLElement, opts: MatchHudOpts = {}): Matc
       clock.classList.toggle('isResult', snap.phase === 'result');
       cluster.dataset.hold = isEightKill(snap.mode) ? 'none' : snap.midpoint;
       cluster.dataset.mode = snap.mode;
-      modePick.value = snap.mode;
 
       const waiting = balls
         .filter((ball) => !ball.inPlay && ball.id !== selfId)

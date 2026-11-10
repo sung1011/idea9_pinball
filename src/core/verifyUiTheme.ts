@@ -128,16 +128,15 @@ export function verifyUiTheme(): void {
   const clock = host.querySelector<HTMLElement>('.matchHudClock');
   const red = host.querySelector<HTMLElement>('.matchHudRed');
   const blue = host.querySelector<HTMLElement>('.matchHudBlue');
-  const wrap = host.querySelector<HTMLElement>('.matchHudHeroWrap');
-  const stripe = host.querySelector<HTMLElement>('.matchHudModeStripe');
-  const pick = host.querySelector<HTMLElement>('select.matchHudMode');
   const skill = host.querySelector<HTMLButtonElement>('.touchSkillBtn');
   const helpFab = host.querySelector<HTMLButtonElement>('.helpFab');
   const settingsFab = host.querySelector<HTMLButtonElement>('.settingsFab');
-  if (!cluster || !clock || !red || !blue || !wrap || !stripe || !pick || !skill || !helpFab || !settingsFab) {
+  if (!cluster || !clock || !red || !blue || !skill || !helpFab || !settingsFab) {
     host.remove();
-    throw new Error('HUD 换皮：应有胶囊、模式下拉、技能键与 ?/齿轮');
+    throw new Error('HUD 换皮：应有胶囊、技能键与 ?/齿轮');
   }
+  assert(!host.querySelector('select.matchHudMode'), 'HUD 换皮：左上不应再有玩法下拉');
+  assert(!host.querySelector('.matchHudLeft'), 'HUD 换皮：左上不应残留玩法入口层');
 
   const clusterCs = getComputedStyle(cluster);
   assert(
@@ -153,13 +152,6 @@ export function verifyUiTheme(): void {
   assert(sameCssColor(color(clock, 'color'), UI_THEME.goldSpear), '计时应为 gold_spear');
   assert(sameCssColor(color(red, 'color'), UI_THEME.teamRed), '红分应为 team_red');
   assert(sameCssColor(color(blue, 'color'), UI_THEME.teamBlue), '蓝分应为 team_blue');
-
-  const wrapCs = getComputedStyle(wrap);
-  assert(sameCssColor(wrapCs.backgroundColor, UI_THEME.parchmentBase), '模式下拉：羊皮纸底');
-  assert(sameCssColor(wrapCs.borderTopColor, UI_THEME.panelBorder), '模式下拉：panel_border');
-  assert(sameCssColor(color(stripe, 'backgroundColor'), UI_THEME.woodFrame), '模式下拉：左侧木条');
-  assert(sameCssColor(color(pick, 'color'), UI_THEME.ink), '模式下拉：文字 ink');
-  assert(!cssColorHasGold(wrapCs.boxShadow) && !cssColorHasGold(wrapCs.borderTopColor), '模式下拉：无金饰');
 
   const skillCs = getComputedStyle(skill);
   assert(sameCssColor(skillCs.backgroundColor, UI_THEME.buttonIdle), `技能键：button_idle（实际 ${skillCs.backgroundColor}）`);
@@ -278,12 +270,25 @@ export function verifyUiTheme(): void {
   assert(sameCssColor(getComputedStyle(wide).borderTopColor, UI_THEME.woodFrame), '设置按钮：木框');
   assert(sameCssColor(color(wide, 'color'), UI_THEME.ink), '设置按钮：ink');
   assert(!cssColorHasGold(getComputedStyle(wide).borderTopColor) && !cssColorHasGold(color(wide, 'color')), '设置按钮：无金闪');
+  const modeRow = host.querySelector<HTMLElement>('.settingsModeRow');
+  const modePick = host.querySelector<HTMLElement>('select.settingsModePick');
   const heroRow = host.querySelector<HTMLElement>('.settingsHeroRow');
   const heroPick = host.querySelector<HTMLElement>('select.settingsHeroPick');
+  if (!modeRow || !modePick) {
+    host.remove();
+    throw new Error('设置换皮：常规页应有玩法选择');
+  }
   if (!heroRow || !heroPick) {
     host.remove();
     throw new Error('设置换皮：常规页应有我的英雄选择');
   }
+  const modeRowCs = getComputedStyle(modeRow);
+  assert(sameCssColor(modeRowCs.backgroundColor, UI_THEME.parchmentBase), '玩法：羊皮纸底');
+  assert(sameCssColor(modeRowCs.borderTopColor, UI_THEME.woodFrame), '玩法：木框');
+  assert(sameCssColor(color(modePick, 'backgroundColor'), UI_THEME.buttonIdle), '玩法选择：button_idle');
+  assert(sameCssColor(getComputedStyle(modePick).borderTopColor, UI_THEME.woodFrame), '玩法选择：木框');
+  assert(sameCssColor(color(modePick, 'color'), UI_THEME.ink), '玩法选择：ink');
+  assert(!cssColorHasGold(modeRowCs.borderTopColor) && !cssColorHasGold(color(modePick, 'color')), '玩法：无金闪');
   const heroRowCs = getComputedStyle(heroRow);
   assert(sameCssColor(heroRowCs.backgroundColor, UI_THEME.parchmentBase), '我的英雄：羊皮纸底');
   assert(sameCssColor(heroRowCs.borderTopColor, UI_THEME.woodFrame), '我的英雄：木框');

@@ -28,18 +28,38 @@ import {
   SPEED_CAP,
 } from './constants';
 import { LAST_MODE_STORAGE_KEY, loadLastModeId, saveLastModeId } from './lastModeId';
-import { DEFAULT_MATCH_MODE, isMatchModeId, MATCH_MODE_LABEL } from './matchMode';
+import { DEFAULT_MATCH_MODE, isMatchModeId, MATCH_MODE_IDS, MATCH_MODE_LABEL, type MatchModeId } from './matchMode';
 import { createMatchSession } from './matchSession';
 import { applyPotionToBall, createPotionField, potionCorners } from './potionField';
 import { createRiftHazard } from './riftHazard';
+import type { AppVersions } from '../ui/appVersion';
 import { createMatchHud } from '../ui/matchHud';
 import { createHelpCard } from '../ui/helpCard';
+import { createSettingsPanel } from '../ui/settingsPanel';
 import { arenaPillarsEnabled, resolveArenaObstacles, setArenaPillarsEnabled } from './wallBounce';
 
 function assert(cond: boolean, message: string): void {
   if (!cond) {
     throw new Error(message);
   }
+}
+
+function dummyVersions(): AppVersions {
+  return {
+    getState: () => ({
+      entries: [],
+      grouped: [],
+      history: [],
+      installed: null,
+      pending: [],
+      flash: '',
+    }),
+    subscribe: () => () => {},
+    refresh: async () => {},
+    checkUpdate: async () => {},
+    applyUpdate: async () => {},
+    dispose: () => {},
+  };
 }
 
 function hit(
@@ -347,6 +367,22 @@ export function verifyEightKill(): void {
   restarted.tick(0.02, []);
   assert(!!restarted.snapshot().potion, '八杀：重开后正式开战 10s 应出新首瓶');
 
+  const [fightRed, fightBlue] = pair();
+  const midFight = createMatchSession([fightRed, fightBlue], { mode: 'eightKill', countdownSec: 0 });
+  assert(midFight.snapshot().phase === 'playing', '八杀：战中切玩法前应在 playing');
+  midFight.setMode('controlPoint');
+  midFight.reset();
+  assert(midFight.snapshot().mode === 'controlPoint', '八杀：战中切玩法应立刻改模式');
+  assert(midFight.snapshot().elapsedSec === 0, '八杀：战中切玩法应立刻重开');
+
+  const [preRed, preBlue] = pair();
+  const preFight = createMatchSession([preRed, preBlue], { mode: 'controlPoint', countdownSec: 5 });
+  assert(preFight.snapshot().phase === 'countdown', '八杀：战前切玩法前应在 countdown');
+  preFight.setMode('eightKill');
+  preFight.reset();
+  assert(preFight.snapshot().mode === 'eightKill', '八杀：战前切玩法应立刻改模式');
+  assert(preFight.snapshot().phase === 'countdown', '八杀：战前切玩法应重开倒计时');
+
   const [pauseRed, pauseBlue] = pair();
   const paused = createMatchSession([pauseRed, pauseBlue], {
     countdownSec: 0,
@@ -441,21 +477,62 @@ export function verifyEightKill(): void {
   }
 
   const host = document.createElement('div');
-  const hud = createMatchHud(host, { mode: 'eightKill' });
-  const modePick = host.querySelector<HTMLSelectElement>('select.matchHudMode');
-  const left = host.querySelector<HTMLElement>('.matchHudLeft');
+  const hud = createMatchHud(host);
+  const modeState = { mode: 'eightKill' as MatchModeId };
+  let modePicks = 0;
+  const settings = createSettingsPanel(host, {
+    onRestart: () => {},
+    onReload: () => {},
+    onCollision: () => {},
+    onScore: () => {},
+    onAdvance: () => {},
+    onJumpClock: () => {},
+    onForceRespawn: () => {},
+    getMode: () => modeState.mode,
+    onPickMode: (mode) => {
+      modePicks += 1;
+      if (modeState.mode === mode) {
+        return;
+      }
+      modeState.mode = mode;
+    },
+    versions: dummyVersions(),
+  });
   const redVal = host.querySelector<HTMLElement>('.matchHudRed .matchHudScoreVal');
   const blueVal = host.querySelector<HTMLElement>('.matchHudBlue .matchHudScoreVal');
-  if (!modePick || !left || !redVal || !blueVal) {
-    throw new Error('八杀：左上应有模式下拉');
+  if (!redVal || !blueVal) {
+    throw new Error('八杀：顶中应有击杀数');
   }
+  assert(!host.querySelector('.matchHudLeft'), '八杀：左上不应再有玩法入口层');
+  assert(!host.querySelector('select.matchHudMode'), '八杀：左上不应再有玩法下拉');
+  assert(!host.querySelector('.matchHudHeroRow'), '八杀：左上不应再有我/队友下拉');
+  settings.open();
+  const modePick = host.querySelector<HTMLSelectElement>('select.settingsModePick');
+  if (!modePick) {
+    throw new Error('八杀：设置常规页应有玩法下拉');
+  }
+  assert(MATCH_MODE_IDS.join('/') === 'eightKill/controlPoint', '八杀：玩法顺序应为八杀/占点');
   assert(
     [...modePick.options].map((opt) => opt.textContent).join('/') === '八杀/占点',
-    '八杀：模式下拉文案应为八杀/占点',
+    '八杀：玩法文案应为八杀/占点',
   );
-  assert(modePick.value === 'eightKill', '八杀：模式下拉缺省应为八杀');
-  assert(left.firstElementChild === modePick.parentElement, '八杀：左上首位应为模式下拉');
-  assert(!host.querySelector('.matchHudHeroRow'), '八杀：左上不应再有我/队友下拉');
+  assert(modePick.value === 'eightKill', '八杀：玩法缺省应为八杀');
+  modePick.value = 'controlPoint';
+  modePick.dispatchEvent(new Event('change', { bubbles: true }));
+  assert(modeState.mode === 'controlPoint' && modePicks === 1, '八杀：选占点应立刻切换');
+  modePick.value = 'eightKill';
+  modePick.dispatchEvent(new Event('change', { bubbles: true }));
+  assert(modeState.mode === 'eightKill' && modePicks === 2, '八杀：选八杀应立刻切回');
+  const samePicks = modePicks;
+  modePick.value = 'eightKill';
+  modePick.dispatchEvent(new Event('change', { bubbles: true }));
+  assert(modeState.mode === 'eightKill' && modePicks === samePicks + 1, '八杀：再选当前玩法应是空操作');
+  modeState.mode = 'controlPoint';
+  settings.setMode('controlPoint');
+  assert(
+    host.querySelector<HTMLSelectElement>('select.settingsModePick')?.value === 'controlPoint',
+    '八杀：当前值应同步到常规页',
+  );
   hud.sync(
     {
       phase: 'playing',

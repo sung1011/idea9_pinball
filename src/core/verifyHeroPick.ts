@@ -87,11 +87,9 @@ export function verifyHeroPick(): void {
   });
   assert(!host.querySelector('.matchHudHeroRow'), '换英雄：左上不应再有我/队友下拉');
   assert(!host.querySelector('select.matchHudAllyHero'), '换英雄：不应再有队友选择入口');
-  assert(
-    !host.querySelector('select.matchHudHero:not(.matchHudMode)'),
-    '换英雄：局内不应再有自己英雄下拉',
-  );
-  assert(!!host.querySelector('select.matchHudMode'), '换英雄：左上模式入口应仍在');
+  assert(!host.querySelector('select.matchHudHero'), '换英雄：局内不应再有自己英雄下拉');
+  assert(!host.querySelector('select.matchHudMode'), '换英雄：左上不应再有玩法下拉');
+  assert(!host.querySelector('.matchHudLeft'), '换英雄：左上不应残留玩法入口层');
 
   settings.open();
   const overlay = host.querySelector<HTMLElement>('.settingsOverlay');

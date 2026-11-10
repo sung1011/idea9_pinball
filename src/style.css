@@ -94,7 +94,7 @@ canvas {
   min-height: 28px;
   max-width: calc(100% - 2 * max(
     calc(var(--hud-safe-right) + var(--hud-pad) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px)),
-    calc(var(--hud-safe-left) + var(--hud-pad) + 6.4em)
+    calc(var(--hud-safe-left) + var(--hud-pad))
   ));
   box-sizing: border-box;
   padding: 3px 12px;
@@ -173,109 +173,6 @@ canvas {
 
 .matchHudCluster[data-hold='blue'] {
   box-shadow: inset 0 1px 0 var(--parchment-highlight), inset 0 0 0 2px var(--team-blue), var(--hud-shadow);
-}
-
-.matchHudLeft {
-  position: absolute;
-  left: calc(var(--hud-safe-left) + var(--hud-pad));
-  top: calc(var(--hud-safe-top) + var(--hud-pad));
-  right: auto;
-  bottom: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  pointer-events: none;
-  transform: none;
-  z-index: 8;
-}
-
-.matchHudHeroRow {
-  position: relative;
-  left: auto;
-  top: auto;
-  right: auto;
-  bottom: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  pointer-events: none;
-  transform: none;
-}
-
-.matchHudModeWrap {
-  min-width: 4.8em;
-}
-
-.matchHudModeStripe {
-  background: var(--wood-frame);
-}
-
-.matchHudHeroWrap {
-  display: flex;
-  align-items: stretch;
-  gap: 0;
-  pointer-events: auto;
-  overflow: hidden;
-  border-radius: 10px;
-  background: var(--parchment-base);
-  border: 1px solid var(--panel-border);
-  box-shadow: var(--hud-shadow);
-}
-
-.matchHudHeroStripe {
-  width: 4px;
-  flex: none;
-  background: var(--team-red);
-}
-
-.matchHudHeroStripe.matchHudModeStripe {
-  background: var(--wood-frame);
-}
-
-.matchHudHeroTag {
-  display: flex;
-  align-items: center;
-  padding: 0 4px 0 6px;
-  color: var(--ink-muted);
-  font: 700 10px/1 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  letter-spacing: 0.04em;
-}
-
-.matchHudHero {
-  appearance: none;
-  -webkit-appearance: none;
-  min-height: 28px;
-  min-width: 3.6em;
-  padding: 3px 18px 3px 5px;
-  border: 0;
-  border-radius: 0;
-  background-color: transparent;
-  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%),
-    linear-gradient(135deg, var(--ink) 50%, transparent 50%);
-  background-position: calc(100% - 12px) calc(50% - 2px), calc(100% - 7px) calc(50% - 2px);
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-  color: var(--ink);
-  font: 700 12px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
-  cursor: pointer;
-  user-select: auto;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.matchHudHero:hover,
-.matchHudHero:focus-visible {
-  background-color: var(--button-pressed);
-  color: var(--ink);
-  outline: 2px solid var(--outline-ui);
-  outline-offset: -2px;
-}
-
-.matchHudHero option {
-  background: var(--parchment-base);
-  color: var(--ink);
 }
 
 .matchHudToast {
@@ -747,7 +644,8 @@ canvas {
   line-height: 1.5;
 }
 
-.settingsHeroRow {
+.settingsHeroRow,
+.settingsModeRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -760,13 +658,15 @@ canvas {
   box-shadow: var(--hud-shadow);
 }
 
-.settingsHeroLabel {
+.settingsHeroLabel,
+.settingsModeLabel {
   flex: none;
   color: var(--ink);
   font: 700 15px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
 }
 
-.settingsHeroPick {
+.settingsHeroPick,
+.settingsModePick {
   appearance: none;
   -webkit-appearance: none;
   min-height: 32px;
@@ -789,14 +689,17 @@ canvas {
 }
 
 .settingsHeroPick:hover,
-.settingsHeroPick:focus-visible {
+.settingsHeroPick:focus-visible,
+.settingsModePick:hover,
+.settingsModePick:focus-visible {
   background-color: var(--button-pressed);
   border-color: var(--wood-frame-dark);
   outline: 2px solid var(--outline-ui);
   outline-offset: -2px;
 }
 
-.settingsHeroPick option {
+.settingsHeroPick option,
+.settingsModePick option {
   background: var(--parchment-base);
   color: var(--ink);
 }
@@ -1424,19 +1327,9 @@ canvas {
   --hud-fab: 26px;
 }
 
-#app.isShortHud .matchHudCluster,
-#app.isShortHud .matchHudHero {
+#app.isShortHud .matchHudCluster {
   min-height: 24px;
   font-size: 12px;
-}
-
-#app.isShortHud .matchHudHeroTag {
-  font-size: 9px;
-}
-
-#app.isShortHud .matchHudHero {
-  min-width: 3.8em;
-  padding: 2px 18px 2px 6px;
 }
 
 #app.isShortHud .matchHudScoreVal {
@@ -1480,15 +1373,6 @@ canvas {
   font-size: 14px;
 }
 
-#app.isNarrowHud .matchHudHero {
-  min-width: 3.4em;
-  padding: 2px 16px 2px 4px;
-}
-
-#app.isNarrowHud .matchHudHeroTag {
-  font-size: 9px;
-  padding: 0 3px 0 4px;
-}
 
 .combatStats {
   position: absolute;
