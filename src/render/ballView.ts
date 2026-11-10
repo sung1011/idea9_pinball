@@ -2,7 +2,7 @@ import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
 import { spearCdFill } from '../core/collisionDamage';
 import { BALL_RADIUS, SPEAR_TIP_DIST } from '../core/constants';
-import { getHookRiderArt, HOOK_RIDER, hookRiderRotation } from './hookRiderArt';
+import { getHookRiderArt, HOOK_RIDER, hookRiderBodyTexture, hookRiderRotation } from './hookRiderArt';
 
 export type BallViewSyncOpts = {
   charging?: boolean;
@@ -249,12 +249,12 @@ function drawChargeFx(
   }
 }
 
-function makeHookRiderSprites(): { horse: Sprite; spear: Sprite } | null {
+function makeHookRiderSprites(team?: BallBody['team']): { horse: Sprite; spear: Sprite } | null {
   const art = getHookRiderArt();
   if (!art) {
     return null;
   }
-  const horse = new Sprite(art.body);
+  const horse = new Sprite(hookRiderBodyTexture(team) ?? art.body);
   horse.anchor.set(HOOK_RIDER.bodyAnchorX, HOOK_RIDER.bodyAnchorY);
   horse.width = HOOK_RIDER.bodyWorldW;
   horse.height = HOOK_RIDER.bodyWorldH;
@@ -278,7 +278,7 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
   const slotLabel = makeSlotLabel(ball.teamSlot);
   const hpBar = new Graphics();
   const spear = new Graphics();
-  const rider = makeHookRiderSprites();
+  const rider = makeHookRiderSprites(ball.team);
   root.addChild(mark, fx);
   if (rider) {
     root.addChild(rider.horse);
@@ -333,6 +333,10 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
     if (rider) {
       const fade = next.invincibleRemain > 0 || next.phaseRemain > 0 ? 0.72 : 1;
       const rot = hookRiderRotation(dir.x, dir.y);
+      const bodyTex = hookRiderBodyTexture(next.team);
+      if (bodyTex && rider.horse.texture !== bodyTex) {
+        rider.horse.texture = bodyTex;
+      }
       rider.horse.visible = true;
       rider.spear.visible = true;
       rider.horse.alpha = fade;

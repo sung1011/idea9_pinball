@@ -124,7 +124,8 @@ export function verifySelfMark(): void {
 
   const prevArt = getHookRiderArt();
   try {
-    setHookRiderArt({ body: stubTexture(), spear: stubTexture() });
+    const riderStub = stubTexture();
+    setHookRiderArt({ body: riderStub, bodyRed: riderStub, spear: stubTexture() });
     const riderRoster = createMatchRoster({ player: 'arc', ally: 'arc', blue1: 'well', blue2: 'nail' });
     const riderPlayer = riderRoster.find((ball) => ball.team === 'red' && ball.teamSlot === 1);
     const riderAlly = riderRoster.find((ball) => ball.team === 'red' && ball.teamSlot === 2);
