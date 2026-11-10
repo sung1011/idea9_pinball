@@ -108,8 +108,9 @@ export function verifyUlt(): void {
   assert(Number(HOOK_ULT.damage) !== Number(HOOK_SHOVE.damage), '必杀：伤害应与盾冲不同');
   assert(ultShort('hook') === '无畏' && ultName('hook') === '无畏冲锋', '必杀：钩刺第五键文案应为无畏/无畏冲锋');
   assert(ultShort('ring') === '沉磁' && ultName('ring') === '沉磁井', '必杀：磁环第五键文案应为沉磁/沉磁井');
+  assert(ultShort('chain') === '均血' && ultName('chain') === '均血', '必杀：链生第五键文案应为均血');
   for (const hero of HERO_IDS) {
-    if (hero === 'hook' || hero === 'ring') {
+    if (hero === 'hook' || hero === 'ring' || hero === 'chain') {
       continue;
     }
     assert(ultShort(hero) === '必杀' && ultName(hero) === '必杀', `必杀：${hero} 第五键文案应为必杀`);
@@ -267,16 +268,16 @@ export function verifyUlt(): void {
   assert(!shove.isDisplacing() || sBlue.hp < sBlue.maxHp, '必杀：盾冲仍应碰敌结算，不与无畏共用');
 
   let todoHits = 0;
-  const other = createPlayerControl('chain', { onUltTodo: () => (todoHits += 1) });
-  const chainBall = createBallBody({ x: 8, y: 8, color: 1, hero: 'chain' });
-  chainBall.ultEnergy = 0;
-  other.tick(chainBall, sample({ skillPress: 5 }), 0, [chainBall]);
+  const other = createPlayerControl('nail', { onUltTodo: () => (todoHits += 1) });
+  const nailBall = createBallBody({ x: 8, y: 8, color: 1, hero: 'nail' });
+  nailBall.ultEnergy = 0;
+  other.tick(nailBall, sample({ skillPress: 5 }), 0, [nailBall]);
   assert(todoHits === 1, '必杀：其他英雄点第五键应出 todo');
   assert(other.getAimingSlot() === 0, '必杀：其他英雄第五键不应进瞄');
-  chainBall.ultEnergy = 100;
-  other.tick(chainBall, sample({ skillPress: 5 }), 0, [chainBall]);
+  nailBall.ultEnergy = 100;
+  other.tick(nailBall, sample({ skillPress: 5 }), 0, [nailBall]);
   assert(todoHits === 2, '必杀：其他英雄能量不足也不得禁用第五键');
-  assert(chainBall.ultEnergy === 100, '必杀：其他英雄不得扣能量');
+  assert(nailBall.ultEnergy === 100, '必杀：其他英雄不得扣能量');
 
   const low = createSkillCaster('hook');
   const lowBall = createBallBody({ x: 9, y: 9, color: 1, facingX: 1 });
@@ -304,6 +305,8 @@ export function verifyUlt(): void {
   pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: 'ring', energy: 100 });
   assert(ultBtn?.classList.contains('isReady') === true, '必杀 UI：磁环满能量应标就绪');
   pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: 'chain', energy: 100 });
+  assert(ultBtn?.classList.contains('isReady') === true, '必杀 UI：链生满能量应标就绪');
+  pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: 'nail', energy: 100 });
   assert(ultBtn?.classList.contains('isReady') !== true, '必杀 UI：未实装英雄满能量也不标就绪');
   pad.showTodo();
   assert(!!todo && todo.classList.contains('isOn') && todo.textContent === 'todo', '必杀 UI：todo 必须精确小写');

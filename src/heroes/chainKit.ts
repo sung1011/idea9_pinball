@@ -43,6 +43,17 @@ export const CHAIN_SCRAMBLE = {
   duration: 3,
 } as const;
 
+/**
+ * 链生第五键均血（描述名，未定华丽名）。
+ * 以自身为圆心立刻结算一次，不前方选点、不延迟、不持续。
+ */
+export const CHAIN_ULT = {
+  slot: 5,
+  energyCost: 100,
+  radius: 4,
+  allyHealRatio: 0.1,
+} as const;
+
 /** 对内仍是链生四槽：治疗链 / 护盾脉冲 / 勾友 / 范围沉默 */
 export const CHAIN_SKILL_INTERNAL = ['治疗链', '护盾脉冲', '勾友', '范围沉默'] as const;
 /** 骑士链生对外显示名 */
@@ -66,6 +77,9 @@ export function chainWindup(slot: SkillSlot): number {
   if (slot === 3) {
     return CHAIN_TOW.windup;
   }
+  if (slot === 5) {
+    return 0;
+  }
   return CHAIN_SCRAMBLE.windup;
 }
 
@@ -73,12 +87,12 @@ export function chainSkillCd(slot: SkillSlot): number {
   return CHAIN_CDS[slot - 1];
 }
 
-/** 勾友是位移技；治疗 / 盾脉贴附 / 沉默不是。 */
+/** 勾友是位移技；治疗 / 盾脉贴附 / 沉默 / 均血不是。 */
 export function chainIsDisplace(slot: SkillSlot): boolean {
   return slot === 3;
 }
 
-/** 瞄准预览：愈链用扇，盾脉/援勾/扰锋用圆。 */
+/** 瞄准预览：愈链用扇，盾脉/援勾/扰锋/均血用圆（均血圆心=自身）。 */
 export function chainAimShape(slot: SkillSlot): ChainAimShape | null {
   if (slot === 1) {
     return { kind: 'cone', halfRad: (CHAIN_HEAL.fanDeg * Math.PI) / 360, radius: CHAIN_HEAL.range };
@@ -91,6 +105,9 @@ export function chainAimShape(slot: SkillSlot): ChainAimShape | null {
   }
   if (slot === 4) {
     return { kind: 'circle', radius: CHAIN_SCRAMBLE.range, offsetX: 0, offsetY: 0 };
+  }
+  if (slot === 5) {
+    return { kind: 'circle', radius: CHAIN_ULT.radius, offsetX: 0, offsetY: 0 };
   }
   return null;
 }

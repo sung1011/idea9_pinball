@@ -37,6 +37,8 @@ import { verifyWorldViewLock } from './core/verifyWorldViewLock';
 import { verifyRespawnHud } from './core/verifyRespawnHud';
 import { verifyUlt } from './core/verifyUlt';
 import { verifyRingUlt } from './core/verifyRingUlt';
+import { verifyChainUlt } from './core/verifyChainUlt';
+import { resetChainEqualize } from './core/chainEqualize';
 import { verifyAimStick } from './core/verifyAimStick';
 import { verifyHookRider } from './core/verifyHookRider';
 import { creditUltCombat } from './core/ultEnergy';
@@ -83,6 +85,7 @@ async function boot(): Promise<void> {
   verifyRing();
   verifyRingUlt();
   verifyChain();
+  verifyChainUlt();
   verifyNail();
   verifyArc();
   verifyWell();
@@ -279,6 +282,7 @@ async function boot(): Promise<void> {
     rollOpeningBots();
     resetTrapZones();
     resetMagnetWells();
+    resetChainEqualize();
     resetStakes();
     resetMirrorWalls();
     resetBoomFlashes();
@@ -302,6 +306,7 @@ async function boot(): Promise<void> {
   const onPairDebug = (): void => {
     resetTrapZones();
     resetMagnetWells();
+    resetChainEqualize();
     resetStakes();
     resetMirrorWalls();
     resetBoomFlashes();

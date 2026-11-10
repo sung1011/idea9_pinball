@@ -14,13 +14,16 @@ import {
   CHAIN_SCRAMBLE,
   CHAIN_SHIELD,
   CHAIN_TOW,
+  CHAIN_ULT,
   chainIsDisplace,
   chainSkillCd,
   chainWindup,
 } from '../heroes/chainKit';
 import { RING_TRAP } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
+import { applyChainEqualize } from './chainEqualize';
 import { applySkillDamage } from './skillHits';
+import { canSpendUlt, spendUltEnergy } from './ultEnergy';
 import {
   pickEnemiesInRange,
   pickFanAllyOrEnemy,
@@ -291,6 +294,21 @@ export function createChainCaster(): SkillCaster {
       return;
     }
     const slot = aimingSlot;
+    if (slot === 5) {
+      if (!canSpendUlt(ball, CHAIN_ULT.energyCost)) {
+        return;
+      }
+      const aim = aimOf(ball, sample);
+      if (!setFacingFrom(ball, aim.x, aim.y)) {
+        return;
+      }
+      if (!spendUltEnergy(ball, CHAIN_ULT.energyCost)) {
+        return;
+      }
+      aimingSlot = 0;
+      applyChainEqualize(ball, roster);
+      return;
+    }
     if (cds[slot - 1] > 0) {
       return;
     }
@@ -337,6 +355,10 @@ export function createChainCaster(): SkillCaster {
     if (sample.skillPress) {
       if (aimingSlot === sample.skillPress) {
         tryRelease(ball, sample, roster);
+      } else if (sample.skillPress === 5) {
+        if (canSpendUlt(ball, CHAIN_ULT.energyCost) && !(effect && effect.kind === 'windup')) {
+          aimingSlot = 5;
+        }
       } else if (cds[sample.skillPress - 1] <= 0 && !(effect && effect.kind === 'windup')) {
         aimingSlot = sample.skillPress;
       }

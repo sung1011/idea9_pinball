@@ -53,7 +53,7 @@ export function creditUltCombat(balls: readonly BallBody[], hits: readonly Colli
     }
   }
   for (const heal of heals) {
-    if (heal.amount <= 0 || heal.sourceId == null || heal.sourceId < 0) {
+    if (heal.amount <= 0 || heal.sourceId == null || heal.sourceId < 0 || heal.noUltCredit) {
       continue;
     }
     const source = balls.find((ball) => ball.id === heal.sourceId);

@@ -18,6 +18,8 @@ export type HealPulse = {
   y: number;
   /** 实际回血施法者；缺省或 <0 表示无归属（药剂等） */
   sourceId?: number;
+  /** 必杀实际治疗：统计可记，但不给施法者回充能量 */
+  noUltCredit?: boolean;
 };
 
 /** 伤害红橙 / 治疗绿 / 护盾青（护盾无数值事件则跳过）。 */

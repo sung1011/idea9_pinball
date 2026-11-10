@@ -23,6 +23,7 @@ import { NAIL_ARMOR, NAIL_PIN } from '../heroes/nailKit';
 import type { HealPulse } from './combatFloat';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
 import { FRICTION } from './constants';
+import { takeChainEqualizeHeals, tickEqualizeFlashes } from './chainEqualize';
 import { applyMagnetWellPull, tickMagnetWellBlasts } from './magnetWells';
 import { applyFloorSpeed } from './skillStub';
 import { resolveAllMirrorWalls, tickAllMirrorWalls } from './mirrorWalls';
@@ -83,7 +84,7 @@ export type PhysicsStepResult = {
   wallHitIds: number[];
 };
 
-/** 每帧：沉磁井吸力 → 积分位移 → 墙/柱/球/困圈夹边 → 枪尖碰撞掉血弹开 → 摩擦 / 保底 → 速度盖帽 → 沉磁井爆炸。 */
+/** 每帧：沉磁井吸力 → 积分位移 → 墙/柱/球/困圈夹边 → 枪尖碰撞掉血弹开 → 摩擦 / 保底 → 速度盖帽 → 沉磁井爆炸 / 均血额外回血入账。 */
 export function stepPhysics(
   balls: readonly BallBody[],
   dt: number,
@@ -231,6 +232,8 @@ export function stepPhysics(
   }
 
   hits.push(...tickMagnetWellBlasts(balls, stepDt));
+  heals.push(...takeChainEqualizeHeals());
+  tickEqualizeFlashes(stepDt);
 
   return { hits, heals, collidedIds: [...collided], wallHitIds: [...wallHits] };
 }

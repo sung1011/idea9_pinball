@@ -154,7 +154,7 @@ export type SkillTipCopy = {
 export const ULT_TODO_COPY = 'todo';
 
 export function heroHasUlt(hero: HeroId): boolean {
-  return hero === 'hook' || hero === 'ring';
+  return hero === 'hook' || hero === 'ring' || hero === 'chain';
 }
 
 export function ultShort(hero: HeroId): string {
@@ -163,6 +163,9 @@ export function ultShort(hero: HeroId): string {
   }
   if (hero === 'ring') {
     return '沉磁';
+  }
+  if (hero === 'chain') {
+    return '均血';
   }
   return '必杀';
 }
@@ -174,6 +177,9 @@ export function ultName(hero: HeroId): string {
   if (hero === 'ring') {
     return '沉磁井';
   }
+  if (hero === 'chain') {
+    return '均血';
+  }
   return '必杀';
 }
 
@@ -183,6 +189,9 @@ export function ultTip(hero: HeroId): string {
   }
   if (hero === 'ring') {
     return '前方选点落地后强吸 3 秒再爆炸，半径 4 格';
+  }
+  if (hero === 'chain') {
+    return '以自身为圆心半径4格立刻均血，我方再回10%';
   }
   return ULT_TODO_COPY;
 }
@@ -209,7 +218,7 @@ export function kitHelpSkills(hero: HeroId): string {
     return '技能 1–4：1 辉环（身周磁场） / 2 斥波 / 3 壁行 / 4 囚环（物理关死出不去）。第五键沉磁井（前方选点，最远 6 格，半径 4，落地即吸 3 秒后爆炸）。';
   }
   if (hero === 'chain') {
-    return '技能 1–4：1 愈链（治疗链） / 2 盾脉 / 3 援勾 / 4 扰锋（范围沉默）。第五键必杀占位。';
+    return '技能 1–4：1 愈链（治疗链） / 2 盾脉 / 3 援勾 / 4 扰锋（范围沉默）。第五键均血（以自身为圆心半径 4，立刻按百分比算术平均调血，我方再回 10%）。';
   }
   if (hero === 'nail') {
     return '技能 1–4：1 甲垒（叠甲） / 2 刺盾 / 3 顶冲 / 4 钉锚（定锚）。第五键必杀占位。';
@@ -231,7 +240,7 @@ export function kitSettingsHint(hero: HeroId): string {
     return '技能 1 辉环 / 2 斥波 / 3 壁行 / 4 囚环 / 5 沉磁井。按下进瞄，再按同键或左键释放。';
   }
   if (hero === 'chain') {
-    return '技能 1 愈链 / 2 盾脉 / 3 援勾 / 4 扰锋 / 5 必杀。按下进瞄，再按同键或左键释放。';
+    return '技能 1 愈链 / 2 盾脉 / 3 援勾 / 4 扰锋 / 5 均血。按下进瞄，再按同键或左键释放。';
   }
   if (hero === 'nail') {
     return '技能 1 甲垒 / 2 刺盾 / 3 顶冲 / 4 钉锚 / 5 必杀。按下进瞄，再按同键或左键释放。';

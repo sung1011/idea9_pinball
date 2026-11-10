@@ -1,6 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
 import { listBoomFlashes } from '../core/boomFlashes';
+import { listEqualizeFlashes } from '../core/chainEqualize';
 import { POTION_RADIUS } from '../core/constants';
 import { listMagnetWells, type MagnetWell } from '../core/magnetWells';
 import { listMirrorWalls } from '../core/mirrorWalls';
@@ -28,6 +29,7 @@ const MARK = 0xf0abfc;
 const GRAZE = 0x7dd3fc;
 const STAKE = 0xf59e0b;
 const BOOM = 0xfb7185;
+const EQUALIZE = 0x86efac;
 const GLASS = 0xa5d8ff;
 
 const GOLD = 0xd4a017;
@@ -121,7 +123,7 @@ function makeWellCountdown(well: MagnetWell): Text {
   return label;
 }
 
-/** 磁场身周圈 + 困圈落点圈 + 沉磁井场地圈与倒计时。 */
+/** 磁场身周圈 + 困圈落点圈 + 沉磁井场地圈与倒计时 + 均血短暂结算圈。 */
 export function createFieldOverlay(): FieldOverlay {
   const root = new Container();
   root.eventMode = 'none';
@@ -208,6 +210,13 @@ export function createFieldOverlay(): FieldOverlay {
       gfx.circle(flash.x, flash.y, flash.radius);
       gfx.fill({ color: BOOM, alpha: pulse });
       gfx.stroke({ color: BOOM, width: 0.07, alpha: 0.7 });
+    }
+    for (const flash of listEqualizeFlashes()) {
+      const life = Math.max(flash.life, 1e-6);
+      const pulse = 0.12 + 0.26 * Math.min(1, flash.remain / life);
+      gfx.circle(flash.x, flash.y, flash.radius);
+      gfx.fill({ color: EQUALIZE, alpha: pulse });
+      gfx.stroke({ color: EQUALIZE, width: 0.07, alpha: 0.72 });
     }
   };
 
