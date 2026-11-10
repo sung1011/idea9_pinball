@@ -43,6 +43,7 @@ import { verifyAimStick } from './core/verifyAimStick';
 import { verifyHookRider } from './core/verifyHookRider';
 import { verifyHookRiderRun } from './core/verifyHookRiderRun';
 import { verifyTechTree } from './core/verifyTechTree';
+import { verifyHookBrakeConvoy } from './core/verifyHookBrakeConvoy';
 import { creditUltCombat } from './core/ultEnergy';
 import { resetMagnetWells } from './core/magnetWells';
 import { resetMirrorWalls } from './core/mirrorWalls';
@@ -116,6 +117,7 @@ async function boot(): Promise<void> {
   verifyAimStick();
   verifyHookRider();
   verifyTechTree();
+  verifyHookBrakeConvoy();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {

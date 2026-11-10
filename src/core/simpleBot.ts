@@ -1,4 +1,5 @@
 import { clearKitAuras, skillsBlocked, type BallBody } from './ballBody';
+import { isBrakeConvoyPassenger } from './hookBrakeConvoy';
 import type { CollisionHit } from './collisionDamage';
 import {
   BOT_AIM_JITTER_RAD,
@@ -351,7 +352,7 @@ export function createSimpleBot(bot: BallBody, opts: SimpleBotOpts = {}): Simple
       bot.aimX = aimX;
       bot.aimY = aimY;
       bot.hasAim = true;
-      if (bot.stunRemain <= 0 && !caster.isDisplacing() && bot.frictionMul === 1) {
+      if (bot.stunRemain <= 0 && !caster.isDisplacing() && !isBrakeConvoyPassenger(bot) && bot.frictionMul === 1) {
         applyFloorSpeed(bot);
         applySteerToward(bot, aimX, aimY, dt);
       }

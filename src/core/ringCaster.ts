@@ -20,6 +20,7 @@ import { pickFanEnemies, unitVec } from './skillQuery';
 import type { SkillCaster, SkillCds, WindupInfo } from './skillCaster';
 import { setFacingFrom } from './skillStub';
 import { placeMagnetWell } from './magnetWells';
+import { convoyBlocksSkillRelease } from './hookBrakeConvoy';
 import { canSpendUlt, spendUltEnergy } from './ultEnergy';
 import { clearTrapZone, isInEnemyTrap, markTrapOccupants, setTrapZone, tickTrapZone } from './trapZones';
 
@@ -194,6 +195,9 @@ export function createRingCaster(): SkillCaster {
       return;
     }
     const slot = aimingSlot;
+    if (convoyBlocksSkillRelease(ball, slot)) {
+      return;
+    }
     if (slot === 5) {
       if (!canSpendUlt(ball, RING_ULT.energyCost)) {
         return;

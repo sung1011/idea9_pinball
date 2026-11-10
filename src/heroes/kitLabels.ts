@@ -79,7 +79,7 @@ const HOOK_SKILL_TIPS = [
   '勾中后自己飞向目标贴脸',
   '朝向连捅三次，第三下硬直',
   '冲刺碰敌强推并开撞窗',
-  '急停蓄力后按弹出瞬间枪尖方向弹出',
+  '急停蓄力后按弹出瞬间枪尖方向弹出；点亮科技后接触友军可携带冲锋',
 ] as const;
 
 const RING_SKILL_TIPS = [
@@ -232,7 +232,7 @@ export function kitHelpSkills(hero: HeroId): string {
   if (hero === 'mirror') {
     return '技能 1–4：1 折光（受伤减半入账） / 2 反照 / 3 裂镜 / 4 镜壁。第五键必杀占位。';
   }
-  return '技能 1–4：1 钩矛 / 2 连刺×3 / 3 盾冲 / 4 蓄势。第五键无畏冲锋（满能量后退三步，每步 0.4 秒 / 0.8 格，再沿枪尖穿刺）。';
+  return '技能 1–4：1 钩矛 / 2 连刺×3 / 3 盾冲 / 4 蓄势（点亮科技后弹出可携带接触友军）。第五键无畏冲锋（满能量后退三步，每步 0.4 秒 / 0.8 格，再沿枪尖穿刺）。';
 }
 
 export function kitSettingsHint(hero: HeroId): string {

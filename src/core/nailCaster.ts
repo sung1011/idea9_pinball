@@ -22,6 +22,7 @@ import { RING_TRAP } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import { applyNailReflect, applyPinRamBonus } from './nailCombat';
 import { applyHardCc, scaleHardCc } from './hardCc';
+import { convoyBlocksSkillRelease } from './hookBrakeConvoy';
 import type { SkillCaster, SkillCds, WindupInfo } from './skillCaster';
 import { applySkillDamage } from './skillHits';
 import { pickFanEnemy, unitVec } from './skillQuery';
@@ -164,6 +165,9 @@ export function createNailCaster(): SkillCaster {
       return;
     }
     const slot = aimingSlot;
+    if (convoyBlocksSkillRelease(ball, slot)) {
+      return;
+    }
     if (cds[slot - 1] > 0) {
       return;
     }

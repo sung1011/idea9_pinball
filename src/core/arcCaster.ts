@@ -16,6 +16,7 @@ import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import type { SkillCaster, SkillCds, WindupInfo } from './skillCaster';
 import { pickFanEnemy, pickNearestEnemy, unitVec } from './skillQuery';
 import { setFacingFrom } from './skillStub';
+import { convoyBlocksSkillRelease } from './hookBrakeConvoy';
 import { isInEnemyTrap } from './trapZones';
 import { resolveArenaObstacles } from './wallBounce';
 
@@ -175,6 +176,9 @@ export function createArcCaster(): SkillCaster {
       return;
     }
     const slot = aimingSlot;
+    if (convoyBlocksSkillRelease(ball, slot)) {
+      return;
+    }
     if (cds[slot - 1] > 0) {
       return;
     }

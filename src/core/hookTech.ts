@@ -27,8 +27,6 @@ export const HOOK_SHOVE_TECH = {
 export const HOOK_BRAKE_TECH = {
   id: 'hookBrake' as const,
   cost: 50,
-  chargeRatio: 0.8,
-  extraDamage: 8,
 } as const;
 
 export type HookTechDef = {
@@ -70,7 +68,7 @@ export const HOOK_TECH_DEFS: readonly HookTechDef[] = [
     cost: HOOK_BRAKE_TECH.cost,
     name: HOOK_SKILL_NAMES[3],
     effect:
-      '蓄力到本次最大有效蓄力 80% 以上弹出，本次弹出首次碰撞必须直接命中非无敌敌方才追加 8 点伤。先撞墙/障碍/友军或无敌敌人则失去该次资格，不能绕行补触发。',
+      '任何有效蓄势弹出都能沿途接触携带存活友军冲锋。仅实际碰到的友军接入，不隔空吸取；可带多人。无敌/硬控友军不接入，普通护盾可接入。携带只跟本次弹出 0.25 秒主动撞窗，不延长基础位移、不加额外伤害。队友不能主动脱离；位移技暂不可放且不扣次数/冷却/能量。',
   },
 ];
 

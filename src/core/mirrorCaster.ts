@@ -18,6 +18,7 @@ import type { AimHint, SkillCaster, SkillCds, WindupInfo } from './skillCaster';
 import { applySkillDamage } from './skillHits';
 import { pickEnemiesAround, pickFanEnemy, unitVec } from './skillQuery';
 import { setFacingFrom } from './skillStub';
+import { convoyBlocksSkillRelease } from './hookBrakeConvoy';
 import { isInEnemyTrap } from './trapZones';
 
 const TIME_EPS = 1e-7;
@@ -173,6 +174,9 @@ export function createMirrorCaster(): SkillCaster {
       return;
     }
     const slot = aimingSlot;
+    if (convoyBlocksSkillRelease(ball, slot)) {
+      return;
+    }
     if (cds[slot - 1] > 0) {
       return;
     }

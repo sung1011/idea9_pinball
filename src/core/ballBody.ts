@@ -120,8 +120,16 @@ export type BallBody = {
   /** 钩刺盾冲科技护盾：与药水盾独立，再触发重置不叠加 */
   hookShoveShieldRemain: number;
   hookShoveShieldHp: number;
-  /** 蓄势弹出科技：等待首次碰撞，跟主动撞窗一起过期 */
-  hookBrakePopPending: boolean;
+  /** 蓄势科技冲锋携带窗剩余秒；仅领导者。沿用弹出主动撞窗 0.25s */
+  hookBrakeConvoyRemain: number;
+  /** 本次弹出已接入过的友军 id，释放后仍占用 */
+  hookBrakeConvoyTouched: number[];
+  /** 当前携带的友军 id，接入顺序，空位不重排 */
+  hookBrakeConvoyIds: number[];
+  /** 被携带时的领导者 id；0 表示无 */
+  hookBrakeConvoyLeaderId: number;
+  /** 接入时分配的跟随距离，空位不收缩 */
+  hookBrakeConvoyFollowDist: number;
   /** 必杀能量 0–100；死亡保留、换英雄/重开清空 */
   ultEnergy: number;
   /** 未换成能量的有效伤害+治疗余量 */
@@ -216,7 +224,11 @@ export function createBallBody(init: {
     potionShieldHp: 0,
     hookShoveShieldRemain: 0,
     hookShoveShieldHp: 0,
-    hookBrakePopPending: false,
+    hookBrakeConvoyRemain: 0,
+    hookBrakeConvoyTouched: [],
+    hookBrakeConvoyIds: [],
+    hookBrakeConvoyLeaderId: 0,
+    hookBrakeConvoyFollowDist: 0,
     ultEnergy: 0,
     ultCombatCredit: 0,
   };
@@ -267,13 +279,9 @@ export function openActiveRam(ball: BallBody): void {
 export function tickActiveRam(ball: BallBody, dt: number): void {
   if (ball.activeRamRemain <= 0) {
     ball.activeRamRemain = 0;
-    ball.hookBrakePopPending = false;
     return;
   }
   ball.activeRamRemain = Math.max(0, ball.activeRamRemain - dt);
-  if (ball.activeRamRemain <= 0) {
-    ball.hookBrakePopPending = false;
-  }
 }
 
 export function tickSpearCd(ball: BallBody, dt: number): void {
@@ -611,5 +619,9 @@ export function clearKitAuras(ball: BallBody): void {
   ball.mirrorLedger = 0;
   ball.hookShoveShieldRemain = 0;
   ball.hookShoveShieldHp = 0;
-  ball.hookBrakePopPending = false;
+  ball.hookBrakeConvoyRemain = 0;
+  ball.hookBrakeConvoyTouched = [];
+  ball.hookBrakeConvoyIds = [];
+  ball.hookBrakeConvoyLeaderId = 0;
+  ball.hookBrakeConvoyFollowDist = 0;
 }

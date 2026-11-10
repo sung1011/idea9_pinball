@@ -1,4 +1,5 @@
 import { clearKitAuras, clearPotionBuffs, createBallBody, grantInvincible, type BallBody, type TeamId } from './ballBody';
+import { breakHookBrakeConvoyFor } from './hookBrakeConvoy';
 import { clearUltEnergy } from './ultEnergy';
 import { pickRandomHero, type HeroId } from '../heroes/heroIds';
 import type { CollisionHit } from './collisionDamage';
@@ -238,7 +239,8 @@ function allocMatchId(): string {
   return id;
 }
 
-function resetBall(ball: BallBody, openingInvincible: number): void {
+function resetBall(ball: BallBody, openingInvincible: number, roster: readonly BallBody[]): void {
+  breakHookBrakeConvoyFor(ball, roster);
   ball.x = ball.spawnX;
   ball.y = ball.spawnY;
   ball.vx = 0;
@@ -413,6 +415,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     timeLeft = 0;
     suddenDeath = false;
     for (const ball of balls) {
+      breakHookBrakeConvoyFor(ball, balls);
       if (ball.inPlay) {
         grantInvincible(ball, 60);
       }
@@ -427,6 +430,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     timeLeft = 0;
     suddenDeath = false;
     for (const ball of balls) {
+      breakHookBrakeConvoyFor(ball, balls);
       if (ball.inPlay) {
         grantInvincible(ball, 60);
       }
@@ -447,6 +451,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   };
 
   const parkOut = (ball: BallBody): void => {
+    breakHookBrakeConvoyFor(ball, balls);
     ball.inPlay = false;
     ball.hp = 0;
     ball.vx = 0;
@@ -465,6 +470,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   };
 
   const respawnBall = (ball: BallBody): void => {
+    breakHookBrakeConvoyFor(ball, balls);
     delete respawns[ball.id];
     ball.x = ball.spawnX;
     ball.y = ball.spawnY;
@@ -792,7 +798,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
       delete respawns[Number(key)];
     }
     for (const ball of balls) {
-      resetBall(ball, openingInvincible);
+      resetBall(ball, openingInvincible, balls);
     }
   };
 

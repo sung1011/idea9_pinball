@@ -22,7 +22,7 @@ import {
 import { NAIL_ARMOR, NAIL_PIN } from '../heroes/nailKit';
 import type { HealPulse } from './combatFloat';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
-import { consumeHookBrakePopWall, resolveHookBrakePopContact } from './hookBrakePop';
+import { finishHookBrakeConvoy, prepareHookBrakeConvoy, tryHookBrakeConvoyAttach } from './hookBrakeConvoy';
 import { tickHookBleeds } from './hookBleed';
 import { tickHookShoveShield } from './hookShield';
 import { FRICTION } from './constants';
@@ -96,6 +96,7 @@ export function stepPhysics(
   const stepDt = Math.min(Math.max(dt, 0), MAX_DT);
   tickAllMirrorWalls(stepDt);
   applyMagnetWellPull(balls, stepDt);
+  prepareHookBrakeConvoy(balls, stepDt);
   const live = balls.filter((ball) => ball.inPlay);
 
   for (const ball of live) {
@@ -142,6 +143,7 @@ export function stepPhysics(
     resolveTrapCages(live);
     for (let a = 0; a < live.length; a += 1) {
       for (let b = a + 1; b < live.length; b += 1) {
+        tryHookBrakeConvoyAttach(live[a], live[b], balls);
         const contact = resolveBallBall(live[a], live[b]);
         if (!contact || !contact.approaching) {
           continue;
@@ -169,14 +171,8 @@ export function stepPhysics(
 
   const hits: CollisionHit[] = [];
   const heals: HealPulse[] = [];
-  for (const id of wallHits) {
-    const wallBall = live.find((item) => item.id === id);
-    if (wallBall) {
-      consumeHookBrakePopWall(wallBall);
-    }
-  }
+  finishHookBrakeConvoy(balls, stepDt, wallHits);
   for (const contact of pending) {
-    hits.push(...resolveHookBrakePopContact(contact.a, contact.b));
     hits.push(
       ...applyCollisionCombat(
         contact.a,

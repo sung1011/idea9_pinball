@@ -22,6 +22,7 @@ import {
 import { RING_TRAP } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import { applyChainEqualize } from './chainEqualize';
+import { convoyBlocksSkillRelease } from './hookBrakeConvoy';
 import { applySkillDamage } from './skillHits';
 import { canSpendUlt, spendUltEnergy } from './ultEnergy';
 import {
@@ -294,6 +295,9 @@ export function createChainCaster(): SkillCaster {
       return;
     }
     const slot = aimingSlot;
+    if (convoyBlocksSkillRelease(ball, slot)) {
+      return;
+    }
     if (slot === 5) {
       if (!canSpendUlt(ball, CHAIN_ULT.energyCost)) {
         return;

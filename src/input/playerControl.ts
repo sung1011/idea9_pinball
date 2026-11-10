@@ -1,4 +1,5 @@
 import { clearKitAuras, type BallBody } from '../core/ballBody';
+import { isBrakeConvoyPassenger } from '../core/hookBrakeConvoy';
 import type { CollisionHit } from '../core/collisionDamage';
 import {
   createSkillCaster,
@@ -85,6 +86,7 @@ export function createPlayerControl(initial: HeroId = 'hook', opts: PlayerContro
         dt > 0 &&
         player.stunRemain <= 0 &&
         !caster.isDisplacing() &&
+        !isBrakeConvoyPassenger(player) &&
         player.frictionMul === 1
       ) {
         applyFloorSpeed(player);

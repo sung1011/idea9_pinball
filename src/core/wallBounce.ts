@@ -202,6 +202,25 @@ export function resolveBallBall(a: BallBody, b: BallBody): BallOverlap | null {
   const approaching = rel <= 0;
 
   const overlap = minDist - dist;
+  const aLeader = a.hookBrakeConvoyRemain > 0 && b.hookBrakeConvoyLeaderId === a.id;
+  const bLeader = b.hookBrakeConvoyRemain > 0 && a.hookBrakeConvoyLeaderId === b.id;
+  const sameConvoy =
+    a.hookBrakeConvoyLeaderId > 0 && a.hookBrakeConvoyLeaderId === b.hookBrakeConvoyLeaderId;
+  if (aLeader || bLeader || sameConvoy) {
+    if (aLeader && !bLeader) {
+      b.x += nx * overlap;
+      b.y += ny * overlap;
+    } else if (bLeader && !aLeader) {
+      a.x -= nx * overlap;
+      a.y -= ny * overlap;
+    } else {
+      a.x -= nx * overlap * 0.5;
+      a.y -= ny * overlap * 0.5;
+      b.x += nx * overlap * 0.5;
+      b.y += ny * overlap * 0.5;
+    }
+    return { nx, ny, relSpeed, approaching: false, relVx, relVy };
+  }
   const aLocked = a.pinLocked && a.pinRemain > 0;
   const bLocked = b.pinLocked && b.pinRemain > 0;
   if (aLocked && !bLocked) {

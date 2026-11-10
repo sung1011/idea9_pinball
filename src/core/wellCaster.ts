@@ -20,6 +20,7 @@ import { applySkillDamage } from './skillHits';
 import { pickEnemiesAround, pickEnemiesOnLine, pickNearestEnemy, unitVec } from './skillQuery';
 import { setFacingFrom } from './skillStub';
 import { clearStake, getStake, placeStake, tickStake } from './ropeStakes';
+import { convoyBlocksSkillRelease } from './hookBrakeConvoy';
 import { isInEnemyTrap } from './trapZones';
 import { resolveArenaObstacles } from './wallBounce';
 
@@ -259,6 +260,9 @@ export function createWellCaster(): SkillCaster {
       return;
     }
     const slot = aimingSlot;
+    if (convoyBlocksSkillRelease(ball, slot)) {
+      return;
+    }
     if (cds[slot - 1] > 0) {
       return;
     }

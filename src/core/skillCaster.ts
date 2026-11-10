@@ -42,9 +42,9 @@ import { setFacingFrom } from './skillStub';
 import { isInEnemyTrap } from './trapZones';
 import { resolveArenaObstacles } from './wallBounce';
 import { applyHookBleed } from './hookBleed';
-import { armHookBrakePop, isValidTechEnemy } from './hookBrakePop';
+import { beginHookBrakeConvoy, convoyBlocksSkillRelease, isValidTechEnemy } from './hookBrakeConvoy';
 import { grantHookShoveShield } from './hookShield';
-import { HOOK_BRAKE_TECH, HOOK_PULL_TECH } from './hookTech';
+import { HOOK_PULL_TECH } from './hookTech';
 import { copyCombatTechs, EMPTY_COMBAT_TECHS, type CombatTechSnapshot } from './techIds';
 
 const EPS = 1e-8;
@@ -234,6 +234,9 @@ export function createHookCaster(getTechs?: () => CombatTechSnapshot): SkillCast
       return;
     }
     const slot = aimingSlot;
+    if (convoyBlocksSkillRelease(ball, slot)) {
+      return;
+    }
     if (slot !== 5 && cds[slot - 1] > 0) {
       return;
     }
@@ -485,7 +488,7 @@ export function createHookCaster(getTechs?: () => CombatTechSnapshot): SkillCast
     ball.suppressCombat = true;
   };
 
-  const popBrake = (ball: BallBody): void => {
+  const popBrake = (ball: BallBody, roster: readonly BallBody[]): void => {
     const dir = spearAimDir(ball);
     ball.facingX = dir.x;
     ball.facingY = dir.y;
@@ -493,11 +496,8 @@ export function createHookCaster(getTechs?: () => CombatTechSnapshot): SkillCast
     ball.vy = dir.y * HOOK_BRAKE.popSpeed;
     ball.allowOverCap = true;
     openActiveRam(ball);
-    const charged = brakeElapsed + 1e-9 >= brakeMax * HOOK_BRAKE_TECH.chargeRatio;
-    if (techsOf().brake && charged) {
-      armHookBrakePop(ball);
-    } else {
-      ball.hookBrakePopPending = false;
+    if (techsOf().brake) {
+      beginHookBrakeConvoy(ball, roster);
     }
   };
 
@@ -556,7 +556,7 @@ export function createHookCaster(getTechs?: () => CombatTechSnapshot): SkillCast
       if (brakeRemain <= TIME_EPS) {
         brakeArmed = false;
         brakeRemain = 0;
-        popBrake(ball);
+        popBrake(ball, roster);
       } else {
         ball.frictionMul = HOOK_BRAKE.frictionMul;
       }

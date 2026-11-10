@@ -439,27 +439,59 @@ export function verifyTechTree(): void {
   dead.inPlay = false;
   assert(!grantHookShoveShield(dead), '科技：已死不挂幽灵盾');
 
+  const oldLit = createTechStore(
+    memoryTechStorage({
+      [TECH_SAVE_KEY]: JSON.stringify({ ...emptyTechSave(), points: 77, unlockedHeroes: ['hook'], litTechs: ['hookBrake'] }),
+    }),
+  );
+  assert(oldLit.isTechLit('hookBrake') && oldLit.getState().points === 77, '科技：旧蓄势点亮无损迁移且不重收费');
+  const brakeDef = HOOK_TECH_DEFS.find((item) => item.id === 'hookBrake');
+  assert(!!brakeDef && brakeDef.cost === 50, '科技：蓄势仍 50 点');
+  assert(!!brakeDef && brakeDef.effect.includes('携带') && !brakeDef.effect.includes('80%') && !brakeDef.effect.includes('8 点'), '科技：蓄势描述改为携带，旧 +8/80% 取消');
+  assert(!('extraDamage' in HOOK_BRAKE_TECH) && !('chargeRatio' in HOOK_BRAKE_TECH), '科技：旧追加 8 伤与蓄力门槛常量应删除');
+
   const brakeTech = createSkillCaster('hook', { techs: allTechs });
   const [brRed, brBlue] = redBlue(8, 6, 11.2, 6);
   brRed.vx = 8;
   fire(brakeTech, brRed, 4, 1, 0, [brRed, brBlue]);
   advance(brakeTech, brRed, [brRed, brBlue], HOOK_BRAKE.brakeTime + 0.08);
-  assert(brRed.hookBrakePopPending || brBlue.hp < MAX_HP, '科技：蓄满 80% 弹出应武装或已碰敌');
+  assert(brRed.hookBrakeConvoyRemain > 0 || brRed.activeRamRemain > 0, '科技：点亮后弹出应打开携带/撞窗');
+  const hpAtPop = brBlue.hp;
   let popLeft = 0.3;
-  while (popLeft > 1e-9 && brBlue.hp === MAX_HP) {
+  while (popLeft > 1e-9) {
     const dt = Math.min(1 / 60, popLeft);
     play(brakeTech, brRed, [brRed, brBlue], dt);
     popLeft -= dt;
   }
-  if (brBlue.hp < MAX_HP && brBlue.hp > MAX_HP - HOOK_BRAKE_TECH.extraDamage - 1) {
-    assert(brBlue.hp <= MAX_HP - HOOK_BRAKE_TECH.extraDamage, '科技：首次碰敌应追加 8 伤');
+  assert(brBlue.hp === hpAtPop, '科技：碰敌不再追加 8 伤，新旧不能叠加');
+
+  const allyPop = createSkillCaster('hook', { techs: allTechs });
+  const allyLead = createBallBody({ x: 8, y: 8, color: 1, team: 'red', facingX: 1, vx: 0, vy: 0 });
+  const allyMate = createBallBody({ x: 10.05, y: 8, color: 2, team: 'red', facingX: 1, vx: 0, vy: 0 });
+  allyLead.suppressCombat = true;
+  allyMate.suppressCombat = true;
+  fire(allyPop, allyLead, 4, 1, 0, [allyLead, allyMate]);
+  let waitPop = HOOK_BRAKE.brakeTime + 0.08;
+  let poppedAlly = false;
+  while (waitPop > 1e-9) {
+    const dt = Math.min(1 / 60, waitPop);
+    play(allyPop, allyLead, [allyLead, allyMate], dt);
+    waitPop -= dt;
+    if (allyLead.hookBrakeConvoyRemain > 0 && !poppedAlly) {
+      poppedAlly = true;
+      allyMate.x = allyLead.x + 1.92;
+      allyMate.y = allyLead.y;
+      allyMate.vx = 0;
+      allyMate.vy = 0;
+    }
   }
+  assert(poppedAlly && allyMate.hookBrakeConvoyLeaderId === allyLead.id, '科技：弹出接触友军应携带');
 
   const wallPop = createSkillCaster('hook', { techs: allTechs });
   const wallPopBall = createBallBody({ x: MAP_WIDTH - 1.5, y: 6, color: 1, team: 'red', facingX: 1, vx: 0, vy: 0 });
   fire(wallPop, wallPopBall, 4);
   advance(wallPop, wallPopBall, [wallPopBall], HOOK_BRAKE.brakeTime + 0.2);
-  assert(!wallPopBall.hookBrakePopPending, `科技：先撞墙失去追加资格（pending=${wallPopBall.hookBrakePopPending} x=${wallPopBall.x.toFixed(2)}）`);
+  assert(wallPopBall.hookBrakeConvoyRemain <= 0, `科技：冲锋者撞墙应结束携带窗（remain=${wallPopBall.hookBrakeConvoyRemain} x=${wallPopBall.x.toFixed(2)}）`);
 
   const bot = createSimpleBot(createBallBody({ x: 14, y: 6, color: 1, team: 'blue', facingX: -1 }));
   assert(!(bot.getCaster() as { getHero?: () => string }).getHero || bot.getCaster().getHero() === 'hook', '科技：AI 仍按自身 kit');
@@ -574,6 +606,13 @@ export function verifyTechTree(): void {
     const hookPullItem = [...(slotBox?.querySelectorAll<HTMLButtonElement>('button.techItem') ?? [])].find((btn) =>
       (btn.textContent ?? '').includes('钩矛'),
     );
+    hookPullItem?.click();
+    const brakeItem = [...(slotBox?.querySelectorAll<HTMLButtonElement>('button.techItem') ?? [])].find((btn) =>
+      (btn.textContent ?? '').includes('蓄势'),
+    );
+    brakeItem?.click();
+    const brakeDetail = fit.querySelector('.techDetail')?.textContent ?? '';
+    assert(brakeDetail.includes('携带') && !brakeDetail.includes('80%') && !brakeDetail.includes('追加'), `${label}：蓄势科技应为携带而非旧加伤`);
     hookPullItem?.click();
     const box = techRoot.getBoundingClientRect();
     const hostBox = fit.getBoundingClientRect();
