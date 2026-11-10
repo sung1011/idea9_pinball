@@ -17,6 +17,15 @@ export type BallView = {
 
 const SPEAR_GOLD = 0xffe08a;
 const SHIELD_RIM = 0xf4f0e4;
+/**
+ * 撞后微调仍开 0.3s 强拧窗；青色提示圈不再画到单位身上。
+ * `draw` 必须为 false；色值只给自检对照，禁止再 stroke 到 ball Graphics。
+ */
+export const FINE_TUNE_RING = {
+  draw: false,
+  color: 0x7ee8ff,
+  extraRadius: 0.16,
+} as const;
 /** 本人脚下单层身份圈：奶黄环 + 深棕细描边。半径约盾径 1.3 倍，略大于主体、不放大碰撞。 */
 export const SELF_MARK = {
   /** 旧内环半径，合并单层后不再绘制。 */
@@ -357,9 +366,10 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
       body.circle(0, 0, BALL_RADIUS + 0.08 * SKIN);
       body.stroke({ color: SPEAR_GOLD, width: 0.055 * SKIN, alpha: 0.95 });
     }
-    if (next.fineTuneRemain > 0) {
-      body.circle(0, 0, BALL_RADIUS + 0.16 * SKIN);
-      body.stroke({ color: 0x7ee8ff, width: 0.05 * SKIN, alpha: 0.9 });
+    // fineTuneRemain 只驱动 0.3s 强拧，不再画青色提示圈。
+    if (FINE_TUNE_RING.draw && next.fineTuneRemain > 0) {
+      body.circle(0, 0, BALL_RADIUS + FINE_TUNE_RING.extraRadius * SKIN);
+      body.stroke({ color: FINE_TUNE_RING.color, width: 0.05 * SKIN, alpha: 0.9 });
     }
     if (next.fieldRemain > 0) {
       body.circle(0, 0, BALL_RADIUS + 0.22 * SKIN);

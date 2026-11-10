@@ -32,6 +32,7 @@ import { floatsFromHits, floatsFromShield, resetCombatFloatAcc, takeHealFloats }
 import { createCombatStats } from './core/combatStats';
 import { verifyCombatStats } from './core/verifyCombatStats';
 import { verifySelfMark } from './core/verifySelfMark';
+import { verifyFineTuneRing } from './core/verifyFineTuneRing';
 import { verifyWorldViewLock } from './core/verifyWorldViewLock';
 import { verifyRespawnHud } from './core/verifyRespawnHud';
 import { verifyUlt } from './core/verifyUlt';
@@ -93,6 +94,7 @@ async function boot(): Promise<void> {
   verifyCombatFloat();
   verifyCombatStats();
   verifySelfMark();
+  verifyFineTuneRing();
   verifyWorldViewLock();
   verifyRespawnHud();
   verifyUlt();
