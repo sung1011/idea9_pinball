@@ -3,6 +3,9 @@ import { applyPotionToBall } from './potionField';
 import { applyHpLoss } from './hpLoss';
 import { HOOK_BRAKE, HOOK_PULL, HOOK_SHOVE, HOOK_STAB } from '../heroes/hookKit';
 import { HERO_IDS, heroZh, type HeroId } from '../heroes/heroIds';
+import { skillNames } from '../heroes/kitLabels';
+import { SKILL_ICON_FILES } from '../heroes/skillIcons';
+import { allHeroTechSlots, heroTechSlots, isBuyableTechId, todoSlotId } from './heroTechSlots';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import { createPlayerControl } from '../input/playerControl';
 import { createSkillCaster } from './skillCaster';
@@ -196,6 +199,35 @@ export function verifyTechTree(): void {
   assert(!again.ok && again.code === 'owned', '科技：已点亮不重复扣点');
   const todo = techBag.buyTech('ringGlow' as never);
   assert(!todo.ok, '科技：其他英雄强化不可买');
+  const beforeTodoPts = techBag.getState().points;
+  const beforeTodoLit = techBag.getState().litTechs.join();
+  for (const hero of HERO_IDS) {
+    const names = skillNames(hero);
+    const files = SKILL_ICON_FILES[hero];
+    const slots = heroTechSlots(hero);
+    assert(slots.length === 4, `科技：${heroZh(hero)} 应有四个普通技能槽`);
+    for (let i = 0; i < 4; i += 1) {
+      const slot = slots[i];
+      assert(!!slot && slot.slot === i + 1, `科技：${heroZh(hero)} 槽顺序应为 1–4`);
+      assert(slot.name === names[i], `科技：${heroZh(hero)} 第${i + 1}槽名应为 ${names[i]}`);
+      assert(slot.iconFile === files[i], `科技：${heroZh(hero)} 第${i + 1}槽图标应读现有文件`);
+      assert(!slot.iconUrl.includes('ult') && !/5/.test(slot.iconFile), `科技：${heroZh(hero)} 槽不应混入必杀`);
+      if (hero === 'hook') {
+        assert(slot.kind === 'live' && isBuyableTechId(slot.techId), '科技：钩刺四槽仍是可买科技 ID');
+      } else {
+        assert(slot.kind === 'todo' && slot.techId === todoSlotId(hero, slot.slot), `科技：${heroZh(hero)} 占位键应为 todo`);
+        assert(!isBuyableTechId(slot.techId), `科技：${heroZh(hero)} 占位不能注册成可买科技 ID`);
+        const denied = techBag.buyTech(slot.techId as never);
+        assert(!denied.ok && denied.code === 'todo', `科技：${heroZh(hero)} ${slot.name} 购买路径应拒绝`);
+        const deniedAgain = techBag.buyTech(slot.techId as never);
+        assert(!deniedAgain.ok, `科技：${heroZh(hero)} ${slot.name} 重复购买仍拒绝`);
+      }
+    }
+  }
+  assert(allHeroTechSlots().length === HERO_IDS.length * 4, '科技：七英雄各四槽共 28 槽');
+  assert(allHeroTechSlots().filter((item) => item.kind === 'todo').length === 24, '科技：非钩刺 6×4 全是 todo');
+  assert(techBag.getState().points === beforeTodoPts && techBag.getState().litTechs.join() === beforeTodoLit, '科技：todo 购买不扣点不写解锁');
+  assert(!techBag.getState().unlockedHeroes.includes('ring'), '科技：点 todo 槽不能绕过英雄解锁');
 
   const persistMem = memoryTechStorage({
     [TECH_SAVE_KEY]: JSON.stringify({ ...emptyTechSave(), points: 80, unlockedHeroes: ['hook', 'ring'], litTechs: ['hookPull'] }),
@@ -483,6 +515,41 @@ export function verifyTechTree(): void {
   const storeUi = createTechStore(memoryTechStorage({ [TECH_SAVE_KEY]: JSON.stringify({ ...emptyTechSave(), points: 40 }) }));
   const hudChrome =
     '--hud-pad:8px;--hud-fab:28px;--hud-fab-gap:4px;--hud-safe-top:0px;--hud-safe-right:0px;--hud-safe-bottom:0px;--hud-safe-left:0px';
+  const browse = document.createElement('div');
+  browse.style.cssText = `position:fixed;left:0;top:0;width:1920px;height:1080px;${hudChrome}`;
+  document.body.appendChild(browse);
+  const browsePanel = createTechPanel(browse, { store: storeUi, getPhase: () => 'countdown' });
+  browsePanel.open();
+  const ptsAtBrowse = storeUi.getState().points;
+  for (const hero of HERO_IDS) {
+    const heroBtn = [...browse.querySelectorAll<HTMLButtonElement>('button.techItem')].find(
+      (btn) => btn.dataset.techHero === hero && !btn.dataset.techSlot,
+    );
+    heroBtn?.click();
+    const slotBox = browse.querySelector<HTMLElement>('[data-tech-slots]');
+    assert(slotBox?.dataset.techSlots === hero, `科技：切到${heroZh(hero)}应只显示该英雄槽`);
+    const slotBtns = [...(slotBox?.querySelectorAll<HTMLButtonElement>('button.techItem') ?? [])];
+    assert(slotBtns.length === 4, `科技：${heroZh(hero)} UI 应有四槽`);
+    const shown = slotBtns.map((btn) => btn.querySelector('.techItemName')?.textContent ?? '');
+    assert(shown.join('/') === skillNames(hero).join('/'), `科技：${heroZh(hero)} UI 技能名/顺序应与 kit 一致`);
+    for (let i = 0; i < 4; i += 1) {
+      const img = slotBtns[i]?.querySelector<HTMLImageElement>('img.techItemIcon');
+      assert(!!img?.src.includes(SKILL_ICON_FILES[hero][i] ?? 'missing'), `科技：${heroZh(hero)} 第${i + 1}槽应复用现有图标`);
+      const nameEl = slotBtns[i]?.querySelector<HTMLElement>('.techItemName');
+      assert(!!nameEl && nameEl.scrollWidth <= nameEl.clientWidth + 1, `科技：${heroZh(hero)} 槽名不应遮挡`);
+    }
+    if (hero === 'hook') {
+      continue;
+    }
+    slotBtns[0]?.click();
+    const detail = browse.querySelector('.techDetail')?.textContent ?? '';
+    assert(detail.includes('todo·待开发'), `科技：${heroZh(hero)} 详情应标 todo·待开发`);
+    assert(!detail.includes('消耗30点点亮') && !detail.includes('消耗50点点亮'), `科技：${heroZh(hero)} 详情不应假价格`);
+  }
+  assert(storeUi.getState().points === ptsAtBrowse, '科技：浏览全部 todo 槽不扣点');
+  browsePanel.close();
+  browse.remove();
+
   const assertUiFit = (viewW: number, viewH: number, label: string): void => {
     const fit = document.createElement('div');
     fit.style.cssText = `position:fixed;left:0;top:0;width:${viewW}px;height:${viewH}px;${hudChrome}`;
@@ -502,7 +569,9 @@ export function verifyTechTree(): void {
       fit.remove();
       throw new Error(`${label}：应有科技入口与面板`);
     }
-    const hookPullItem = [...fit.querySelectorAll<HTMLButtonElement>('button.techItem')].find((btn) =>
+    const slotBox = fit.querySelector<HTMLElement>('[data-tech-slots]');
+    assert(slotBox?.dataset.techSlots === 'hook', `${label}：默认应显示钩刺四槽`);
+    const hookPullItem = [...(slotBox?.querySelectorAll<HTMLButtonElement>('button.techItem') ?? [])].find((btn) =>
       (btn.textContent ?? '').includes('钩矛'),
     );
     hookPullItem?.click();
@@ -518,6 +587,29 @@ export function verifyTechTree(): void {
     assert(!fit.querySelector('.techEquip'), `${label}：无装备栏`);
     const buy = [...fit.querySelectorAll<HTMLButtonElement>('button.techBuy')].find((btn) => !btn.disabled);
     assert(!!buy, `${label}：倒计时应可购买`);
+    const ringHeroBtn = [...fit.querySelectorAll<HTMLButtonElement>('button.techItem')].find(
+      (btn) => btn.dataset.techHero === 'ring' && !btn.dataset.techSlot,
+    );
+    ringHeroBtn?.click();
+    const ringSlots = fit.querySelector<HTMLElement>('[data-tech-slots]');
+    assert(ringSlots?.dataset.techSlots === 'ring', `${label}：切磁环应换四槽`);
+    const ringSlotNames = [...(ringSlots?.querySelectorAll('.techItemName') ?? [])].map((n) => n.textContent ?? '');
+    assert(ringSlotNames.join('/') === skillNames('ring').join('/'), `${label}：磁环四槽名/顺序应与现有技能一致`);
+    assert(!(ringSlots?.textContent ?? '').includes('钩矛'), `${label}：切英雄不应残留钩刺槽`);
+    const firstRingSlot = ringSlots?.querySelector<HTMLButtonElement>('button.techItem');
+    firstRingSlot?.click();
+    const ringDetail = fit.querySelector('.techDetail')?.textContent ?? '';
+    assert(ringDetail.includes('todo·待开发'), `${label}：其他英雄槽应标 todo·待开发`);
+    assert(!ringDetail.includes('30点') && !ringDetail.includes('50点') && !ringDetail.includes('消耗30点点亮'), `${label}：todo 槽不应出现假价格`);
+    const todoBuy = fit.querySelector<HTMLButtonElement>('button.techBuy[data-tech-todo]');
+    assert(!!todoBuy?.disabled && todoBuy.textContent === 'todo', `${label}：todo 点亮应禁用`);
+    const ptsBeforeClick = storeUi.getState().points;
+    todoBuy?.click();
+    todoBuy?.click();
+    assert(storeUi.getState().points === ptsBeforeClick, `${label}：重复点 todo 不扣点`);
+    const ringUnlock = fit.querySelector<HTMLButtonElement>('button.techItem[data-tech-hero="ring"]:not([data-tech-slot])');
+    ringUnlock?.click();
+    assert((fit.querySelector('.techDetail')?.textContent ?? '').includes('消耗'), `${label}：未解锁英雄仍可买英雄解锁`);
     settings.open();
     assert(!panel.isOpen() || true, `${label}：设置与科技可并存关闭逻辑`);
     settings.close();

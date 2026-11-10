@@ -747,6 +747,31 @@ canvas {
   cursor: pointer;
   box-shadow: var(--hud-shadow);
   touch-action: manipulation;
+  min-width: 0;
+}
+
+.techItemLead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.techItemIcon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.techItemName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .techItem.isOn,
@@ -767,6 +792,7 @@ canvas {
   color: var(--ink-muted);
   font-weight: 600;
   font-size: 12px;
+  flex: 0 0 auto;
 }
 
 .techDetail {
