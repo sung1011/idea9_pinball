@@ -6,7 +6,7 @@ import { getHookRiderArt, HOOK_RIDER, hookRiderRotation } from './hookRiderArt';
 
 export type BallViewSyncOpts = {
   charging?: boolean;
-  /** 仅本地玩家脚下双环；队友/敌方不要传 true */
+  /** 仅本地玩家脚下单层身份圈；队友/敌方不要传 true */
   selfMark?: boolean;
 };
 
@@ -17,8 +17,9 @@ export type BallView = {
 
 const SPEAR_GOLD = 0xffe08a;
 const SHIELD_RIM = 0xf4f0e4;
-/** 本人脚下双环：奶黄环 + 深棕细描边。外环约盾径 1.3 倍，略大于主体、不放大碰撞。 */
+/** 本人脚下单层身份圈：奶黄环 + 深棕细描边。半径约盾径 1.3 倍，略大于主体、不放大碰撞。 */
 export const SELF_MARK = {
+  /** 旧内环半径，合并单层后不再绘制。 */
   innerRadius: BALL_RADIUS * 1.16,
   outerRadius: BALL_RADIUS * 1.3,
   milk: 0xf6e7a3,
@@ -46,8 +47,8 @@ function unit(x: number, y: number): { x: number; y: number } {
   return { x: x / len, y: y / len };
 }
 
-/** 骑装时的队色描边，画在碰撞圆上，不填充以免挡住人马。红/蓝仍用 ball.color。 */
-function drawTeamRing(g: Graphics, ball: BallBody): void {
+/** 骑装队色描边：保留函数与当前红蓝 ball.color，常驻身份圈改由本人单层奶黄承担，不再套到全体。 */
+export function drawTeamRing(g: Graphics, ball: BallBody): void {
   const alpha = ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
   g.circle(0, 0, BALL_RADIUS);
   g.stroke({ color: ball.color, width: 0.07 * SKIN, alpha: 0.95 * alpha });
@@ -204,9 +205,8 @@ function strokeMilkRing(g: Graphics, radius: number): void {
   g.stroke({ color: SELF_MARK.milk, width: SELF_MARK.band, cap: 'round' });
 }
 
-/** 本人脚下双环。画在主体之下，不进冲锋残影。 */
+/** 本人脚下单层身份圈。画在主体之下，不进冲锋残影。 */
 export function drawSelfMarkRings(g: Graphics): void {
-  strokeMilkRing(g, SELF_MARK.innerRadius);
   strokeMilkRing(g, SELF_MARK.outerRadius);
 }
 
@@ -340,7 +340,6 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
       rider.horse.rotation = rot;
       rider.spear.rotation = rot;
       rider.spear.position.set(dir.x * SPEAR_TIP_DIST, dir.y * SPEAR_TIP_DIST);
-      drawTeamRing(body, next);
     } else {
       drawKnightShield(body, next);
       drawPlume(body, dir.x, dir.y, next.color);
