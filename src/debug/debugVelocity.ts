@@ -1,133 +1,16 @@
-import { openActiveRam, type BallBody } from '../core/ballBody';
-import { BALL_RADIUS, MAP_HEIGHT, SPEED_CAP } from '../core/constants';
-
-export type CollisionTestKind = 'back' | 'side' | 'front' | 'graze';
-
-export type DebugVelocityHandle = {
-  runCollision: (kind: CollisionTestKind) => boolean;
-};
-
-const KEY_TO_KIND: Record<string, CollisionTestKind> = {
-  z: 'back',
-  x: 'side',
-  c: 'front',
-  v: 'graze',
-};
-
-function setFacing(ball: BallBody, dx: number, dy: number): void {
-  const len = Math.hypot(dx, dy);
-  if (len < 1e-6) {
-    return;
-  }
-  const inv = 1 / len;
-  ball.facingX = dx * inv;
-  ball.facingY = dy * inv;
-}
-
-function placeBall(ball: BallBody, x: number, y: number, facingX: number, facingY: number): void {
-  ball.x = x;
-  ball.y = y;
-  ball.vx = 0;
-  ball.vy = 0;
-  ball.facingX = facingX;
-  ball.facingY = facingY;
-  ball.activeRamRemain = 0;
-  ball.spearCdRemain = 0;
-  ball.fineTuneRemain = 0;
-  ball.invincibleRemain = 0;
-  ball.stunRemain = 0;
-  ball.frictionMul = 1;
-  ball.allowOverCap = false;
-  ball.suppressCombat = false;
-}
-
-function impart(ball: BallBody, dx: number, dy: number, speed = SPEED_CAP, ram = true): void {
-  setFacing(ball, dx, dy);
-  ball.vx = ball.facingX * speed;
-  ball.vy = ball.facingY * speed;
-  if (ram) {
-    openActiveRam(ball);
-  }
-}
-
-function debugPair(balls: BallBody[]): [BallBody, BallBody] | null {
-  const a = balls.find((ball) => ball.team === 'red') ?? balls[0];
-  const b = balls.find((ball) => ball.team === 'blue' || ball !== a);
-  return a && b && a !== b ? [a, b] : null;
-}
-
-/** 碰撞测：Z 背刺 / X 侧身圆蹭不掉血 / C 枪尖对戳 / V 同向轻蹭。双方在场才生效。 */
-export function applyCollisionTest(
-  balls: readonly BallBody[],
-  kind: CollisionTestKind,
-  onPairDebug?: () => void,
-): boolean {
-  const pair = debugPair(balls as BallBody[]);
-  if (!pair || !pair[0].inPlay || !pair[1].inPlay) {
-    return false;
-  }
-  onPairDebug?.();
-  const midY = MAP_HEIGHT / 2;
-  const skin = BALL_RADIUS / 0.5;
-  if (kind === 'front') {
-    placeBall(pair[0], 10 - 1.3 * skin, midY, 1, 0);
-    placeBall(pair[1], 10 + 1.3 * skin, midY, -1, 0);
-    impart(pair[0], 1, 0);
-    impart(pair[1], -1, 0);
-    return true;
-  }
-  if (kind === 'back') {
-    placeBall(pair[0], 10 - 1.3 * skin, midY, 1, 0);
-    placeBall(pair[1], 10 + 1.3 * skin, midY, 1, 0);
-    impart(pair[0], 1, 0);
-    return true;
-  }
-  if (kind === 'side') {
-    placeBall(pair[0], 8.8, midY - 0.7, 1, 0);
-    placeBall(pair[1], 10.2, midY + 0.6, 1, 0);
-    impart(pair[0], 1, 0);
-    impart(pair[1], 1, 0, 2.5, false);
-    return true;
-  }
-  placeBall(pair[0], 9.5, midY, 1, 0);
-  placeBall(pair[1], 9.5 + 0.85 * skin, midY + 0.5 * skin, 1, 0);
-  impart(pair[0], 1, 0, 2.5, false);
-  impart(pair[1], 1, 0, 2.5, false);
-  return true;
-}
-
-/** 调试：Z 背刺 / X 侧蹭 / C 对戳 / V 同向轻蹭（GM 开时）；R 只重开，正式也可用。 */
-export function bindDebugVelocity(opts: {
-  balls: BallBody[];
-  onReset?: () => void;
-  onPairDebug?: () => void;
-  isGmOn?: () => boolean;
-}): DebugVelocityHandle {
-  const runCollision = (kind: CollisionTestKind): boolean =>
-    applyCollisionTest(opts.balls, kind, opts.onPairDebug);
-
+/** `R` 只重开一局（正式可用）。旧 GM 碰撞测快捷键已移除。 */
+export function bindDebugVelocity(opts: { onReset?: () => void }): () => void {
   const onKey = (ev: KeyboardEvent): void => {
     if (ev.repeat) {
       return;
     }
-    const key = ev.key.toLowerCase();
-    if (key === 'r') {
-      ev.preventDefault();
-      opts.onReset?.();
-      return;
-    }
-    if (!(opts.isGmOn?.() ?? true)) {
-      return;
-    }
-    const kind = KEY_TO_KIND[key];
-    if (!kind) {
+    if (ev.key.toLowerCase() !== 'r') {
       return;
     }
     ev.preventDefault();
-    runCollision(kind);
+    opts.onReset?.();
   };
 
   window.addEventListener('keydown', onKey);
-
-  return { runCollision };
+  return () => window.removeEventListener('keydown', onKey);
 }

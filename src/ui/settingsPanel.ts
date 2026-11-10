@@ -1,6 +1,3 @@
-import { loadGmEnabled, saveGmEnabled } from '../debug/gmState';
-import type { CollisionTestKind } from '../debug/debugVelocity';
-import type { TeamId } from '../core/ballBody';
 import {
   DEFAULT_MATCH_MODE,
   isMatchModeId,
@@ -18,7 +15,6 @@ export type SettingsPanel = {
   open: () => void;
   close: () => void;
   isOpen: () => boolean;
-  isGmOn: () => boolean;
   setHero: (hero: HeroId) => void;
   setMode: (mode: MatchModeId) => void;
 };
@@ -29,11 +25,8 @@ export type SettingsActions = {
   onRestart: () => void;
   /** 硬刷新当前页；不清存档、不重开本局。 */
   onReload: () => void;
-  onCollision: (kind: CollisionTestKind) => void;
-  onScore: (team: TeamId, points: number) => void;
-  onAdvance: (sec: number) => void;
-  onJumpClock: (sec: number) => void;
-  onForceRespawn: () => void;
+  /** 仅 GM 页「科技点 +1」。成功才返回 true，失败不得假报。 */
+  onGrantTechPoint?: () => boolean;
   getHero?: () => HeroId;
   onPickHero?: (hero: HeroId) => void;
   getMode?: () => MatchModeId;
@@ -43,7 +36,6 @@ export type SettingsActions = {
   onPractice?: () => void;
   onEndPractice?: () => void;
   onOpenTech?: () => void;
-  onSwapHero?: () => void;
   versions: AppVersions;
 };
 
@@ -72,8 +64,8 @@ function addHint(host: HTMLElement, text: string): void {
 
 /** 右上角齿轮：常规 / 版本 / GM。点空白关。与 `?` 说明卡分开。 */
 export function createSettingsPanel(host: HTMLElement, actions: SettingsActions): SettingsPanel {
-  let gmOn = loadGmEnabled();
   let tab: SettingsTab = 'general';
+  let granting = false;
 
   const fab = el('button', 'settingsFab');
   fab.type = 'button';
@@ -138,12 +130,6 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
   };
 
   const isOpen = (): boolean => overlay.classList.contains('isOn');
-
-  const setGm = (on: boolean): void => {
-    gmOn = on;
-    saveGmEnabled(on);
-    render();
-  };
 
   const renderGeneral = (): void => {
     const currentMode = actions.getMode?.() ?? DEFAULT_MATCH_MODE;
@@ -264,7 +250,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。瞄准中触屏点空白即瞄向并释放，滑动只改朝向。右键 / Esc 取消瞄准。');
     addHint(
       body,
-      '本机固定 2v2。开局与每次 R：队友和两名敌方从含镜卫全池均匀随机（可重复）。常规页「玩法」可切八杀 / 占点，记住上次所选；换玩法立刻重开倒计时（重开不发科技点）。常规页「我的英雄」只列已解锁英雄；钩刺免费，其他用科技点解锁。练习可试用全部英雄，不解锁也不发点。不能换队友。进度只存在本机。GM 开时按 H 只循环已解锁英雄。',
+      '本机固定 2v2。开局与每次 R：队友和两名敌方从含镜卫全池均匀随机（可重复）。常规页「玩法」可切八杀 / 占点，记住上次所选；换玩法立刻重开倒计时（重开不发科技点）。常规页「我的英雄」只列已解锁英雄；钩刺免费，其他用科技点解锁。练习可试用全部英雄，不解锁也不发点。不能换队友。进度只存在本机。设置 GM 页可点「科技点 +1」。',
     );
   };
 
@@ -324,68 +310,39 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     }
   };
 
-  const gmBtn = (label: string, onClick: () => void): HTMLButtonElement => {
-    const btn = el('button', 'settingsGmBtn', label);
-    btn.type = 'button';
-    btn.disabled = !gmOn;
-    btn.addEventListener('click', (ev) => {
-      ev.preventDefault();
-      if (!gmOn) {
-        return;
-      }
-      onClick();
-    });
-    return btn;
-  };
-
-  const addGmGroup = (titleText: string, buttons: HTMLButtonElement[]): void => {
-    const group = el('section', 'settingsGmGroup');
-    group.appendChild(el('h3', 'settingsGmTitle', titleText));
-    const grid = el('div', 'settingsGmGrid');
-    for (const btn of buttons) {
-      grid.appendChild(btn);
-    }
-    group.append(grid);
-    body.appendChild(group);
+  const spawnGmFloat = (row: HTMLElement): void => {
+    const node = el('span', 'settingsGmFloat', '科技点 +1');
+    node.setAttribute('aria-live', 'polite');
+    node.addEventListener('animationend', () => node.remove());
+    row.appendChild(node);
   };
 
   const renderGm = (): void => {
-    const toggleRow = el('label', 'settingsSwitch');
-    const toggleText = el('span', '', 'GM 调试');
-    const toggle = document.createElement('input');
-    toggle.type = 'checkbox';
-    toggle.checked = gmOn;
-    toggle.setAttribute('aria-label', 'GM 调试');
-    toggle.addEventListener('change', () => {
-      setGm(toggle.checked);
+    const row = el('div', 'settingsGmGrant');
+    const btn = el('button', 'settingsGmBtn', '科技点 +1');
+    btn.type = 'button';
+    btn.setAttribute('data-touch-control', '');
+    btn.setAttribute('data-gm-grant', 'tech-plus-one');
+    btn.setAttribute('aria-label', '科技点 +1');
+    btn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (granting) {
+        return;
+      }
+      granting = true;
+      let ok = false;
+      try {
+        ok = !!actions.onGrantTechPoint?.();
+      } finally {
+        granting = false;
+      }
+      if (ok) {
+        spawnGmFloat(row);
+      }
     });
-    toggleRow.append(toggleText, toggle);
-    body.appendChild(toggleRow);
-    addHint(body, gmOn ? '调试键已开：Z/X/C/V · F/G · T/Y · H 循环钩刺/磁环/链生/钉壳/闪弧/井绳/镜卫。' : 'GM 关：调试键无效，R 仍可重开。');
-
-    addGmGroup('碰撞测', [
-      gmBtn('背刺 Z', () => actions.onCollision('back')),
-      gmBtn('侧蹭 X', () => actions.onCollision('side')),
-      gmBtn('对戳 C', () => actions.onCollision('front')),
-      gmBtn('同向蹭 V', () => actions.onCollision('graze')),
-    ]);
-    addGmGroup('分数', [
-      gmBtn('红 +10 F', () => actions.onScore('red', 10)),
-      gmBtn('蓝 +10 G', () => actions.onScore('blue', 10)),
-      gmBtn('红 -10', () => actions.onScore('red', -10)),
-      gmBtn('蓝 -10', () => actions.onScore('blue', -10)),
-    ]);
-    addGmGroup('时钟', [
-      gmBtn('跳 30s T', () => actions.onAdvance(30)),
-      gmBtn('剩 1s Y', () => actions.onJumpClock(1)),
-    ]);
-    addGmGroup('回场', [gmBtn('立即回场', () => actions.onForceRespawn())]);
-    addGmGroup('英雄', [
-      gmBtn(`换英雄 H · 当前${heroZh(actions.getHero?.() ?? 'hook')}`, () => {
-        actions.onSwapHero?.();
-        render();
-      }),
-    ]);
+    row.appendChild(btn);
+    body.appendChild(row);
   };
 
   const render = (): void => {
@@ -449,7 +406,6 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     open,
     close,
     isOpen,
-    isGmOn: () => gmOn,
     setHero(hero) {
       const pick = body.querySelector<HTMLSelectElement>('select.settingsHeroPick');
       if (pick) {

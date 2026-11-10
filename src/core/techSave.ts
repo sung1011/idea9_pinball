@@ -50,6 +50,20 @@ export type TechGrantResult = {
   duplicate: boolean;
 };
 
+export type TechPointGrantOk = {
+  ok: true;
+  amount: number;
+  balance: number;
+};
+
+export type TechPointGrantFail = {
+  ok: false;
+  code: 'readonly' | 'write' | 'invalid';
+  message: string;
+};
+
+export type TechPointGrantResult = TechPointGrantOk | TechPointGrantFail;
+
 export type TechLoadStatus = {
   ok: boolean;
   writable: boolean;
@@ -66,6 +80,7 @@ export type TechStore = {
   techCost: (id: HookTechId) => number;
   buyHero: (hero: HeroId) => TechBuyResult;
   buyTech: (id: HookTechId) => TechBuyResult;
+  grantPoints: (amount: number) => TechPointGrantResult;
   grantMatchReward: (input: MatchRewardInput) => TechGrantResult;
   status: () => TechLoadStatus;
   subscribe: (listener: () => void) => () => void;
@@ -329,6 +344,24 @@ export function createTechStore(storage: TechStorage = browserTechStorage(), key
         return fail('write', '写入失败，未扣点也未解锁');
       }
       return { ok: true, state: cloneState(state), spent: cost, kind: 'hero', id: hero };
+    },
+    grantPoints(amount) {
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return { ok: false, code: 'invalid' as const, message: '非法点数' };
+      }
+      const add = Math.floor(amount);
+      if (add <= 0) {
+        return { ok: false, code: 'invalid' as const, message: '非法点数' };
+      }
+      if (!writable) {
+        return { ok: false, code: 'readonly' as const, message: message || '存档不可写入，未加点' };
+      }
+      const next = cloneState(state);
+      next.points = Math.min(MAX_POINTS, next.points + add);
+      if (!persist(next)) {
+        return { ok: false, code: 'write' as const, message: '写入失败，未加点' };
+      }
+      return { ok: true, amount: add, balance: state.points };
     },
     buyTech(id) {
       if (!isHookTechId(id)) {

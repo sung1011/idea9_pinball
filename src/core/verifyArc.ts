@@ -119,9 +119,9 @@ export function verifyArc(): void {
   assert(ARC_MARK.duration === 6 && ARC_MARK.extra === 14, '闪弧：标记应为 6s / 额外14');
   assert(ARC_PHASE.cd === 14 && ARC_PHASE.duration === 2.4 && ARC_PHASE.minSpeed === 6, '闪弧：虚晃应为 CD14 / 2.4s / 结束速≥6');
   assert(ARC_PHASE.ramWindow === 0.2, '闪弧：虚晃达标后撞窗应为 0.2s');
-  assert(nextHero('hook') === 'ring' && nextHero('ring') === 'chain', '闪弧：H 循环前段钩刺→磁环→链生');
-  assert(nextHero('chain') === 'nail' && nextHero('nail') === 'arc', '闪弧：H 循环应接到钉壳再接到闪弧');
-  assert(nextHero('arc') === 'well', '闪弧：H 循环闪弧后接到井绳');
+  assert(nextHero('hook') === 'ring' && nextHero('ring') === 'chain', '闪弧：英雄循环前段钩刺→磁环→链生');
+  assert(nextHero('chain') === 'nail' && nextHero('nail') === 'arc', '闪弧：英雄循环应接到钉壳再接到闪弧');
+  assert(nextHero('arc') === 'well', '闪弧：英雄循环闪弧后接到井绳');
 
   const behind = behindEnemyPos(12, 6, -1, 0, BALL_RADIUS, BALL_RADIUS);
   assert(Math.abs(behind.x - (12 + BALL_RADIUS + BALL_RADIUS + ARC_SIDESTEP.behindPad)) < 1e-6, '闪弧：贴背应在敌朝向反侧短距');

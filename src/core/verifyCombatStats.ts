@@ -483,11 +483,6 @@ export function verifyCombatStats(): void {
   createSettingsPanel(host, {
     onRestart: () => {},
     onReload: () => {},
-    onCollision: () => {},
-    onScore: () => {},
-    onAdvance: () => {},
-    onJumpClock: () => {},
-    onForceRespawn: () => {},
     versions: dummyVersions(),
   });
   applyStageVars(host, computeLandscapeStage(1920, 1080, { top: 0, right: 0, bottom: 0, left: 0 }));

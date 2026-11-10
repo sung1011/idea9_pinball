@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.59-gm-tech-plus-one",
+    "version": "0.0.59",
+    "date": "2026-11-10",
+    "summary": "设置 GM 页只留「科技点 +1」；去掉旧调试按钮、开关与 Z/X/C/V/F/G/T/Y/H，R 与常规设置/科技/玩法不变"
+  },
+  {
     "id": "v0.0.58-hook-brake-convoy",
     "version": "0.0.58",
     "date": "2026-11-10",

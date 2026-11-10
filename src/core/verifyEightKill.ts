@@ -483,11 +483,6 @@ export function verifyEightKill(): void {
   const settings = createSettingsPanel(host, {
     onRestart: () => {},
     onReload: () => {},
-    onCollision: () => {},
-    onScore: () => {},
-    onAdvance: () => {},
-    onJumpClock: () => {},
-    onForceRespawn: () => {},
     getMode: () => modeState.mode,
     onPickMode: (mode) => {
       modePicks += 1;

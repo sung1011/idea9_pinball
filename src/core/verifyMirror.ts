@@ -116,7 +116,7 @@ export function verifyMirror(): void {
   assert(MIRROR_SHATTER.cd === 10 && MIRROR_SHATTER.selfDamage === 24, '镜卫：裂镜应为 CD10 / 自伤24');
   assert(MIRROR_SHATTER.splash === 12, '镜卫：裂镜溅射应为 12');
   assert(MIRROR_WALL.cd === 14 && MIRROR_WALL.duration === 2.5, '镜卫：镜壁应为 CD14 / 2.5s');
-  assert(nextHero('well') === 'mirror' && nextHero('mirror') === 'hook', '镜卫：H 循环井绳→镜卫→钩刺');
+  assert(nextHero('well') === 'mirror' && nextHero('mirror') === 'hook', '镜卫：英雄循环井绳→镜卫→钩刺');
 
   resetTrapZones();
   resetMirrorWalls();

@@ -43,22 +43,22 @@ import { verifyAimStick } from './core/verifyAimStick';
 import { verifyHookRider } from './core/verifyHookRider';
 import { verifyHookRiderRun } from './core/verifyHookRiderRun';
 import { verifyTechTree } from './core/verifyTechTree';
+import { verifyGm } from './core/verifyGm';
 import { verifyHookBrakeConvoy } from './core/verifyHookBrakeConvoy';
 import { creditUltCombat } from './core/ultEnergy';
 import { resetMagnetWells } from './core/magnetWells';
 import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
-import { nextHero, type HeroId } from './heroes/heroIds';
+import { type HeroId } from './heroes/heroIds';
 import { loadLastHeroId, saveLastHeroId } from './heroes/lastHeroId';
 import { clearHookBleeds } from './core/hookBleed';
 import { takeHookShieldGrants } from './core/hookShield';
-import { nextUnlockedHero, EMPTY_COMBAT_TECHS, type CombatTechSnapshot } from './core/techIds';
+import { EMPTY_COMBAT_TECHS, type CombatTechSnapshot } from './core/techIds';
 import { createTechStore } from './core/techSave';
 import { createTechPanel } from './ui/techPanel';
 import type { ResultTechInfo } from './ui/resultPanel';
 import { createFieldOverlay } from './render/fieldOverlay';
-import { bindDebugMatch } from './debug/debugMatch';
 import { bindDebugVelocity } from './debug/debugVelocity';
 import { applyOpeningCharge } from './core/openingCharge';
 import { createActionBus, isAimUiTarget } from './input/actionBus';
@@ -117,7 +117,9 @@ async function boot(): Promise<void> {
   verifyAimStick();
   verifyHookRider();
   verifyTechTree();
+  verifyGm();
   verifyHookBrakeConvoy();
+  document.documentElement.dataset.verifyBoot = 'ok';
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -298,11 +300,6 @@ async function boot(): Promise<void> {
     );
   };
 
-  const swapPlayerHero = (): void => {
-    const next = practice ? nextHero(player.hero) : nextUnlockedHero(player.hero, techStore.getState().unlockedHeroes);
-    applyPlayerHero(next);
-  };
-
   let applyMatchMode = (_mode: MatchModeId): void => {};
 
   const combatStats = createCombatStats();
@@ -350,30 +347,10 @@ async function boot(): Promise<void> {
   const resultPanel = createResultPanel(host, restart);
   resultPanel.sync(match.snapshot());
 
-  const onPairDebug = (): void => {
-    resetTrapZones();
-    resetMagnetWells();
-    resetChainEqualize();
-    resetStakes();
-    resetMirrorWalls();
-    resetBoomFlashes();
-    resetCombatFloatAcc();
-    combatFloats.clear();
-    control.reset();
-    for (const { ai } of botHandles) {
-      ai.reset();
-    }
-  };
-
-  let settingsIsGmOn = (): boolean => true;
   let settingsClose = (): void => {};
-  const debug = bindDebugVelocity({
-    balls,
+  bindDebugVelocity({
     onReset: restart,
-    onPairDebug,
-    isGmOn: () => settingsIsGmOn(),
   });
-  bindDebugMatch(match, { isGmOn: () => settingsIsGmOn(), onSwapHero: swapPlayerHero });
 
   let techClose = (): void => {};
   let techOpen = (): void => {};
@@ -431,24 +408,8 @@ async function boot(): Promise<void> {
       restart();
     },
     onOpenTech: () => techOpen(),
-    onSwapHero: swapPlayerHero,
-    onCollision: (kind) => {
-      debug.runCollision(kind);
-    },
-    onScore: (team, points) => {
-      match.debugAddScore(team, points);
-    },
-    onAdvance: (sec) => {
-      match.debugAdvance(sec);
-    },
-    onJumpClock: (sec) => {
-      match.debugJumpClock(sec);
-    },
-    onForceRespawn: () => {
-      match.debugForceRespawn();
-    },
+    onGrantTechPoint: () => techStore.grantPoints(1).ok,
   });
-  settingsIsGmOn = () => settings.isGmOn();
   settingsClose = settings.close;
   settingsSetHero = (hero) => settings.setHero(hero);
   settingsSetMode = (mode) => settings.setMode(mode);

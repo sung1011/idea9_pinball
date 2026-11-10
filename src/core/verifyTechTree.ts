@@ -137,11 +137,6 @@ function settingsActs() {
   return {
     onRestart: () => {},
     onReload: () => {},
-    onCollision: () => {},
-    onScore: () => {},
-    onAdvance: () => {},
-    onJumpClock: () => {},
-    onForceRespawn: () => {},
     versions: dummyVersions(),
   };
 }

@@ -51,7 +51,7 @@ function sample(partial: Partial<ActionSample> = {}): ActionSample {
   };
 }
 
-/** 设置常规页只换自己英雄；无队友入口；H 循环只跟自己；换 kit 不清血量/位置/编号。 */
+/** 设置常规页只换自己英雄；无队友入口；换 kit 不清血量/位置/编号。 */
 export function verifyHeroPick(): void {
   assert(HERO_IDS.length === 7, '换英雄：池应为 7 人');
   assert(HERO_IDS.every((id) => isHeroId(id)), '换英雄：池内 id 应全部合法');
@@ -71,11 +71,6 @@ export function verifyHeroPick(): void {
   const settings = createSettingsPanel(host, {
     onRestart: () => {},
     onReload: () => {},
-    onCollision: () => {},
-    onScore: () => {},
-    onAdvance: () => {},
-    onJumpClock: () => {},
-    onForceRespawn: () => {},
     getHero: () => state.hero,
     getUnlockedHeroes: () => unlocked,
     onPickHero: (next) => {
@@ -181,8 +176,8 @@ export function verifyHeroPick(): void {
   state.hero = nextHero(state.hero);
   settings.setHero(state.hero);
   const afterSwap = host.querySelector<HTMLSelectElement>('select.settingsHeroPick');
-  assert(state.hero === 'hook' && afterSwap?.value === 'hook', '换英雄：H 循环后选择应跟到钩刺');
-  assert(state.ally === 'chain', '换英雄：H 循环只跟自己');
+  assert(state.hero === 'hook' && afterSwap?.value === 'hook', '换英雄：外部改英雄后选择应跟到钩刺');
+  assert(state.ally === 'chain', '换英雄：改自己不应改队友');
   assert(!host.querySelector('[aria-label="切换队友英雄"]'), '换英雄：不应提供队友选择');
   host.remove();
 

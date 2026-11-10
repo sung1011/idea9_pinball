@@ -362,11 +362,6 @@ export function verifyHudLayout(): void {
     onReload: () => {
       reloads += 1;
     },
-    onCollision: () => {},
-    onScore: () => {},
-    onAdvance: () => {},
-    onJumpClock: () => {},
-    onForceRespawn: () => {},
     getMode: () => modeState.mode,
     onPickMode: (mode) => {
       modePicks += 1;
@@ -423,16 +418,17 @@ export function verifyHudLayout(): void {
   const beforeGm = modePicks;
   const gmTab = [...host.querySelectorAll<HTMLElement>('.settingsTab')].find((el) => el.dataset.tab === 'gm');
   gmTab?.click();
-  const gmToggle = host.querySelector<HTMLInputElement>('input[aria-label="GM 调试"]');
-  if (!gmToggle) {
-    throw new Error('HUD：GM 页应有调试开关');
+  const gmGrant = host.querySelector<HTMLButtonElement>('[data-gm-grant="tech-plus-one"]');
+  if (!gmGrant) {
+    throw new Error('HUD：GM 页应有科技点 +1');
   }
-  gmToggle.checked = !gmToggle.checked;
-  gmToggle.dispatchEvent(new Event('change', { bubbles: true }));
+  assert(gmGrant.textContent === '科技点 +1', 'HUD：GM 按钮文案应为科技点 +1');
+  assert(!host.querySelector('input[aria-label="GM 调试"]'), 'HUD：GM 页不应再有调试开关');
+  gmGrant.click();
   const generalTab = [...host.querySelectorAll<HTMLElement>('.settingsTab')].find((el) => el.dataset.tab === 'general');
   generalTab?.click();
   const modeAfterGm = host.querySelector<HTMLSelectElement>('select.settingsModePick');
-  assert(modeAfterGm?.value === 'eightKill' && modePicks === beforeGm, 'HUD：开关 GM 不应重置玩法');
+  assert(modeAfterGm?.value === 'eightKill' && modePicks === beforeGm, 'HUD：点 GM 加点不应重置玩法');
   assert(heroPick.options.length === 7, 'HUD：设置常规页应有我的英雄七人选择');
   assert(heroLabel === '我的英雄', 'HUD：常规页选择标签应为我的英雄');
   assert(isAimUiTarget(heroPick), 'HUD：点设置英雄选择不应抢 Aim');
@@ -457,6 +453,7 @@ export function verifyHudLayout(): void {
   assert(!helpCopy.includes('左上最上方可切'), 'HUD：说明卡不应再写左上切玩法');
   assert(helpCopy.includes('设置常规页「玩法」可切「八杀 / 占点」'), 'HUD：说明卡应写从常规页切玩法');
   assert(helpCopy.includes('设置常规页可换自己的英雄'), 'HUD：说明卡应写从常规页换自己');
+  assert(!helpCopy.includes('GM H'), 'HUD：说明卡不应再写 GM H');
   assert(helpCopy.includes('瞄准摇杆'), 'HUD：说明卡应提到触屏左下瞄准摇杆');
   assert(helpCopy.includes('顶右「科」'), 'HUD：说明卡应写科技入口');
   assert(!settingsHint.includes('左上可换自己或队友'), 'HUD：常规页提示不应再写左上换队友');
@@ -532,11 +529,6 @@ export function verifyHudLayout(): void {
     const fitSettings = createSettingsPanel(fitHost, {
       onRestart: () => {},
       onReload: () => {},
-      onCollision: () => {},
-      onScore: () => {},
-      onAdvance: () => {},
-      onJumpClock: () => {},
-      onForceRespawn: () => {},
       getMode: () => 'eightKill',
       versions: dummyVersions(),
     });

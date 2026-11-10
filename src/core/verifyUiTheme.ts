@@ -118,11 +118,6 @@ export function verifyUiTheme(): void {
   const settings = createSettingsPanel(host, {
     onRestart: () => {},
     onReload: () => {},
-    onCollision: () => {},
-    onScore: () => {},
-    onAdvance: () => {},
-    onJumpClock: () => {},
-    onForceRespawn: () => {},
     versions: dummyVersions(),
   });
   const resultUi = createResultPanel(host, () => {});
@@ -335,19 +330,18 @@ export function verifyUiTheme(): void {
   flashProbe.remove();
 
   gmTab?.click();
-  const gmTitle = host.querySelector<HTMLElement>('.settingsGmTitle');
   const gmBtn = host.querySelector<HTMLElement>('.settingsGmBtn');
-  const gmSwitch = host.querySelector<HTMLElement>('.settingsSwitch');
-  if (!gmTitle || !gmBtn || !gmSwitch) {
+  if (!gmBtn) {
     host.remove();
-    throw new Error('浮层换皮：GM 页应有分组标题、按钮与开关');
+    throw new Error('浮层换皮：GM 页应有科技点 +1 按钮');
   }
-  assert(sameCssColor(color(gmTitle, 'color'), UI_THEME.inkMuted), 'GM 分组：ink_muted');
+  assert(gmBtn.textContent === '科技点 +1', 'GM 按钮：文案');
+  assert(!host.querySelector('.settingsSwitch'), 'GM 页：不应再有调试开关');
+  assert(!host.querySelector('.settingsGmTitle'), 'GM 页：不应再有旧分组标题');
   assert(sameCssColor(color(gmBtn, 'backgroundColor'), UI_THEME.buttonIdle), 'GM 按钮：button_idle');
   assert(sameCssColor(getComputedStyle(gmBtn).borderTopColor, UI_THEME.woodFrame), 'GM 按钮：木框');
   assert(sameCssColor(color(gmBtn, 'color'), UI_THEME.ink), 'GM 按钮：ink');
   assert(!cssColorHasGold(color(gmBtn, 'color')) && !cssColorHasGold(getComputedStyle(gmBtn).borderTopColor), 'GM 按钮：无金闪');
-  assert(sameCssColor(color(gmSwitch, 'color'), UI_THEME.ink), 'GM 开关文：ink');
   settings.close();
 
   resultUi.sync(dummyResultSnap({ winner: 'red' }));
