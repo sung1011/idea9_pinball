@@ -21,16 +21,17 @@ export function formatRespawnNeed(remain: number): string {
 
 function formatClock(snap: MatchSnapshot): string {
   if (snap.phase === 'countdown') {
-    return `开战 ${Math.max(1, Math.ceil(snap.timeLeft))}`;
+    const n = `开战 ${Math.max(1, Math.ceil(snap.timeLeft))}`;
+    return snap.practice ? `练习 ${n}` : n;
   }
   if (snap.phase === 'result') {
     if (snap.winner === 'red') {
-      return '红方胜';
+      return snap.practice ? '练习 红方胜' : '红方胜';
     }
     if (snap.winner === 'blue') {
-      return '蓝方胜';
+      return snap.practice ? '练习 蓝方胜' : '蓝方胜';
     }
-    return '结束';
+    return snap.practice ? '练习 结束' : '结束';
   }
   if (snap.phase === 'overtime' && snap.suddenDeath) {
     return '下次击破';
@@ -39,7 +40,8 @@ function formatClock(snap: MatchSnapshot): string {
   const m = Math.floor(total / 60);
   const s = total % 60;
   const clock = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  return snap.phase === 'overtime' ? `加时 ${clock}` : clock;
+  const label = snap.phase === 'overtime' ? `加时 ${clock}` : clock;
+  return snap.practice ? `练习 ${label}` : label;
 }
 
 function makeSep(): HTMLSpanElement {

@@ -93,7 +93,7 @@ canvas {
   gap: 8px;
   min-height: 28px;
   max-width: calc(100% - 2 * max(
-    calc(var(--hud-safe-right) + var(--hud-pad) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px)),
+    calc(var(--hud-safe-right) + var(--hud-pad) + (var(--hud-fab, 28px) + var(--hud-fab-gap, 4px)) * 3),
     calc(var(--hud-safe-left) + var(--hud-pad))
   ));
   box-sizing: border-box;
@@ -233,7 +233,8 @@ canvas {
 }
 
 .helpFab,
-.settingsFab {
+.settingsFab,
+.techFab {
   position: absolute;
   top: calc(var(--hud-safe-top) + var(--hud-pad));
   width: var(--hud-fab, 28px);
@@ -262,6 +263,10 @@ canvas {
   right: calc(var(--hud-safe-right) + var(--hud-pad) + var(--hud-fab, 28px) + var(--hud-fab-gap, 4px));
 }
 
+.techFab {
+  right: calc(var(--hud-safe-right) + var(--hud-pad) + (var(--hud-fab, 28px) + var(--hud-fab-gap, 4px)) * 2);
+}
+
 .settingsFab svg {
   display: block;
 }
@@ -271,7 +276,10 @@ canvas {
 .helpFab:active,
 .settingsFab.isOn,
 .settingsFab:hover,
-.settingsFab:active {
+.settingsFab:active,
+.techFab.isOn,
+.techFab:hover,
+.techFab:active {
   background: var(--button-pressed);
   border-color: var(--wood-frame-dark);
   color: var(--ink);
@@ -280,7 +288,8 @@ canvas {
 
 .helpOverlay,
 .resultOverlay,
-.settingsOverlay {
+.settingsOverlay,
+.techOverlay {
   display: none;
   position: absolute;
   inset: 0;
@@ -293,18 +302,24 @@ canvas {
 
 .helpOverlay,
 .resultOverlay,
-.settingsOverlay {
+.settingsOverlay,
+.techOverlay {
   background: rgba(47, 36, 26, 0.48);
 }
 
 .helpOverlay.isOn,
 .resultOverlay.isOn,
-.settingsOverlay.isOn {
+.settingsOverlay.isOn,
+.techOverlay.isOn {
   display: flex;
 }
 
 .settingsOverlay {
   z-index: 26;
+}
+
+.techOverlay {
+  z-index: 27;
 }
 
 .resultOverlay {
@@ -313,7 +328,8 @@ canvas {
 
 .helpCard,
 .resultPanel,
-.settingsPanel {
+.settingsPanel,
+.techPanel {
   position: relative;
   width: min(420px, 92vw);
   max-height: min(86vh, 640px);
@@ -323,9 +339,15 @@ canvas {
   font: 14px/1.5 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
 }
 
+.techPanel {
+  width: min(520px, 94vw);
+  max-height: min(86vh, 700px);
+}
+
 .helpCard,
 .resultPanel,
-.settingsPanel {
+.settingsPanel,
+.techPanel {
   background-color: var(--parchment-base);
   background-image: linear-gradient(180deg, var(--parchment-highlight) 0%, transparent 42%);
   border: 2px solid var(--wood-frame);
@@ -337,7 +359,8 @@ canvas {
   overflow: hidden;
 }
 
-.helpCardHead {
+.helpCardHead,
+.techHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -345,7 +368,8 @@ canvas {
 }
 
 .helpCard h2,
-.settingsTitle {
+.settingsTitle,
+.techTitle {
   margin: 0;
   font-size: 22px;
   color: var(--ink);
@@ -358,7 +382,8 @@ canvas {
 
 .helpCardClose,
 .settingsClose,
-.resultPanelClose {
+.resultPanelClose,
+.techClose {
   width: 32px;
   height: 32px;
   border: 2px solid var(--wood-frame);
@@ -376,7 +401,9 @@ canvas {
 .settingsClose:hover,
 .settingsClose:active,
 .resultPanelClose:hover,
-.resultPanelClose:active {
+.resultPanelClose:active,
+.techClose:hover,
+.techClose:active {
   background: var(--button-pressed);
   border-color: var(--wood-frame-dark);
   color: var(--ink);
@@ -510,12 +537,18 @@ canvas {
 }
 
 .resultPanelReason,
-.resultPanelTime {
+.resultPanelTime,
+.resultPanelTech {
   position: relative;
   z-index: 1;
   margin: 6px 0 0;
   text-align: center;
   color: var(--ink-muted);
+}
+
+.resultPanelTech {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .resultPanelScores {
@@ -642,6 +675,106 @@ canvas {
   color: var(--ink-muted);
   font-size: 13px;
   line-height: 1.5;
+}
+
+.techBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.techBalance {
+  margin: 0;
+  color: var(--ink);
+  font: 700 16px/1.3 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+}
+
+.techHint,
+.techStatus {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.techWarn {
+  margin: 0;
+  color: var(--team-red);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.techFlash {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.techFlash.isOk {
+  color: var(--ink);
+}
+
+.techFlash.isErr {
+  color: var(--team-red);
+}
+
+.techGroupTitle,
+.techDetailTitle {
+  margin: 0 0 6px;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.techList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.techItem,
+.techBuy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 2px solid var(--wood-frame);
+  border-radius: 10px;
+  background: var(--button-idle);
+  color: var(--ink);
+  font: 700 14px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: var(--hud-shadow);
+  touch-action: manipulation;
+}
+
+.techItem.isOn,
+.techItem:hover,
+.techItem:active,
+.techBuy:hover,
+.techBuy:active {
+  background: var(--button-pressed);
+  border-color: var(--wood-frame-dark);
+}
+
+.techBuy:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.techItemMeta {
+  color: var(--ink-muted);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.techDetail {
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .settingsHeroRow,

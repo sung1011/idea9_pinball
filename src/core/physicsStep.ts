@@ -22,6 +22,9 @@ import {
 import { NAIL_ARMOR, NAIL_PIN } from '../heroes/nailKit';
 import type { HealPulse } from './combatFloat';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
+import { consumeHookBrakePopWall, resolveHookBrakePopContact } from './hookBrakePop';
+import { tickHookBleeds } from './hookBleed';
+import { tickHookShoveShield } from './hookShield';
 import { FRICTION } from './constants';
 import { takeChainEqualizeHeals, tickEqualizeFlashes } from './chainEqualize';
 import { applyMagnetWellPull, tickMagnetWellBlasts } from './magnetWells';
@@ -166,7 +169,14 @@ export function stepPhysics(
 
   const hits: CollisionHit[] = [];
   const heals: HealPulse[] = [];
+  for (const id of wallHits) {
+    const wallBall = live.find((item) => item.id === id);
+    if (wallBall) {
+      consumeHookBrakePopWall(wallBall);
+    }
+  }
   for (const contact of pending) {
+    hits.push(...resolveHookBrakePopContact(contact.a, contact.b));
     hits.push(
       ...applyCollisionCombat(
         contact.a,
@@ -226,11 +236,13 @@ export function stepPhysics(
     tickEchoMark(ball, stepDt);
     tickRefract(ball, stepDt);
     tickPotionBuffs(ball, stepDt);
+    tickHookShoveShield(ball, stepDt);
     if (collided.has(ball.id)) {
       openFineTune(ball);
     }
   }
 
+  hits.push(...tickHookBleeds(stepDt, balls));
   hits.push(...tickMagnetWellBlasts(balls, stepDt));
   heals.push(...takeChainEqualizeHeals());
   tickEqualizeFlashes(stepDt);

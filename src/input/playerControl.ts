@@ -4,6 +4,7 @@ import {
   createSkillCaster,
   type AimHint,
   type SkillCaster,
+  type SkillCasterOpts,
   type SkillCds,
   type WindupInfo,
 } from '../core/skillCaster';
@@ -43,11 +44,13 @@ export type PlayerControl = {
 
 export type PlayerControlOpts = {
   onUltTodo?: () => void;
+  techs?: SkillCasterOpts['techs'];
 };
 
 /** 红球施放：同键或左键释放；触屏瞄准中点空白也可释放、滑动只改向；前摇从释放后起算。 */
 export function createPlayerControl(initial: HeroId = 'hook', opts: PlayerControlOpts = {}): PlayerControl {
-  let caster = createSkillCaster(initial);
+  const casterOpts: SkillCasterOpts = { techs: opts.techs };
+  let caster = createSkillCaster(initial, casterOpts);
 
   return {
     tick: (player, sample, dt, roster = [], tickOpts = {}) => {
@@ -103,7 +106,7 @@ export function createPlayerControl(initial: HeroId = 'hook', opts: PlayerContro
       clearKitAuras(ball);
       clearUltEnergy(ball);
       ball.hero = hero;
-      caster = createSkillCaster(hero);
+      caster = createSkillCaster(hero, casterOpts);
     },
   };
 }

@@ -115,9 +115,9 @@ function hitVictim(
   if (incoming <= 0) {
     return null;
   }
-  const shieldBefore = victim.potionShieldHp;
+  const shieldBefore = victim.potionShieldHp + victim.hookShoveShieldHp;
   const damage = applyHpLoss(victim, incoming);
-  const absorbed = Math.max(0, shieldBefore - victim.potionShieldHp);
+  const absorbed = Math.max(0, shieldBefore - (victim.potionShieldHp + victim.hookShoveShieldHp));
   if (damage <= 0 && absorbed <= 0) {
     return null;
   }

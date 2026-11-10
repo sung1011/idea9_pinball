@@ -117,6 +117,11 @@ export type BallBody = {
   /** 护盾药水剩余秒；吸收量见 potionShieldHp */
   potionShieldRemain: number;
   potionShieldHp: number;
+  /** 钩刺盾冲科技护盾：与药水盾独立，再触发重置不叠加 */
+  hookShoveShieldRemain: number;
+  hookShoveShieldHp: number;
+  /** 蓄势弹出科技：等待首次碰撞，跟主动撞窗一起过期 */
+  hookBrakePopPending: boolean;
   /** 必杀能量 0–100；死亡保留、换英雄/重开清空 */
   ultEnergy: number;
   /** 未换成能量的有效伤害+治疗余量 */
@@ -209,6 +214,9 @@ export function createBallBody(init: {
     potionSpeedRemain: 0,
     potionShieldRemain: 0,
     potionShieldHp: 0,
+    hookShoveShieldRemain: 0,
+    hookShoveShieldHp: 0,
+    hookBrakePopPending: false,
     ultEnergy: 0,
     ultCombatCredit: 0,
   };
@@ -259,9 +267,13 @@ export function openActiveRam(ball: BallBody): void {
 export function tickActiveRam(ball: BallBody, dt: number): void {
   if (ball.activeRamRemain <= 0) {
     ball.activeRamRemain = 0;
+    ball.hookBrakePopPending = false;
     return;
   }
   ball.activeRamRemain = Math.max(0, ball.activeRamRemain - dt);
+  if (ball.activeRamRemain <= 0) {
+    ball.hookBrakePopPending = false;
+  }
 }
 
 export function tickSpearCd(ball: BallBody, dt: number): void {
@@ -597,4 +609,7 @@ export function clearKitAuras(ball: BallBody): void {
   ball.phaseRemain = 0;
   ball.refractRemain = 0;
   ball.mirrorLedger = 0;
+  ball.hookShoveShieldRemain = 0;
+  ball.hookShoveShieldHp = 0;
+  ball.hookBrakePopPending = false;
 }

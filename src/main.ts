@@ -41,6 +41,7 @@ import { verifyChainUlt } from './core/verifyChainUlt';
 import { resetChainEqualize } from './core/chainEqualize';
 import { verifyAimStick } from './core/verifyAimStick';
 import { verifyHookRider } from './core/verifyHookRider';
+import { verifyTechTree } from './core/verifyTechTree';
 import { creditUltCombat } from './core/ultEnergy';
 import { resetMagnetWells } from './core/magnetWells';
 import { resetMirrorWalls } from './core/mirrorWalls';
@@ -48,6 +49,12 @@ import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
 import { nextHero, type HeroId } from './heroes/heroIds';
 import { loadLastHeroId, saveLastHeroId } from './heroes/lastHeroId';
+import { clearHookBleeds } from './core/hookBleed';
+import { takeHookShieldGrants } from './core/hookShield';
+import { nextUnlockedHero, EMPTY_COMBAT_TECHS, type CombatTechSnapshot } from './core/techIds';
+import { createTechStore } from './core/techSave';
+import { createTechPanel } from './ui/techPanel';
+import type { ResultTechInfo } from './ui/resultPanel';
 import { createFieldOverlay } from './render/fieldOverlay';
 import { bindDebugMatch } from './debug/debugMatch';
 import { bindDebugVelocity } from './debug/debugVelocity';
@@ -106,6 +113,7 @@ async function boot(): Promise<void> {
   verifyUlt();
   verifyAimStick();
   verifyHookRider();
+  verifyTechTree();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -128,7 +136,22 @@ async function boot(): Promise<void> {
   const arena = createArenaView();
   world.addChild(arena.root);
 
-  const balls = createMatchRoster({ player: loadLastHeroId() });
+  const techStore = createTechStore();
+  let combatTechs: CombatTechSnapshot = EMPTY_COMBAT_TECHS;
+  let techsFrozen = false;
+  let practice = false;
+  let settledMatchId = '';
+  let lastTechReward: ResultTechInfo | null = null;
+  const freezeCombatTechs = (): void => {
+    if (techsFrozen) {
+      return;
+    }
+    combatTechs = techStore.snapshot();
+    techsFrozen = true;
+  };
+  const wantedHero = loadLastHeroId();
+  const startHero = techStore.isHeroUnlocked(wantedHero) ? wantedHero : 'hook';
+  const balls = createMatchRoster({ player: startHero });
   const player = balls.find((ball) => ball.team === 'red' && ball.teamSlot === 1) ?? balls[0];
   const ally = balls.find((ball) => ball.team === 'red' && ball.teamSlot === 2) ?? null;
   const botHandles = balls
@@ -220,7 +243,10 @@ async function boot(): Promise<void> {
 
   const bus = createActionBus();
   const touchPad = createTouchPad(host, bus);
-  const control = createPlayerControl(player.hero, { onUltTodo: () => touchPad.showTodo() });
+  const control = createPlayerControl(player.hero, {
+    onUltTodo: () => touchPad.showTodo(),
+    techs: () => combatTechs,
+  });
   bindPcInput({
     canvas: app.canvas,
     getTransform: () => transform,
@@ -231,10 +257,16 @@ async function boot(): Promise<void> {
   let syncHeroUi = (): void => {};
 
   const applyPlayerHero = (hero: HeroId): void => {
+    if (!practice && !techStore.isHeroUnlocked(hero)) {
+      syncHeroUi();
+      return;
+    }
     if (player.hero !== hero) {
       control.setHero(player, hero);
       bus.reset();
-      saveLastHeroId(player.hero);
+      if (!practice) {
+        saveLastHeroId(player.hero);
+      }
     }
     syncHeroUi();
   };
@@ -261,7 +293,8 @@ async function boot(): Promise<void> {
   };
 
   const swapPlayerHero = (): void => {
-    applyPlayerHero(nextHero(player.hero));
+    const next = practice ? nextHero(player.hero) : nextUnlockedHero(player.hero, techStore.getState().unlockedHeroes);
+    applyPlayerHero(next);
   };
 
   let applyMatchMode = (_mode: MatchModeId): void => {};
@@ -277,6 +310,14 @@ async function boot(): Promise<void> {
   arena.syncStalls(match.snapshot().stalls);
 
   const restart = (): void => {
+    techsFrozen = false;
+    combatTechs = EMPTY_COMBAT_TECHS;
+    settledMatchId = '';
+    lastTechReward = null;
+    if (!practice && !techStore.isHeroUnlocked(player.hero)) {
+      control.setHero(player, 'hook');
+      bus.reset();
+    }
     rollOpeningBots();
     resetTrapZones();
     resetMagnetWells();
@@ -284,10 +325,12 @@ async function boot(): Promise<void> {
     resetStakes();
     resetMirrorWalls();
     resetBoomFlashes();
+    clearHookBleeds();
     resetCombatFloatAcc();
     combatFloats.clear();
     combatStats.reset();
     combatStatsPanel.sync(balls, player.id);
+    match.setPractice(practice);
     match.reset();
     control.reset();
     bus.reset();
@@ -326,7 +369,10 @@ async function boot(): Promise<void> {
   });
   bindDebugMatch(match, { isGmOn: () => settingsIsGmOn(), onSwapHero: swapPlayerHero });
 
-  const help = createHelpCard(host, { onOpen: () => settingsClose() });
+  let techClose = (): void => {};
+  let techOpen = (): void => {};
+  let techIsOpen = (): boolean => false;
+  const help = createHelpCard(host, { onOpen: () => { settingsClose(); techClose(); } });
   help.setMode(matchMode);
   applyMatchMode = (mode: MatchModeId): void => {
     if (mode === matchMode) {
@@ -350,7 +396,10 @@ async function boot(): Promise<void> {
   const appVersions = createAppVersions();
   createUpdatePrompt(host, appVersions);
   const settings = createSettingsPanel(host, {
-    onOpen: () => help.close(),
+    onOpen: () => {
+      help.close();
+      techClose();
+    },
     onOpenHelp: () => help.open(),
     versions: appVersions,
     onRestart: () => {
@@ -362,6 +411,20 @@ async function boot(): Promise<void> {
     onPickHero: applyPlayerHero,
     getMode: () => matchMode,
     onPickMode: (mode) => applyMatchMode(mode),
+    getUnlockedHeroes: () => techStore.getState().unlockedHeroes,
+    getPractice: () => practice,
+    onPractice: () => {
+      practice = true;
+      restart();
+    },
+    onEndPractice: () => {
+      practice = false;
+      if (!techStore.isHeroUnlocked(player.hero)) {
+        applyPlayerHero('hook');
+      }
+      restart();
+    },
+    onOpenTech: () => techOpen(),
     onSwapHero: swapPlayerHero,
     onCollision: (kind) => {
       debug.runCollision(kind);
@@ -383,9 +446,22 @@ async function boot(): Promise<void> {
   settingsClose = settings.close;
   settingsSetHero = (hero) => settings.setHero(hero);
   settingsSetMode = (mode) => settings.setMode(mode);
+  const tech = createTechPanel(host, {
+    store: techStore,
+    getPhase: () => match.snapshot().phase,
+    getPractice: () => practice,
+    onChanged: () => settings.setHero(player.hero),
+    onOpen: () => {
+      help.close();
+      settings.close();
+    },
+  });
+  techOpen = () => tech.open();
+  techClose = () => tech.close();
+  techIsOpen = () => tech.isOpen();
 
   const trySkipOpening = (): void => {
-    if (settings.isOpen() || help.isOpen()) {
+    if (settings.isOpen() || help.isOpen() || techIsOpen()) {
       return;
     }
     match.skipOpening();
@@ -395,7 +471,7 @@ async function boot(): Promise<void> {
     if (ev.key !== 'Escape') {
       return;
     }
-    if (settings.isOpen() || help.isOpen()) {
+    if (settings.isOpen() || help.isOpen() || techIsOpen()) {
       return;
     }
     if (match.snapshot().phase !== 'countdown') {
@@ -408,7 +484,7 @@ async function boot(): Promise<void> {
     if (isAimUiTarget(ev.target)) {
       return;
     }
-    if (settings.isOpen() || help.isOpen()) {
+    if (settings.isOpen() || help.isOpen() || techIsOpen()) {
       return;
     }
     if (ev.target !== app.canvas && ev.target !== host) {
@@ -423,6 +499,9 @@ async function boot(): Promise<void> {
   app.ticker.add((ticker) => {
     const dt = ticker.deltaMS / 1000;
     const snap = match.snapshot();
+    if (snap.phase === 'playing' || snap.phase === 'overtime') {
+      freezeCombatTechs();
+    }
     const sample = bus.sample(player.x, player.y);
     const charging = snap.openingChargeRemain > 0;
     const stalled = snap.phase === 'countdown';
@@ -463,17 +542,39 @@ async function boot(): Promise<void> {
     combatFloats.spawn([
       ...floatsFromHits([...frameHits, ...extraHits], balls),
       ...takeHealFloats([...step.heals, ...potionHeals]),
-      ...floatsFromShield(takeShieldAbsorbs()),
+      ...floatsFromShield([...takeShieldAbsorbs(), ...takeHookShieldGrants()]),
     ]);
     combatFloats.tick(dt);
     combatStatsPanel.sync(balls, player.id);
     const next = match.snapshot();
+    if (next.phase === 'playing' || next.phase === 'overtime') {
+      freezeCombatTechs();
+    }
+    if (next.phase === 'result' && next.matchId && next.matchId !== settledMatchId) {
+      const grant = techStore.grantMatchReward({
+        mode: next.mode,
+        winner: next.winner,
+        playerTeam: 'red',
+        practice: next.practice,
+        matchId: next.matchId,
+      });
+      lastTechReward = {
+        practice: next.practice,
+        granted: grant.granted,
+        amount: grant.amount,
+        balance: grant.balance,
+        note: grant.note,
+      };
+      if (grant.granted || grant.duplicate || grant.note.includes('练习') || grant.note.includes('已结算')) {
+        settledMatchId = next.matchId;
+      }
+    }
     const aimingSlot = control.getAimingSlot();
     const skillCds = control.getSkillCds();
     const windup = control.getWindup();
     const aimHint = control.getAimHint();
     matchHud.sync(next, balls, player.id);
-    resultPanel.sync(next);
+    resultPanel.sync(next, lastTechReward);
     arena.syncHold(next.midpoint);
     arena.syncStalls(next.stalls);
     arena.syncMode(next.mode);

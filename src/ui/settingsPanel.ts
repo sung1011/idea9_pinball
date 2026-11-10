@@ -38,6 +38,11 @@ export type SettingsActions = {
   onPickHero?: (hero: HeroId) => void;
   getMode?: () => MatchModeId;
   onPickMode?: (mode: MatchModeId) => void;
+  getUnlockedHeroes?: () => readonly HeroId[];
+  getPractice?: () => boolean;
+  onPractice?: () => void;
+  onEndPractice?: () => void;
+  onOpenTech?: () => void;
   onSwapHero?: () => void;
   versions: AppVersions;
 };
@@ -172,6 +177,8 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     body.appendChild(modeRow);
 
     const currentHero = actions.getHero?.() ?? 'hook';
+    const practice = !!actions.getPractice?.();
+    const unlocked = new Set<HeroId>(['hook', ...(actions.getUnlockedHeroes?.() ?? [])]);
     const heroRow = el('label', 'settingsHeroRow');
     heroRow.appendChild(el('span', 'settingsHeroLabel', '我的英雄'));
     const heroPick = document.createElement('select');
@@ -181,7 +188,9 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     for (const id of HERO_IDS) {
       const option = document.createElement('option');
       option.value = id;
-      option.textContent = heroZh(id);
+      const open = practice || unlocked.has(id);
+      option.disabled = !open;
+      option.textContent = open ? heroZh(id) : `${heroZh(id)} · 未解锁`;
       heroPick.appendChild(option);
     }
     heroPick.value = currentHero;
@@ -193,6 +202,11 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     heroPick.addEventListener('change', (ev) => {
       ev.stopPropagation();
       if (!isHeroId(heroPick.value)) {
+        heroPick.value = actions.getHero?.() ?? 'hook';
+        return;
+      }
+      const allow = !!actions.getPractice?.() || heroPick.value === 'hook' || (actions.getUnlockedHeroes?.() ?? []).includes(heroPick.value);
+      if (!allow) {
         heroPick.value = actions.getHero?.() ?? 'hook';
         return;
       }
@@ -225,9 +239,33 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
       actions.onOpenHelp?.();
     });
     body.appendChild(helpBtn);
+    const techBtn = el('button', 'settingsWide', '科技');
+    techBtn.type = 'button';
+    techBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      close();
+      actions.onOpenTech?.();
+    });
+    body.appendChild(techBtn);
+    const drill = el('button', 'settingsWide', practice ? '结束练习' : '练习');
+    drill.type = 'button';
+    drill.setAttribute('aria-label', practice ? '结束练习' : '练习');
+    drill.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      if (practice) {
+        actions.onEndPractice?.();
+      } else {
+        actions.onPractice?.();
+      }
+      close();
+    });
+    body.appendChild(drill);
     addHint(body, kitSettingsHint(currentHero));
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。瞄准中触屏点空白即瞄向并释放，滑动只改朝向。右键 / Esc 取消瞄准。');
-    addHint(body, '本机固定 2v2。开局与每次 R：队友和两名敌方从含镜卫全池均匀随机（可重复）。常规页「玩法」可切八杀 / 占点，记住上次所选；换玩法立刻重开倒计时。常规页「我的英雄」可换自己（只换技能组）并记住下次缺省；不能换队友。无记录时你默认钩刺。始终横屏对局：竖持时整屏转 90°（家庭键在右时正向），不提示转屏。GM 开时按 H 只循环红1：钩刺 → 磁环 → 链生 → 钉壳 → 闪弧 → 井绳 → 镜卫。');
+    addHint(
+      body,
+      '本机固定 2v2。开局与每次 R：队友和两名敌方从含镜卫全池均匀随机（可重复）。常规页「玩法」可切八杀 / 占点，记住上次所选；换玩法立刻重开倒计时（重开不发科技点）。常规页「我的英雄」只列已解锁英雄；钩刺免费，其他用科技点解锁。练习可试用全部英雄，不解锁也不发点。不能换队友。进度只存在本机。GM 开时按 H 只循环已解锁英雄。',
+    );
   };
 
   const renderVersion = (): void => {

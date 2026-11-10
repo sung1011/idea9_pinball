@@ -34,6 +34,8 @@ function dummySnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
     blueKills: 0,
     potion: null,
     rift: null,
+    matchId: '',
+    practice: false,
     ...partial,
   };
 }

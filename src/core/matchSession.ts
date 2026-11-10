@@ -29,6 +29,7 @@ import { snapChargeFacing } from './openingCharge';
 import { createPotionField, POTION_KIND_LABEL, type PotionPickup } from './potionField';
 import { createRiftHazard, type RiftSnapshot } from './riftHazard';
 import { stallsForBalls, type StallFence } from './stallFences';
+import { clearHookBleeds } from './hookBleed';
 
 export type MatchPhase = 'countdown' | 'playing' | 'overtime' | 'result';
 export type MidpointHold = 'red' | 'blue' | 'none';
@@ -42,6 +43,7 @@ export type MatchConfig = {
   clockScale?: number;
   mode?: MatchModeId;
   random?: () => number;
+  practice?: boolean;
 };
 
 export type MatchEvent = {
@@ -76,6 +78,8 @@ export type MatchSnapshot = {
   skillsLocked: boolean;
   potion: PotionPickup | null;
   rift: RiftSnapshot | null;
+  matchId: string;
+  practice: boolean;
 };
 
 type DamageMark = {
@@ -226,6 +230,14 @@ function createRosterBall(init: {
   });
 }
 
+let nextMatchSeq = 1;
+
+function allocMatchId(): string {
+  const id = `m${nextMatchSeq}`;
+  nextMatchSeq += 1;
+  return id;
+}
+
 function resetBall(ball: BallBody, openingInvincible: number): void {
   ball.x = ball.spawnX;
   ball.y = ball.spawnY;
@@ -260,6 +272,8 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   const scoreLimit = config.scoreLimit ?? MATCH_SCORE_LIMIT;
   const clockScale = config.clockScale ?? DEBUG_CLOCK_SCALE;
   let mode: MatchModeId = config.mode ?? DEFAULT_MATCH_MODE;
+  let practice = !!config.practice;
+  let matchId = allocMatchId();
   const rng = config.random ?? Math.random;
   const potions = createPotionField(rng);
   const rift = createRiftHazard(rng);
@@ -748,6 +762,8 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
   };
 
   const applyReset = (): void => {
+    matchId = allocMatchId();
+    clearHookBleeds();
     phase = countdownSec > 0 ? 'countdown' : 'playing';
     timeLeft = countdownSec > 0 ? countdownSec : playSec;
     suddenDeath = false;
@@ -845,6 +861,9 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
     setMode(next: MatchModeId): void {
       mode = next;
     },
+    setPractice(next: boolean): void {
+      practice = !!next;
+    },
     reset(): void {
       applyReset();
     },
@@ -874,6 +893,8 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
         skillsLocked: phase === 'countdown' || openingChargeRemain > 0,
         potion: potions.snapshot(),
         rift: rift.snapshot(),
+        matchId,
+        practice,
       };
     },
     debugAddScore(team: TeamId, points: number): void {

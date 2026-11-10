@@ -559,6 +559,8 @@ export function verifyEightKill(): void {
       skillsLocked: false,
       potion: null,
       rift: null,
+      matchId: '',
+      practice: false,
     },
     [],
   );

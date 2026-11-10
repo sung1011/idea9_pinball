@@ -41,6 +41,11 @@ import { pickFanEnemy, segmentBlocked, unitVec } from './skillQuery';
 import { setFacingFrom } from './skillStub';
 import { isInEnemyTrap } from './trapZones';
 import { resolveArenaObstacles } from './wallBounce';
+import { applyHookBleed } from './hookBleed';
+import { armHookBrakePop, isValidTechEnemy } from './hookBrakePop';
+import { grantHookShoveShield } from './hookShield';
+import { HOOK_BRAKE_TECH, HOOK_PULL_TECH } from './hookTech';
+import { copyCombatTechs, EMPTY_COMBAT_TECHS, type CombatTechSnapshot } from './techIds';
 
 const EPS = 1e-8;
 const TIME_EPS = 1e-7;
@@ -70,7 +75,15 @@ type Effect =
   | { kind: 'windup'; slot: SkillSlot; remain: number; aimX: number; aimY: number; targetId?: number }
   | { kind: 'hookFly'; targetId: number }
   | { kind: 'stab'; nextIn: number; index: number; aimX: number; aimY: number }
-  | { kind: 'dash'; dirX: number; dirY: number; remainTime: number; remainDist: number; speed: number }
+  | {
+      kind: 'dash';
+      dirX: number;
+      dirY: number;
+      remainTime: number;
+      remainDist: number;
+      speed: number;
+      shieldUsed: boolean;
+    }
   | UltEffect;
 
 export { applyHardCc, scaleHardCc } from './hardCc';
@@ -136,6 +149,10 @@ function isDisplacing(effect: Effect | null): boolean {
   return !!effect && (effect.kind === 'hookFly' || effect.kind === 'dash' || isUltEffect(effect));
 }
 
+export type SkillCasterOpts = {
+  techs?: () => CombatTechSnapshot;
+};
+
 export type SkillCaster = {
   handleInput: (ball: BallBody, sample: ActionSample, roster?: readonly BallBody[]) => void;
   tick: (ball: BallBody, dt: number, roster: readonly BallBody[]) => CollisionHit[];
@@ -155,8 +172,8 @@ export type SkillCaster = {
   getHero: () => HeroId;
 };
 
-/** 按英雄建施放器；默认钩刺，避免拆坏既有 verify。 */
-export function createSkillCaster(hero: HeroId = 'hook'): SkillCaster {
+/** 按英雄建施放器；默认钩刺，避免拆坏既有 verify。科技只给传入快照的钩刺，AI 默认空。 */
+export function createSkillCaster(hero: HeroId = 'hook', opts: SkillCasterOpts = {}): SkillCaster {
   if (hero === 'ring') {
     return createRingCaster();
   }
@@ -175,21 +192,31 @@ export function createSkillCaster(hero: HeroId = 'hook'): SkillCaster {
   if (hero === 'mirror') {
     return createMirrorCaster();
   }
-  return createHookCaster();
+  return createHookCaster(opts.techs);
 }
 
 /** 钩刺施放：按下进瞄可无限持有；释放后才走前摇，再出效果。 */
-export function createHookCaster(): SkillCaster {
+export function createHookCaster(getTechs?: () => CombatTechSnapshot): SkillCaster {
   let aimingSlot: SkillSlot | 0 = 0;
   const cds = emptyCds();
   let effect: Effect | null = null;
   let brakeRemain = 0;
   let brakeArmed = false;
+  let brakeElapsed = 0;
+  let brakeMax = HOOK_BRAKE.brakeTime;
+  let pullOriginX = 0;
+  let pullOriginY = 0;
+  let pullFullCd: number = HOOK_PULL.cd;
+  let pullFarDone = false;
+  const stabLanded = [false, false, false];
   let now = 0;
+
+  const techsOf = (): CombatTechSnapshot => copyCombatTechs(getTechs?.() ?? EMPTY_COMBAT_TECHS);
 
   const cancelBrake = (): void => {
     brakeRemain = 0;
     brakeArmed = false;
+    brakeElapsed = 0;
   };
 
   const startCd = (slot: SkillSlot): void => {
@@ -234,13 +261,21 @@ export function createHookCaster(): SkillCaster {
     }
     startCd(slot);
     aimingSlot = 0;
+    if (slot === 1) {
+      pullOriginX = ball.x;
+      pullOriginY = ball.y;
+      pullFullCd = hookSkillCd(1);
+      pullFarDone = false;
+    }
     const delay = hookWindup(slot);
     const lockId = slot === 1 ? (pickHookPull(ball, roster, ball.facingX, ball.facingY)?.target.id ?? -1) : -1;
     if (slot === 4 || delay <= 0) {
       if (effect?.kind === 'hookFly') {
         effect = null;
       }
-      brakeRemain = HOOK_BRAKE.brakeTime;
+      brakeMax = HOOK_BRAKE.brakeTime;
+      brakeElapsed = 0;
+      brakeRemain = brakeMax;
       brakeArmed = true;
       return;
     }
@@ -294,6 +329,17 @@ export function createHookCaster(): SkillCaster {
     if (dmg) {
       hits.push(dmg);
     }
+    const techs = techsOf();
+    const path = Math.hypot(target.x - pullOriginX, target.y - pullOriginY);
+    if (
+      techs.pull &&
+      !pullFarDone &&
+      isValidTechEnemy(ball, target) &&
+      path + 1e-9 >= HOOK_PULL.range * HOOK_PULL_TECH.farPathRatio
+    ) {
+      cds[0] = Math.max(0, cds[0] - pullFullCd * HOOK_PULL_TECH.cdRefundRatio);
+      pullFarDone = true;
+    }
     const gap = Math.hypot(target.x - ball.x, target.y - ball.y);
     const touch = ball.radius + target.radius;
     if (gap <= touch + TOUCH_PAD) {
@@ -327,6 +373,9 @@ export function createHookCaster(): SkillCaster {
     if (!picked) {
       return [];
     }
+    if (isValidTechEnemy(ball, picked.target) && index >= 0 && index < stabLanded.length) {
+      stabLanded[index] = true;
+    }
     const hits: CollisionHit[] = [];
     const dmg = applySkillDamage(picked.target, ball, HOOK_STAB.damages[index] ?? 0);
     if (dmg) {
@@ -334,6 +383,9 @@ export function createHookCaster(): SkillCaster {
     }
     if (index === HOOK_STAB.hits - 1) {
       applyHardCc(picked.target, HOOK_STAB.thirdStun, now);
+      if (techsOf().stab && stabLanded[0] && stabLanded[1] && stabLanded[2]) {
+        applyHookBleed(picked.target, ball);
+      }
     }
     return hits;
   };
@@ -352,6 +404,7 @@ export function createHookCaster(): SkillCaster {
       remainTime: HOOK_SHOVE.dashTime,
       remainDist: HOOK_SHOVE.dashDist,
       speed,
+      shieldUsed: false,
     };
     ball.vx = dir.x * speed;
     ball.vy = dir.y * speed;
@@ -377,6 +430,9 @@ export function createHookCaster(): SkillCaster {
     }
     if (slot === 2) {
       cancelBrake();
+      stabLanded[0] = false;
+      stabLanded[1] = false;
+      stabLanded[2] = false;
       const hits = doStab(ball, 0, aimX, aimY, roster);
       effect = { kind: 'stab', nextIn: HOOK_STAB.interval, index: 1, aimX, aimY };
       return hits;
@@ -437,6 +493,12 @@ export function createHookCaster(): SkillCaster {
     ball.vy = dir.y * HOOK_BRAKE.popSpeed;
     ball.allowOverCap = true;
     openActiveRam(ball);
+    const charged = brakeElapsed + 1e-9 >= brakeMax * HOOK_BRAKE_TECH.chargeRatio;
+    if (techsOf().brake && charged) {
+      armHookBrakePop(ball);
+    } else {
+      ball.hookBrakePopPending = false;
+    }
   };
 
   const tick = (ball: BallBody, dt: number, roster: readonly BallBody[]): CollisionHit[] => {
@@ -490,6 +552,7 @@ export function createHookCaster(): SkillCaster {
 
     if (brakeArmed) {
       brakeRemain -= step;
+      brakeElapsed += step;
       if (brakeRemain <= TIME_EPS) {
         brakeArmed = false;
         brakeRemain = 0;
@@ -617,6 +680,10 @@ export function createHookCaster(): SkillCaster {
       if (extra) {
         hits.push(extra);
       }
+      if (techsOf().shove && !effect.shieldUsed && isValidTechEnemy(ball, touched) && ball.inPlay && ball.hp > 0) {
+        grantHookShoveShield(ball);
+        effect.shieldUsed = true;
+      }
       effect = null;
       return hits;
     }
@@ -644,6 +711,10 @@ export function createHookCaster(): SkillCaster {
       cds[3] = 0;
       effect = null;
       cancelBrake();
+      pullFarDone = false;
+      stabLanded[0] = false;
+      stabLanded[1] = false;
+      stabLanded[2] = false;
       now = 0;
     },
     getAimingSlot: () => aimingSlot,

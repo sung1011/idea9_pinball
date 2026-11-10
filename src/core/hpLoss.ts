@@ -1,5 +1,6 @@
 import type { BallBody } from './ballBody';
 import type { HealPulse } from './combatFloat';
+import { absorbWithShieldLayers } from './hookShield';
 
 export type HpLossOpts = {
   /** 裂镜自伤：不吃折光，避免和「自伤 24 入账」双算 */
@@ -42,17 +43,10 @@ export function applyHpLoss(victim: BallBody, incoming: number, opts: HpLossOpts
       victim.mirrorLedger += mitigated;
     }
   }
-  if (victim.potionShieldHp > 0 && victim.potionShieldRemain > 0) {
-    const absorbed = Math.min(victim.potionShieldHp, applied);
-    if (absorbed > 0) {
-      victim.potionShieldHp -= absorbed;
-      applied -= absorbed;
-      shieldAbsorbs.push({ unitId: victim.id, amount: absorbed, x: victim.x, y: victim.y });
-      if (victim.potionShieldHp <= 1e-6) {
-        victim.potionShieldHp = 0;
-        victim.potionShieldRemain = 0;
-      }
-    }
+  const absorbed = absorbWithShieldLayers(victim, applied);
+  applied = absorbed.applied;
+  if (absorbed.absorbed > 0) {
+    shieldAbsorbs.push({ unitId: victim.id, amount: absorbed.absorbed, x: victim.x, y: victim.y });
   }
   victim.hp = Math.max(0, victim.hp - applied);
   return before - victim.hp;

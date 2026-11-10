@@ -64,6 +64,7 @@ export function verifyHeroPick(): void {
   document.body.appendChild(host);
   const state = { hero: 'hook' as HeroId, ally: 'chain' as HeroId };
   let picks = 0;
+  const unlocked: HeroId[] = ['hook'];
   createMatchHud(host);
   const pad = createTouchPad(host, createActionBus());
   pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: state.hero });
@@ -76,6 +77,7 @@ export function verifyHeroPick(): void {
     onJumpClock: () => {},
     onForceRespawn: () => {},
     getHero: () => state.hero,
+    getUnlockedHeroes: () => unlocked,
     onPickHero: (next) => {
       picks += 1;
       if (state.hero === next) {
@@ -102,10 +104,17 @@ export function verifyHeroPick(): void {
   assert(isAimUiTarget(pick) && isAimUiTarget(overlay), '换英雄：点设置选择不应抢 Aim');
   assert(pick.options.length === 7, '换英雄：下拉应列出 7 人');
   assert(
-    [...pick.options].map((opt) => opt.textContent).join('/') === '钩刺/磁环/链生/钉壳/闪弧/井绳/镜卫',
-    '换英雄：选项文案应为七英雄中文名',
+    [...pick.options].map((opt) => opt.value).join('/') === 'hook/ring/chain/nail/arc/well/mirror',
+    '换英雄：选项应为七英雄 id',
   );
   assert(pick.value === 'hook', '换英雄：自己默认应选钩刺');
+  const lockedRing = [...pick.options].find((opt) => opt.value === 'ring');
+  assert(!!lockedRing?.disabled && (lockedRing.textContent ?? '').includes('未解锁'), '换英雄：未解锁应禁用');
+  pick.value = 'ring';
+  pick.dispatchEvent(new Event('change', { bubbles: true }));
+  assert(state.hero === 'hook' && picks === 0, '换英雄：正式路径不能选未解锁英雄');
+  unlocked.splice(0, unlocked.length, ...HERO_IDS);
+  settings.setHero('hook');
   const canvas = document.createElement('canvas');
   host.appendChild(canvas);
   const bus = createActionBus();

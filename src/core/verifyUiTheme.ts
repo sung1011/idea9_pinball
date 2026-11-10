@@ -8,6 +8,8 @@ import { createCombatStatsPanel } from '../ui/combatStatsPanel';
 import { createResultPanel } from '../ui/resultPanel';
 import { createSettingsPanel } from '../ui/settingsPanel';
 import { createSkillTip } from '../ui/skillTip';
+import { createTechPanel } from '../ui/techPanel';
+import { createTechStore, memoryTechStorage } from './techSave';
 import {
   UI_THEME,
   applyUiTheme,
@@ -74,6 +76,8 @@ function dummyResultSnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
     blueKills: 0,
     potion: null,
     rift: null,
+    matchId: '',
+    practice: false,
     ...partial,
   };
 }
@@ -131,9 +135,11 @@ export function verifyUiTheme(): void {
   const skill = host.querySelector<HTMLButtonElement>('.touchSkillBtn');
   const helpFab = host.querySelector<HTMLButtonElement>('.helpFab');
   const settingsFab = host.querySelector<HTMLButtonElement>('.settingsFab');
-  if (!cluster || !clock || !red || !blue || !skill || !helpFab || !settingsFab) {
+  createTechPanel(host, { store: createTechStore(memoryTechStorage()) });
+  const techFab = host.querySelector<HTMLButtonElement>('.techFab');
+  if (!cluster || !clock || !red || !blue || !skill || !helpFab || !settingsFab || !techFab) {
     host.remove();
-    throw new Error('HUD 换皮：应有胶囊、技能键与 ?/齿轮');
+    throw new Error('HUD 换皮：应有胶囊、技能键与 科/?/齿轮');
   }
   assert(!host.querySelector('select.matchHudMode'), 'HUD 换皮：左上不应再有玩法下拉');
   assert(!host.querySelector('.matchHudLeft'), 'HUD 换皮：左上不应残留玩法入口层');
@@ -176,17 +182,26 @@ export function verifyUiTheme(): void {
 
   const fabCs = getComputedStyle(helpFab);
   const gearCs = getComputedStyle(settingsFab);
+  const techCs = getComputedStyle(techFab);
   assert(sameCssColor(fabCs.backgroundColor, UI_THEME.buttonIdle), '?：button_idle');
   assert(sameCssColor(fabCs.color, UI_THEME.ink), '?：图标 ink');
   assert(sameCssColor(gearCs.backgroundColor, UI_THEME.buttonIdle), '齿轮：button_idle');
   assert(sameCssColor(gearCs.color, UI_THEME.ink), '齿轮：图标 ink');
-  assert(!cssColorHasGold(fabCs.boxShadow) && !cssColorHasGold(gearCs.boxShadow), '?/齿轮：无霓虹 glow');
+  assert(sameCssColor(techCs.backgroundColor, UI_THEME.buttonIdle), '科：button_idle');
+  assert(sameCssColor(techCs.color, UI_THEME.ink), '科：图标 ink');
+  assert(
+    !cssColorHasGold(fabCs.boxShadow) && !cssColorHasGold(gearCs.boxShadow) && !cssColorHasGold(techCs.boxShadow),
+    '科/?/齿轮：无霓虹 glow',
+  );
   helpFab.classList.add('isOn');
   settingsFab.classList.add('isOn');
+  techFab.classList.add('isOn');
   assert(sameCssColor(color(helpFab, 'backgroundColor'), UI_THEME.buttonPressed), '? 按下：button_pressed');
   assert(sameCssColor(color(settingsFab, 'backgroundColor'), UI_THEME.buttonPressed), '齿轮按下：button_pressed');
+  assert(sameCssColor(color(techFab, 'backgroundColor'), UI_THEME.buttonPressed), '科按下：button_pressed');
   helpFab.classList.remove('isOn');
   settingsFab.classList.remove('isOn');
+  techFab.classList.remove('isOn');
 
   const tip = createSkillTip(host);
   tip.show(skill, { name: '钩矛', effect: '勾中贴脸' });

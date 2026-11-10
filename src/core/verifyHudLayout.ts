@@ -11,6 +11,8 @@ import { createBallBody } from './ballBody';
 import { createCombatStats } from './combatStats';
 import { createCombatStatsPanel } from '../ui/combatStatsPanel';
 import { createSettingsPanel } from '../ui/settingsPanel';
+import { createTechPanel } from '../ui/techPanel';
+import { createTechStore, memoryTechStorage } from './techSave';
 import {
   applyStageVars,
   clientToHostLocal,
@@ -54,6 +56,8 @@ function dummySnap(partial: Partial<MatchSnapshot> = {}): MatchSnapshot {
     blueKills: 0,
     potion: null,
     rift: null,
+    matchId: '',
+    practice: false,
     ...partial,
   };
 }
@@ -156,6 +160,7 @@ function assertCornerHud(
   helpFab: HTMLElement | null,
   settingsFab: HTMLElement | null,
   label: string,
+  techFab: HTMLElement | null = null,
 ): void {
   const hostW = host.clientWidth;
   const hostH = host.clientHeight;
@@ -176,6 +181,12 @@ function assertCornerHud(
     assert(gearBox.left + 1 >= helpBox.right, `${label}：齿轮不应叠 ?`);
     assert(Math.abs(helpBox.top - gearBox.top) < 2, `${label}：? 应与齿轮顶对齐`);
     assert(hostW - gearBox.right < 24, `${label}：齿轮应贴视窗右上`);
+    if (techFab) {
+      const techBox = localBox(techFab, host);
+      assert(techBox.right <= helpBox.left + 1, `${label}：科应在 ? 左侧`);
+      assert(Math.abs(techBox.top - gearBox.top) < 2, `${label}：科应与齿轮顶对齐`);
+      assert(techBox.left + 1 >= clusterBox.right, `${label}：科不应叠顶中比分`);
+    }
   }
 }
 
@@ -368,8 +379,13 @@ export function verifyHudLayout(): void {
   });
   const helpFab = host.querySelector<HTMLButtonElement>('.helpFab');
   const settingsFab = host.querySelector<HTMLButtonElement>('.settingsFab');
+  createTechPanel(host, { store: createTechStore(memoryTechStorage()) });
+  const techFab = host.querySelector<HTMLButtonElement>('.techFab');
   if (!helpFab || !settingsFab) {
     throw new Error('HUD：顶右应有 ? 与齿轮');
+  }
+  if (!techFab) {
+    throw new Error('HUD：顶右应有科技入口');
   }
   assert(helpFab.textContent === '?', 'HUD：说明钮应为 ?');
   const hostTransform = getComputedStyle(host).transform;
@@ -442,10 +458,11 @@ export function verifyHudLayout(): void {
   assert(helpCopy.includes('设置常规页「玩法」可切「八杀 / 占点」'), 'HUD：说明卡应写从常规页切玩法');
   assert(helpCopy.includes('设置常规页可换自己的英雄'), 'HUD：说明卡应写从常规页换自己');
   assert(helpCopy.includes('瞄准摇杆'), 'HUD：说明卡应提到触屏左下瞄准摇杆');
+  assert(helpCopy.includes('顶右「科」'), 'HUD：说明卡应写科技入口');
   assert(!settingsHint.includes('左上可换自己或队友'), 'HUD：常规页提示不应再写左上换队友');
   assert(settingsHint.includes('常规页「玩法」可切八杀 / 占点'), 'HUD：常规页提示应写玩法入口');
   assert(skillsDisplay === 'flex' && skillsDir === 'row', 'HUD：四键应一行横排');
-  assertCornerHud(host, skills, cluster, helpFab, settingsFab, 'HUD：横窗');
+  assertCornerHud(host, skills, cluster, helpFab, settingsFab, 'HUD：横窗', techFab);
   const skillSize = skillBtns[0].getBoundingClientRect();
   assert(skillSize.width >= 56 && skillSize.width <= 64, `HUD：技能键应约 60px（实际 ${skillSize.width}）`);
   assert(Math.abs(skillSize.width - skillSize.height) < 1, 'HUD：技能键应保持圆形');

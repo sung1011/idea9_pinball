@@ -1,7 +1,15 @@
 import type { MatchSnapshot } from '../core/matchSession';
 
+export type ResultTechInfo = {
+  practice?: boolean;
+  granted?: boolean;
+  amount?: number;
+  balance?: number;
+  note?: string;
+};
+
 export type ResultPanel = {
-  sync: (snap: MatchSnapshot) => void;
+  sync: (snap: MatchSnapshot, tech?: ResultTechInfo | null) => void;
 };
 
 function formatElapsed(sec: number): string {
@@ -70,12 +78,15 @@ export function createResultPanel(host: HTMLElement, onRestart: () => void): Res
   const elapsed = document.createElement('p');
   elapsed.className = 'resultPanelTime';
 
+  const techLine = document.createElement('p');
+  techLine.className = 'resultPanelTech';
+
   const again = document.createElement('button');
   again.type = 'button';
   again.className = 'resultPanelAgain';
   again.textContent = '再来一局';
 
-  card.append(burst, closeBtn, title, reason, scores, elapsed, again);
+  card.append(burst, closeBtn, title, reason, scores, elapsed, techLine, again);
   overlay.appendChild(card);
   host.appendChild(overlay);
 
@@ -135,6 +146,24 @@ export function createResultPanel(host: HTMLElement, onRestart: () => void): Res
     elapsed.textContent = `用时 ${formatElapsed(snap.elapsedSec)}`;
   };
 
+  const fillTech = (snap: MatchSnapshot, tech: ResultTechInfo | null | undefined): void => {
+    if (snap.practice || tech?.practice) {
+      techLine.textContent = '练习不发科技点';
+      return;
+    }
+    if (tech?.note) {
+      const amount = tech.amount ?? 0;
+      const balance = tech.balance;
+      if (tech.granted && amount > 0 && balance != null) {
+        techLine.textContent = `科技点 +${amount} · 余额 ${balance}`;
+        return;
+      }
+      techLine.textContent = tech.note;
+      return;
+    }
+    techLine.textContent = '';
+  };
+
   closeBtn.addEventListener('click', (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
@@ -153,7 +182,7 @@ export function createResultPanel(host: HTMLElement, onRestart: () => void): Res
   });
 
   return {
-    sync(snap) {
+    sync(snap, tech) {
       if (snap.phase !== 'result') {
         dismissed = false;
         lastPhase = snap.phase;
@@ -170,6 +199,7 @@ export function createResultPanel(host: HTMLElement, onRestart: () => void): Res
       }
       const justOpened = !overlay.classList.contains('isOn');
       fill(snap);
+      fillTech(snap, tech);
       overlay.classList.add('isOn');
       if (justOpened) {
         restartBurst();
