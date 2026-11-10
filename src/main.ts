@@ -41,6 +41,7 @@ import { verifyChainUlt } from './core/verifyChainUlt';
 import { resetChainEqualize } from './core/chainEqualize';
 import { verifyAimStick } from './core/verifyAimStick';
 import { verifyHookRider } from './core/verifyHookRider';
+import { verifyHookRiderRun } from './core/verifyHookRiderRun';
 import { verifyTechTree } from './core/verifyTechTree';
 import { creditUltCombat } from './core/ultEnergy';
 import { resetMagnetWells } from './core/magnetWells';
@@ -67,6 +68,7 @@ import { createAimPreview } from './render/aimPreview';
 import { createArenaView } from './render/arenaView';
 import { createBallView } from './render/ballView';
 import { loadHookRiderArt } from './render/hookRiderArt';
+import { loadHookRiderRunArt } from './render/hookRiderRunArt';
 import { createCombatFloatView } from './render/combatFloatView';
 import { createVisibleLockGate, createWorldViewSession, shiftWorldViewLayout } from './render/worldViewLock';
 import { applyWorldTransform, type WorldTransform } from './render/worldTransform';
@@ -131,6 +133,8 @@ async function boot(): Promise<void> {
   });
   host.appendChild(app.canvas);
   await loadHookRiderArt();
+  await loadHookRiderRunArt();
+  verifyHookRiderRun();
 
   const world = new Container();
   const arena = createArenaView();
@@ -593,6 +597,7 @@ async function boot(): Promise<void> {
       views[i].sync(balls[i], {
         charging: next.openingChargeRemain > 0,
         selfMark: balls[i].id === player.id,
+        runDt: dt,
       });
     }
   });

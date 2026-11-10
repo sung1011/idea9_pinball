@@ -21,6 +21,7 @@ import {
   hookRiderRotation,
   setHookRiderArt,
 } from '../render/hookRiderArt';
+import { getHookRiderRunArt, setHookRiderRunArt } from '../render/hookRiderRunArt';
 
 function assert(cond: boolean, message: string): void {
   if (!cond) {
@@ -56,6 +57,8 @@ function stubTexture(): Texture {
 /** 全局 A 骑装：七英雄按真实队伍选身躯贴图；只改显示，不改碰撞/枪尖/CD；缺图回退圆盾。 */
 export function verifyHookRider(): void {
   const prev = getHookRiderArt();
+  const prevRun = getHookRiderRunArt();
+  setHookRiderRunArt(null);
   try {
     assert(BALL_RADIUS === 1, '钩刺骑装：碰撞半径仍应为 1');
     assert(SPEAR_TIP_DIST === 2.24, '钩刺骑装：枪尖距仍应为 2.24');
@@ -229,5 +232,6 @@ export function verifyHookRider(): void {
     assert(chargeFx instanceof Graphics && chargeFx !== hookView.root.children[0], '骑装：残影仍是独立 Graphics，不改成钩刺特效');
   } finally {
     setHookRiderArt(prev);
+    setHookRiderRunArt(prevRun);
   }
 }

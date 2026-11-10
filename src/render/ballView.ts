@@ -1,13 +1,31 @@
-import { Container, Graphics, Sprite, Text } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
 import { spearCdFill } from '../core/collisionDamage';
 import { BALL_RADIUS, SPEAR_TIP_DIST } from '../core/constants';
 import { getHookRiderArt, HOOK_RIDER, hookRiderBodyTexture, hookRiderRotation } from './hookRiderArt';
+import {
+  createHookRiderRunState,
+  hookRiderRunIdentity,
+  stepHookRiderGait,
+  type HookRiderGaitPose,
+} from './hookRiderRun';
+import {
+  getHookRiderRunArt,
+  hookRiderJointLocal,
+  HOOK_RIDER_RUN_JOINTS,
+  type HookRiderRunArt,
+} from './hookRiderRunArt';
 
 export type BallViewSyncOpts = {
   charging?: boolean;
   /** 仅本地玩家脚下单层身份圈；队友/敌方不要传 true */
   selfMark?: boolean;
+  /** 分层四蹄。分层已加载时默认开；显式 false 回退整图。 */
+  showRun?: boolean;
+  /** 推进步态的秒数。正式 ticker 每帧传入。 */
+  runDt?: number;
+  /** 预览放大时可隐藏编号/血条；正式入口不传。 */
+  hideChrome?: boolean;
 };
 
 export type BallView = {
@@ -278,6 +296,78 @@ function makeHookRiderSprites(team?: BallBody['team']): { horse: Sprite; spear: 
   return { horse, spear: spearSpr };
 }
 
+type RunLayer = {
+  sprite: Sprite;
+  baseX: number;
+  baseY: number;
+};
+
+type RunRig = {
+  root: Container;
+  body: Sprite;
+  rider: Sprite;
+  tail: RunLayer;
+  fl: RunLayer;
+  fr: RunLayer;
+  hl: RunLayer;
+  hr: RunLayer;
+};
+
+function makeRunLayer(texture: Texture, joint: { x: number; y: number }): RunLayer {
+  const sprite = new Sprite(texture);
+  sprite.width = HOOK_RIDER.bodyWorldW;
+  sprite.height = HOOK_RIDER.bodyWorldH;
+  sprite.anchor.set(joint.x / HOOK_RIDER.bodyTexW, joint.y / HOOK_RIDER.bodyTexH);
+  const pos = hookRiderJointLocal(joint.x, joint.y);
+  sprite.position.set(pos.x, pos.y);
+  sprite.eventMode = 'none';
+  return { sprite, baseX: pos.x, baseY: pos.y };
+}
+
+function makeRunBodySprite(texture: Texture): Sprite {
+  const sprite = new Sprite(texture);
+  sprite.anchor.set(HOOK_RIDER.bodyAnchorX, HOOK_RIDER.bodyAnchorY);
+  sprite.width = HOOK_RIDER.bodyWorldW;
+  sprite.height = HOOK_RIDER.bodyWorldH;
+  sprite.eventMode = 'none';
+  return sprite;
+}
+
+function makeRunRig(art: HookRiderRunArt, team?: BallBody['team']): RunRig {
+  const red = team === 'red';
+  const root = new Container();
+  const hl = makeRunLayer(art.hl, HOOK_RIDER_RUN_JOINTS.hl);
+  const hr = makeRunLayer(art.hr, HOOK_RIDER_RUN_JOINTS.hr);
+  const fl = makeRunLayer(art.fl, HOOK_RIDER_RUN_JOINTS.fl);
+  const fr = makeRunLayer(art.fr, HOOK_RIDER_RUN_JOINTS.fr);
+  const body = makeRunBodySprite(red ? art.bodyRed : art.body);
+  const tail = makeRunLayer(art.tail, HOOK_RIDER_RUN_JOINTS.tail);
+  const rider = makeRunBodySprite(red ? art.riderRed : art.rider);
+  root.addChild(hl.sprite, hr.sprite, fl.sprite, fr.sprite, body, tail.sprite, rider);
+  root.eventMode = 'none';
+  root.visible = false;
+  return { root, body, rider, tail, fl, fr, hl, hr };
+}
+
+function applyRunPose(rig: RunRig, pose: HookRiderGaitPose): void {
+  rig.body.position.set(0, pose.bodyY);
+  rig.body.rotation = 0;
+  rig.rider.position.set(0, pose.riderY);
+  rig.rider.rotation = pose.riderRot;
+  rig.tail.sprite.position.set(rig.tail.baseX, rig.tail.baseY);
+  rig.tail.sprite.rotation = pose.tailRot;
+  const legs = [
+    [rig.fl, pose.fl],
+    [rig.fr, pose.fr],
+    [rig.hl, pose.hl],
+    [rig.hr, pose.hr],
+  ] as const;
+  for (const [layer, p] of legs) {
+    layer.sprite.position.set(layer.baseX + p.dx, layer.baseY + p.dy);
+    layer.sprite.rotation = p.rot;
+  }
+}
+
 export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): BallView {
   const root = new Container();
   const mark = new Graphics();
@@ -288,9 +378,15 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
   const hpBar = new Graphics();
   const spear = new Graphics();
   const rider = makeHookRiderSprites(ball.team);
+  const runArt = getHookRiderRunArt();
+  const runRig = runArt ? makeRunRig(runArt, ball.team) : null;
+  const runState = createHookRiderRunState();
   root.addChild(mark, fx);
   if (rider) {
     root.addChild(rider.horse);
+  }
+  if (runRig) {
+    root.addChild(runRig.root);
   }
   root.addChild(body, slotLabel, hpBar);
   if (rider) {
@@ -299,10 +395,18 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
   root.addChild(spear);
   const trail: Array<{ x: number; y: number }> = [];
   let marked = !!init.selfMark;
+  let showRun = init.showRun !== false && !!runRig;
+  let hideChrome = init.hideChrome === true;
 
   const sync = (next: BallBody, opts: BallViewSyncOpts = {}): void => {
     if (typeof opts.selfMark === 'boolean') {
       marked = opts.selfMark;
+    }
+    if (typeof opts.showRun === 'boolean') {
+      showRun = opts.showRun === true && !!runRig;
+    }
+    if (typeof opts.hideChrome === 'boolean') {
+      hideChrome = opts.hideChrome;
     }
     root.visible = next.inPlay;
     root.position.set(next.x, next.y);
@@ -312,6 +416,16 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
       mark.clear();
       mark.visible = false;
       slotLabel.visible = false;
+      runState.phase = 0;
+      runState.amp = 0;
+      if (runRig) {
+        applyRunPose(runRig, hookRiderRunIdentity());
+        runRig.root.visible = false;
+      }
+      if (rider) {
+        rider.horse.visible = false;
+        rider.spear.visible = false;
+      }
       return;
     }
 
@@ -338,7 +452,11 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
 
     const dir = next.hasAim ? unit(next.aimX, next.aimY) : unit(next.facingX, next.facingY);
     body.clear();
-    syncSlotLabel(slotLabel, next);
+    if (hideChrome) {
+      slotLabel.visible = false;
+    } else {
+      syncSlotLabel(slotLabel, next);
+    }
     if (rider) {
       const fade = next.invincibleRemain > 0 || next.phaseRemain > 0 ? 0.72 : 1;
       const rot = hookRiderRotation(dir.x, dir.y);
@@ -346,13 +464,43 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
       if (bodyTex && rider.horse.texture !== bodyTex) {
         rider.horse.texture = bodyTex;
       }
-      rider.horse.visible = true;
+      const useRun = showRun && !!runRig && !!runArt;
+      rider.horse.visible = !useRun;
       rider.spear.visible = true;
       rider.horse.alpha = fade;
       rider.spear.alpha = fade;
       rider.horse.rotation = rot;
       rider.spear.rotation = rot;
       rider.spear.position.set(dir.x * SPEAR_TIP_DIST, dir.y * SPEAR_TIP_DIST);
+      if (runRig && runArt) {
+        const red = next.team === 'red';
+        const runBody = red ? runArt.bodyRed : runArt.body;
+        const runRider = red ? runArt.riderRed : runArt.rider;
+        if (runRig.body.texture !== runBody) {
+          runRig.body.texture = runBody;
+        }
+        if (runRig.rider.texture !== runRider) {
+          runRig.rider.texture = runRider;
+        }
+        runRig.root.visible = useRun;
+        runRig.root.rotation = rot;
+        runRig.root.alpha = fade;
+        const pose =
+          useRun && (opts.runDt ?? 0) >= 0
+            ? stepHookRiderGait(runState, {
+                vx: next.vx,
+                vy: next.vy,
+                facingX: dir.x,
+                facingY: dir.y,
+                dt: opts.runDt ?? 0,
+              })
+            : hookRiderRunIdentity();
+        if (useRun) {
+          applyRunPose(runRig, pose);
+        } else {
+          applyRunPose(runRig, hookRiderRunIdentity());
+        }
+      }
     } else {
       drawKnightShield(body, next);
       drawPlume(body, dir.x, dir.y, next.color);
@@ -417,7 +565,10 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
     }
 
     hpBar.clear();
-    drawHpBar(hpBar, next.hp, next.maxHp, next.spearCdRemain);
+    hpBar.visible = !hideChrome;
+    if (!hideChrome) {
+      drawHpBar(hpBar, next.hp, next.maxHp, next.spearCdRemain);
+    }
 
     spear.clear();
     if (rider) {
