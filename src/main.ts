@@ -36,6 +36,7 @@ import { verifyWorldViewLock } from './core/verifyWorldViewLock';
 import { verifyRespawnHud } from './core/verifyRespawnHud';
 import { verifyUlt } from './core/verifyUlt';
 import { verifyAimStick } from './core/verifyAimStick';
+import { verifyHookRider } from './core/verifyHookRider';
 import { creditUltCombat } from './core/ultEnergy';
 import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
@@ -53,6 +54,7 @@ import { createTouchPad } from './input/touchPad';
 import { createAimPreview } from './render/aimPreview';
 import { createArenaView } from './render/arenaView';
 import { createBallView } from './render/ballView';
+import { loadHookRiderArt } from './render/hookRiderArt';
 import { createCombatFloatView } from './render/combatFloatView';
 import { createVisibleLockGate, createWorldViewSession, shiftWorldViewLayout } from './render/worldViewLock';
 import { applyWorldTransform, type WorldTransform } from './render/worldTransform';
@@ -95,6 +97,7 @@ async function boot(): Promise<void> {
   verifyRespawnHud();
   verifyUlt();
   verifyAimStick();
+  verifyHookRider();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -111,6 +114,7 @@ async function boot(): Promise<void> {
     resolution: Math.min(window.devicePixelRatio || 1, 2),
   });
   host.appendChild(app.canvas);
+  await loadHookRiderArt();
 
   const world = new Container();
   const arena = createArenaView();

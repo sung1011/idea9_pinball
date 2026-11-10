@@ -1,7 +1,8 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import type { BallBody } from '../core/ballBody';
 import { spearCdFill } from '../core/collisionDamage';
 import { BALL_RADIUS, SPEAR_TIP_DIST } from '../core/constants';
+import { getHookRiderArt, HOOK_RIDER, hookRiderRotation } from './hookRiderArt';
 
 export type BallViewSyncOpts = {
   charging?: boolean;
@@ -43,6 +44,13 @@ function unit(x: number, y: number): { x: number; y: number } {
     return { x: 1, y: 0 };
   }
   return { x: x / len, y: y / len };
+}
+
+/** 钩刺骑装时的队色描边，画在碰撞圆上，不填充以免挡住人马。 */
+function drawTeamRing(g: Graphics, ball: BallBody): void {
+  const alpha = ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
+  g.circle(0, 0, BALL_RADIUS);
+  g.stroke({ color: ball.color, width: 0.07 * SKIN, alpha: 0.95 * alpha });
 }
 
 /** 圆盾 + 本队第几人大号数字。盾半径与碰撞圆一致。 */
@@ -241,6 +249,26 @@ function drawChargeFx(
   }
 }
 
+function makeHookRiderSprites(): { horse: Sprite; spear: Sprite } | null {
+  const art = getHookRiderArt();
+  if (!art) {
+    return null;
+  }
+  const horse = new Sprite(art.body);
+  horse.anchor.set(HOOK_RIDER.bodyAnchorX, HOOK_RIDER.bodyAnchorY);
+  horse.width = HOOK_RIDER.bodyWorldW;
+  horse.height = HOOK_RIDER.bodyWorldH;
+  horse.eventMode = 'none';
+  horse.visible = false;
+  const spearSpr = new Sprite(art.spear);
+  spearSpr.anchor.set(HOOK_RIDER.spearAnchorX, HOOK_RIDER.spearAnchorY);
+  spearSpr.width = HOOK_RIDER.spearWorldW;
+  spearSpr.height = HOOK_RIDER.spearWorldH;
+  spearSpr.eventMode = 'none';
+  spearSpr.visible = false;
+  return { horse, spear: spearSpr };
+}
+
 export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): BallView {
   const root = new Container();
   const mark = new Graphics();
@@ -250,7 +278,16 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
   const slotLabel = makeSlotLabel(ball.teamSlot);
   const hpBar = new Graphics();
   const spear = new Graphics();
-  root.addChild(mark, fx, body, slotLabel, hpBar, spear);
+  const rider = makeHookRiderSprites();
+  root.addChild(mark, fx);
+  if (rider) {
+    root.addChild(rider.horse);
+  }
+  root.addChild(body, slotLabel, hpBar);
+  if (rider) {
+    root.addChild(rider.spear);
+  }
+  root.addChild(spear);
   const trail: Array<{ x: number; y: number }> = [];
   let marked = !!init.selfMark;
 
@@ -290,11 +327,29 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
       drawSelfMarkRings(mark);
     }
 
-    body.clear();
-    drawKnightShield(body, next);
-    syncSlotLabel(slotLabel, next);
     const dir = next.hasAim ? unit(next.aimX, next.aimY) : unit(next.facingX, next.facingY);
-    drawPlume(body, dir.x, dir.y, next.color);
+    const useHookArt = next.hero === 'hook' && !!rider;
+    body.clear();
+    syncSlotLabel(slotLabel, next);
+    if (useHookArt && rider) {
+      const fade = next.invincibleRemain > 0 || next.phaseRemain > 0 ? 0.72 : 1;
+      const rot = hookRiderRotation(dir.x, dir.y);
+      rider.horse.visible = true;
+      rider.spear.visible = true;
+      rider.horse.alpha = fade;
+      rider.spear.alpha = fade;
+      rider.horse.rotation = rot;
+      rider.spear.rotation = rot;
+      rider.spear.position.set(dir.x * SPEAR_TIP_DIST, dir.y * SPEAR_TIP_DIST);
+      drawTeamRing(body, next);
+    } else {
+      if (rider) {
+        rider.horse.visible = false;
+        rider.spear.visible = false;
+      }
+      drawKnightShield(body, next);
+      drawPlume(body, dir.x, dir.y, next.color);
+    }
     if (next.invincibleRemain > 0) {
       const pulse = 0.45 + 0.45 * (0.5 + 0.5 * Math.sin(next.invincibleRemain * 10));
       body.circle(0, 0, BALL_RADIUS + 0.14 * SKIN);
@@ -357,10 +412,15 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
     drawHpBar(hpBar, next.hp, next.maxHp, next.spearCdRemain);
 
     spear.clear();
-    if (next.hasAim) {
-      drawTargetSpear(spear, next.aimX, next.aimY);
+    if (useHookArt) {
+      spear.visible = false;
     } else {
-      drawTargetSpear(spear, next.facingX, next.facingY);
+      spear.visible = true;
+      if (next.hasAim) {
+        drawTargetSpear(spear, next.aimX, next.aimY);
+      } else {
+        drawTargetSpear(spear, next.facingX, next.facingY);
+      }
     }
   };
 
