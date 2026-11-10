@@ -46,7 +46,7 @@ function unit(x: number, y: number): { x: number; y: number } {
   return { x: x / len, y: y / len };
 }
 
-/** 钩刺骑装时的队色描边，画在碰撞圆上，不填充以免挡住人马。 */
+/** 骑装时的队色描边，画在碰撞圆上，不填充以免挡住人马。红/蓝仍用 ball.color。 */
 function drawTeamRing(g: Graphics, ball: BallBody): void {
   const alpha = ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
   g.circle(0, 0, BALL_RADIUS);
@@ -210,7 +210,7 @@ export function drawSelfMarkRings(g: Graphics): void {
   strokeMilkRing(g, SELF_MARK.outerRadius);
 }
 
-/** 冲锋残影：队色拖线 + 淡盾影 + 少量金尘。 */
+/** 冲锋残影：队色拖线 + 淡圆影 + 少量金尘。全英雄共用，不改成钩刺特效。 */
 function drawChargeFx(
   g: Graphics,
   next: BallBody,
@@ -328,10 +328,9 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
     }
 
     const dir = next.hasAim ? unit(next.aimX, next.aimY) : unit(next.facingX, next.facingY);
-    const useHookArt = next.hero === 'hook' && !!rider;
     body.clear();
     syncSlotLabel(slotLabel, next);
-    if (useHookArt && rider) {
+    if (rider) {
       const fade = next.invincibleRemain > 0 || next.phaseRemain > 0 ? 0.72 : 1;
       const rot = hookRiderRotation(dir.x, dir.y);
       rider.horse.visible = true;
@@ -343,10 +342,6 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
       rider.spear.position.set(dir.x * SPEAR_TIP_DIST, dir.y * SPEAR_TIP_DIST);
       drawTeamRing(body, next);
     } else {
-      if (rider) {
-        rider.horse.visible = false;
-        rider.spear.visible = false;
-      }
       drawKnightShield(body, next);
       drawPlume(body, dir.x, dir.y, next.color);
     }
@@ -412,7 +407,7 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
     drawHpBar(hpBar, next.hp, next.maxHp, next.spearCdRemain);
 
     spear.clear();
-    if (useHookArt) {
+    if (rider) {
       spear.visible = false;
     } else {
       spear.visible = true;

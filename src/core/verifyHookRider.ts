@@ -1,6 +1,7 @@
 import { Graphics, Sprite, Texture } from 'pixi.js';
 import { BALL_RADIUS, SPEAR_TIP_CD, SPEAR_TIP_DIST, SPEAR_TIP_RADIUS } from './constants';
 import { spearTipPos } from './collisionDamage';
+import { HERO_IDS } from '../heroes/heroIds';
 import { createMatchRoster } from './matchSession';
 import { createBallView } from '../render/ballView';
 import {
@@ -48,7 +49,7 @@ function stubTexture(): Texture {
   return Texture.from(canvas);
 }
 
-/** 钩刺 A 骑装：只改显示，不改碰撞/枪尖/CD；非钩刺仍圆盾；缺图回退。 */
+/** 全局 A 骑装：七英雄红蓝同一套贴图/锚点；只改显示，不改碰撞/枪尖/CD；缺图回退圆盾。 */
 export function verifyHookRider(): void {
   const prev = getHookRiderArt();
   try {
@@ -97,9 +98,50 @@ export function verifyHookRider(): void {
     const hookSprites = spritesOf(hookView);
     const otherSprites = spritesOf(otherView);
     assert(hookSprites.length === 2, '钩刺骑装：钩刺应有人马+枪头两张 Sprite');
-    assert(otherSprites.length === 2 && otherSprites.every((spr) => !spr.visible), '钩刺骑装：其他英雄应隐藏骑装');
+    assert(otherSprites.length === 2, '骑装：其他英雄也应有人马+枪头两张 Sprite');
+    chainBall.facingX = -1;
+    chainBall.facingY = 0;
+    chainBall.hasAim = false;
+    otherView.sync(chainBall);
+    assert(otherSprites.every((spr) => spr.visible), '骑装：链生存活应显示同一套人马');
     const otherSpear = otherView.root.children[otherView.root.children.length - 1];
-    assert(otherSpear instanceof Graphics && otherSpear.visible, '钩刺骑装：其他英雄仍用程序金矛');
+    assert(otherSpear instanceof Graphics && !otherSpear.visible, '骑装：有图时各英雄都隐藏程序金矛');
+    assert(HERO_IDS.length === 7, '骑装：英雄池仍为 7');
+    const red1 = roster.find((ball) => ball.team === 'red' && ball.teamSlot === 1);
+    const blue1 = roster.find((ball) => ball.team === 'blue' && ball.teamSlot === 1);
+    if (!red1 || !blue1) {
+      throw new Error('骑装：应能拿到红1与蓝1');
+    }
+    assert(red1.color === 0xe24a4a, '骑装：红1队色应保持当前');
+    assert(blue1.color === 0x3d7cf0, '骑装：蓝1队色应保持当前');
+    for (const hero of HERO_IDS) {
+      const sample = {
+        ...hookBall,
+        hero,
+        id: 8100 + HERO_IDS.indexOf(hero),
+        facingX: 1,
+        facingY: 0,
+        hasAim: false,
+      };
+      const view = createBallView(sample);
+      view.sync(sample);
+      const sprs = spritesOf(view);
+      assert(sprs.length === 2 && sprs.every((spr) => spr.visible), `骑装：${hero} 应显示同一套人马`);
+      assert(near(sprs[1].position.x, SPEAR_TIP_DIST), `骑装：${hero} 朝右枪尖 x=2.24`);
+      const procG = view.root.children[view.root.children.length - 1];
+      assert(procG instanceof Graphics && !procG.visible, `骑装：${hero} 有图时不画第二根程序枪`);
+    }
+    const dupA = { ...red1, hero: 'mirror' as const, id: 9001, facingX: 1, facingY: 0, hasAim: false };
+    const dupB = { ...blue1, hero: 'mirror' as const, id: 9002, facingX: -1, facingY: 0, hasAim: false };
+    const dupViewA = createBallView(dupA);
+    const dupViewB = createBallView(dupB);
+    dupViewA.sync(dupA);
+    dupViewB.sync(dupB);
+    const dupSpritesB = spritesOf(dupViewB);
+    assert(spritesOf(dupViewA).every((spr) => spr.visible), '骑装：同局重复英雄红方应显示人马');
+    assert(dupSpritesB.every((spr) => spr.visible), '骑装：同局重复英雄蓝方应显示人马');
+    assert(dupA.color === 0xe24a4a && dupB.color === 0x3d7cf0, '骑装：红蓝队色应保持当前不同');
+    assert(near(dupSpritesB[1].position.x, -SPEAR_TIP_DIST), '骑装：蓝方朝左枪尖 x=-2.24');
 
     hookBall.facingX = 1;
     hookBall.facingY = 0;
@@ -136,10 +178,10 @@ export function verifyHookRider(): void {
 
     hookBall.hero = 'ring';
     hookView.sync(hookBall);
-    assert(spritesOf(hookView).every((spr) => !spr.visible), '钩刺骑装：换走钩刺应隐藏骑装');
-    assert(proc instanceof Graphics && proc.visible, '钩刺骑装：换走钩刺应回到程序金矛');
+    assert(spritesOf(hookView).every((spr) => spr.visible), '骑装：换英雄后仍显示同一骑装');
+    assert(proc instanceof Graphics && !proc.visible, '骑装：换英雄后仍隐藏程序金矛');
 
-    hookBall.hero = 'hook';
+    hookBall.hero = 'well';
     hookBall.inPlay = false;
     hookView.sync(hookBall);
     assert(!hookView.root.visible, '钩刺骑装：死亡仍隐藏整颗');
@@ -147,7 +189,10 @@ export function verifyHookRider(): void {
     hookBall.inPlay = true;
     hookView.sync(hookBall, { charging: true });
     assert(hookView.root.visible, '钩刺骑装：复活后应可见');
+    assert(spritesOf(hookView).every((spr) => spr.visible), '骑装：复活后非钩刺仍显示人马');
     assert(hookView.root.children[1] instanceof Graphics, '钩刺骑装：冲锋残影层不改');
+    const chargeFx = hookView.root.children[1];
+    assert(chargeFx instanceof Graphics && chargeFx !== hookView.root.children[0], '骑装：残影仍是独立 Graphics，不改成钩刺特效');
   } finally {
     setHookRiderArt(prev);
   }

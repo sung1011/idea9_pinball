@@ -2,7 +2,8 @@ import { Assets, Texture } from 'pixi.js';
 import { SPEAR_TIP_DIST } from '../core/constants';
 
 /**
- * 钩刺 A 骑装（原图像素裁切拆枪，未重绘、未拉伸人马）。
+ * 全局共用 A 骑装（原图像素裁切拆枪，未重绘、未拉伸人马）。
+ * 七英雄红蓝同一套贴图与锚点；队色仍走 ball.color 描边，不新配色。
  * 身躯按马头前沿 1.82 格对齐，枪头贴片锚在真实枪尖 SPEAR_TIP_DIST=2.24。
  * 1920×1080 cover 下约 71.6×206.1 px，臀宽约 60 px；碰撞圆直径仍 108 px。
  */
@@ -69,7 +70,7 @@ export async function loadHookRiderArt(): Promise<HookRiderArt | null> {
     hookArt = { body, spear };
     return hookArt;
   } catch (err) {
-    console.warn('钩刺骑装贴图加载失败，回退圆盾骑士', err);
+    console.warn('骑装贴图加载失败，回退圆盾骑士', err);
     hookArt = null;
     return null;
   }
