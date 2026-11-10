@@ -9,6 +9,7 @@ import {
   CONTROL_POINT,
   DEBUG_CLOCK_SCALE,
   EIGHT_KILL_LIMIT,
+  EIGHT_KILL_RIFT_ENABLED,
   facingTowardControl,
   KNOCKOUT_SCORE,
   MATCH_COUNTDOWN_SEC,
@@ -797,6 +798,7 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
       tickMidpoint(clockDt);
       const fieldOn =
         isEightKill(mode) && (phase === 'playing' || phase === 'overtime');
+      const riftOn = fieldOn && EIGHT_KILL_RIFT_ENABLED;
       if (fieldOn) {
         for (const grab of potions.tick(balls, elapsedSec, true)) {
           const label = POTION_KIND_LABEL[grab.kind];
@@ -817,13 +819,12 @@ export function createMatchSession(balls: BallBody[], config: MatchConfig = {}) 
                 : `${grab.ball.label}捡到${label}`,
           });
         }
-        const riftHits = rift.tick(clockDt, balls, elapsedSec, now, true);
-        extraHits.push(...riftHits);
-        processKnockouts(riftHits);
       } else {
         potions.tick(balls, elapsedSec, false);
-        rift.tick(clockDt, balls, elapsedSec, now, false);
       }
+      const riftHits = rift.tick(clockDt, balls, elapsedSec, now, riftOn);
+      extraHits.push(...riftHits);
+      processKnockouts(riftHits);
       tickPhase(clockDt);
       if (phase === 'playing' && openingChargeRemain > 0) {
         openingChargeRemain = Math.max(0, openingChargeRemain - clockDt);

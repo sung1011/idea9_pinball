@@ -4,6 +4,7 @@ import { createBallBody } from './ballBody';
 import { collisionDamage, type CollisionHit } from './collisionDamage';
 import {
   EIGHT_KILL_LIMIT,
+  EIGHT_KILL_RIFT_ENABLED,
   HARD_CC_DIMINISH_WINDOW,
   LEFT_PILLAR,
   MAP_HEIGHT,
@@ -78,15 +79,16 @@ function pair() {
   return [red, blue] as const;
 }
 
-/** 八杀模式：击杀计数、药水、地裂矛阵、无领地/矮柱。 */
+/** 八杀模式：击杀计数、药水第 10 秒首刷、无随机环境伤害圈、无领地/矮柱。 */
 export function verifyEightKill(): void {
   assert(DEFAULT_MATCH_MODE === 'eightKill', '八杀：缺省模式应为八杀');
   assert(MATCH_MODE_LABEL.eightKill === '八杀' && MATCH_MODE_LABEL.controlPoint === '占点', '八杀：下拉文案应为八杀/占点');
   assert(isMatchModeId('eightKill') && isMatchModeId('controlPoint') && !isMatchModeId('other'), '八杀：模式 id 应只认两个');
   assert(EIGHT_KILL_LIMIT === 8, '八杀：先到 8 杀');
-  assert(POTION_FIRST_SEC === 20 && POTION_INTERVAL_SEC === 45, '八杀：药水 20s 起每 45s');
-  assert(RIFT_FIRST_SEC === 12 && RIFT_INTERVAL_SEC === 18 && RIFT_WARN_SEC === 2, '八杀：地裂 12s 起每 18s，预警 2s');
-  assert(RIFT_RADIUS === 3.2 && RIFT_DAMAGE === 36 && RIFT_STUN_SEC === 0.6, '八杀：地裂半径/伤/硬直');
+  assert(POTION_FIRST_SEC === 10 && POTION_INTERVAL_SEC === 45, '八杀：药水正式开战 10s 起每 45s');
+  assert(EIGHT_KILL_RIFT_ENABLED === false, '八杀：随机环境伤害圈应关闭');
+  assert(RIFT_FIRST_SEC === 12 && RIFT_INTERVAL_SEC === 18 && RIFT_WARN_SEC === 2, '地裂模块：时序常量保留但不启用');
+  assert(RIFT_RADIUS === 3.2 && RIFT_DAMAGE === 36 && RIFT_STUN_SEC === 0.6, '地裂模块：半径/伤/硬直常量保留');
   assert(POTION_INSET === 3 && POTION_RADIUS === 0.45, '八杀：药水内缩 3、体积可读');
   assert(HARD_CC_DIMINISH_WINDOW === 1.5, '八杀：硬控 1.5s 衰减窗不动');
 
@@ -208,9 +210,18 @@ export function verifyEightKill(): void {
     return (v * 0.31) % 1;
   });
   const dummy = createBallBody({ x: 1, y: 1, color: 0xe24a4a, team: 'red' });
+  potions.tick([dummy], POTION_FIRST_SEC - 0.01, true);
+  assert(potions.snapshot() === null, '八杀：开战 10s 前不应出药水');
   potions.tick([dummy], POTION_FIRST_SEC, true);
   const first = potions.snapshot();
-  assert(!!first, '八杀：开战 20s 应出药水');
+  assert(!!first, '八杀：正式开战 10s 应出药水');
+  potions.tick([dummy], POTION_FIRST_SEC + POTION_INTERVAL_SEC - 0.01, true);
+  assert(
+    potions.snapshot()?.kind === first!.kind &&
+      potions.snapshot()?.x === first!.x &&
+      potions.snapshot()?.y === first!.y,
+    '八杀：未到 45s 间隔不应换瓶',
+  );
   potions.tick([dummy], POTION_FIRST_SEC + POTION_INTERVAL_SEC, true);
   const second = potions.snapshot();
   assert(!!second, '八杀：45s 后应刷新药水');
@@ -263,6 +274,117 @@ export function verifyEightKill(): void {
   applyPotionToBall(sh, 'speed');
   assert(sh.potionDamageRemain > 0 && sh.potionSpeedRemain > 0 && sh.potionShieldHp === POTION_SHIELD, '八杀：三种增益可共存');
 
+  const [sessRed, sessBlue] = pair();
+  sessRed.x = MAP_WIDTH / 2;
+  sessRed.y = MAP_HEIGHT / 2;
+  sessBlue.x = MAP_WIDTH / 2;
+  sessBlue.y = MAP_HEIGHT / 2 + 4;
+  sessRed.invincibleRemain = 0;
+  sessBlue.invincibleRemain = 0;
+  let sessRoll = 0;
+  const potionMatch = createMatchSession([sessRed, sessBlue], {
+    countdownSec: 0,
+    playSec: 240,
+    random: () => {
+      const v = sessRoll;
+      sessRoll += 1;
+      return (v * 0.31) % 1;
+    },
+  });
+  potionMatch.tick(POTION_FIRST_SEC - 0.01, []);
+  assert(potionMatch.snapshot().elapsedSec < POTION_FIRST_SEC, '八杀：playing 计时未到 10s');
+  assert(potionMatch.snapshot().potion === null, '八杀：会话 10s 前不应出药水');
+  assert(potionMatch.snapshot().rift === null, '八杀：会话不应生成环境伤害圈');
+  assert(potionMatch.takeExtraHits().length === 0, '八杀：10s 前环境圈不应造成伤害');
+  potionMatch.tick(0.02, []);
+  assert(potionMatch.snapshot().elapsedSec >= POTION_FIRST_SEC, '八杀：应跨过正式开战 10s');
+  const sessFirst = potionMatch.snapshot().potion;
+  assert(!!sessFirst, '八杀：会话跨过 10s 应出首瓶');
+  assert(potionMatch.snapshot().rift === null, '八杀：首瓶时仍无环境伤害圈');
+  potionMatch.tick(POTION_INTERVAL_SEC - 0.02, []);
+  assert(
+    potionMatch.snapshot().potion?.kind === sessFirst!.kind &&
+      potionMatch.snapshot().potion?.x === sessFirst!.x &&
+      potionMatch.snapshot().potion?.y === sessFirst!.y,
+    '八杀：会话未到后刷点不应换瓶',
+  );
+  potionMatch.tick(0.03, []);
+  const sessSecond = potionMatch.snapshot().potion;
+  assert(!!sessSecond, '八杀：会话 10+45s 应后刷');
+  assert(
+    sessSecond!.kind !== sessFirst!.kind || sessSecond!.x !== sessFirst!.x || sessSecond!.y !== sessFirst!.y,
+    '八杀：后刷应换角或换种类',
+  );
+
+  const [cdRed, cdBlue] = pair();
+  const counted = createMatchSession([cdRed, cdBlue], { countdownSec: 5, playSec: 240 });
+  counted.tick(5, []);
+  assert(counted.snapshot().phase === 'playing', '八杀：5s 倒计时应进入 playing');
+  assert(Math.abs(counted.snapshot().elapsedSec) < 1e-6, '八杀：倒计时结束 elapsedSec 仍为 0');
+  assert(counted.snapshot().potion === null, '八杀：倒计时结束瞬间不应出药水');
+  counted.tick(POTION_FIRST_SEC - 0.01, []);
+  assert(counted.snapshot().potion === null, '八杀：倒计时后未满 10s 不应出药水');
+  counted.tick(0.02, []);
+  assert(!!counted.snapshot().potion, '八杀：倒计时后正式开战 10s 应出首瓶');
+
+  const [skipRed, skipBlue] = pair();
+  const skipped = createMatchSession([skipRed, skipBlue], { countdownSec: 5, playSec: 240 });
+  assert(skipped.skipOpening(), '八杀：应能跳过倒计时');
+  assert(skipped.snapshot().phase === 'playing' && skipped.snapshot().elapsedSec === 0, '八杀：跳过倒计时 elapsedSec 从 0 起');
+  skipped.tick(POTION_FIRST_SEC - 0.01, []);
+  assert(skipped.snapshot().potion === null, '八杀：跳过倒计时后未满 10s 不应出药水');
+  skipped.tick(0.02, []);
+  assert(!!skipped.snapshot().potion, '八杀：跳过倒计时后正式开战 10s 应出首瓶');
+
+  const [rstRed, rstBlue] = pair();
+  const restarted = createMatchSession([rstRed, rstBlue], { countdownSec: 0, playSec: 240 });
+  restarted.tick(POTION_FIRST_SEC + 1, []);
+  assert(!!restarted.snapshot().potion, '八杀：重开前应已有药水');
+  restarted.reset();
+  assert(restarted.snapshot().elapsedSec === 0 && restarted.snapshot().potion === null, '八杀：重开应清计时与场上药水');
+  restarted.tick(POTION_FIRST_SEC - 0.01, []);
+  assert(restarted.snapshot().potion === null, '八杀：重开后未满 10s 不应沿用旧计时出药');
+  restarted.tick(0.02, []);
+  assert(!!restarted.snapshot().potion, '八杀：重开后正式开战 10s 应出新首瓶');
+
+  const [pauseRed, pauseBlue] = pair();
+  const paused = createMatchSession([pauseRed, pauseBlue], {
+    countdownSec: 0,
+    playSec: 240,
+    clockScale: 0,
+  });
+  paused.tick(20, []);
+  assert(paused.snapshot().elapsedSec === 0 && paused.snapshot().potion === null, '八杀：时钟暂停时不应推进药剂');
+  assert(paused.snapshot().rift === null && paused.takeExtraHits().length === 0, '八杀：时钟暂停时不应生成环境圈');
+
+  const [cpRed, cpBlue] = pair();
+  const point = createMatchSession([cpRed, cpBlue], { mode: 'controlPoint', countdownSec: 0, playSec: 80 });
+  point.tick(POTION_FIRST_SEC, []);
+  point.tick(RIFT_FIRST_SEC, []);
+  point.tick(POTION_INTERVAL_SEC, []);
+  assert(point.snapshot().potion === null, '占点：不应出药水');
+  assert(point.snapshot().rift === null, '占点：不应出环境伤害圈');
+  assert(point.takeExtraHits().length === 0, '占点：环境圈不应造成伤害');
+
+  const [liveRed, liveBlue] = pair();
+  liveRed.x = RIFT_RADIUS;
+  liveRed.y = RIFT_RADIUS;
+  liveBlue.x = MAP_WIDTH - 1;
+  liveBlue.y = MAP_HEIGHT - 1;
+  liveRed.invincibleRemain = 0;
+  liveBlue.invincibleRemain = 0;
+  const liveHp = liveRed.hp;
+  const live = createMatchSession([liveRed, liveBlue], { countdownSec: 0, playSec: 80 });
+  live.tick(RIFT_FIRST_SEC, []);
+  assert(live.snapshot().rift === null, '八杀：12s 不应预警环境圈');
+  live.tick(RIFT_WARN_SEC, []);
+  assert(live.snapshot().rift === null, '八杀：预警时长后仍无环境圈');
+  assert(live.takeExtraHits().length === 0, '八杀：环境圈关闭后不应出伤害');
+  assert(liveRed.hp === liveHp && liveRed.stunRemain === 0, '八杀：关闭后圈内单位不应受伤或硬直');
+  live.tick(RIFT_INTERVAL_SEC, []);
+  live.tick(RIFT_WARN_SEC, []);
+  assert(live.snapshot().rift === null && live.takeExtraHits().length === 0, '八杀：后续间隔仍不生成环境圈');
+
   const rift = createRiftHazard(() => 0);
   const [rRed, rBlue] = pair();
   rRed.x = RIFT_RADIUS;
@@ -272,12 +394,21 @@ export function verifyEightKill(): void {
   rRed.invincibleRemain = 0;
   rBlue.invincibleRemain = 0;
   const warnHits = rift.tick(0, [rRed, rBlue], RIFT_FIRST_SEC, 0, true);
-  assert(warnHits.length === 0 && rift.snapshot()?.phase === 'warn', '八杀：12s 应先预警');
+  assert(warnHits.length === 0 && rift.snapshot()?.phase === 'warn', '地裂模块：enabled 时 12s 应先预警');
   const burstHits = rift.tick(RIFT_WARN_SEC, [rRed, rBlue], RIFT_FIRST_SEC + RIFT_WARN_SEC, RIFT_WARN_SEC, true);
-  assert(burstHits.some((h) => h.victimId === rRed.id && h.environment), '八杀：爆出应对圈内环境伤害');
-  assert(!burstHits.some((h) => h.victimId === rBlue.id), '八杀：圈外不应受伤');
-  assert(Math.abs(rRed.hp - (MAX_HP - RIFT_DAMAGE)) < 1e-6, '八杀：地裂伤 36');
-  assert(rRed.stunRemain > 0.55, '八杀：地裂应上 0.6s 硬直');
+  assert(burstHits.some((h) => h.victimId === rRed.id && h.environment), '地裂模块：爆出应对圈内环境伤害');
+  assert(!burstHits.some((h) => h.victimId === rBlue.id), '地裂模块：圈外不应受伤');
+  assert(Math.abs(rRed.hp - (MAX_HP - RIFT_DAMAGE)) < 1e-6, '地裂模块：地裂伤 36');
+  assert(rRed.stunRemain > 0.55, '地裂模块：地裂应上 0.6s 硬直');
+  const disabled = createRiftHazard(() => 0);
+  const [offRed] = pair();
+  offRed.x = RIFT_RADIUS;
+  offRed.y = RIFT_RADIUS;
+  offRed.invincibleRemain = 0;
+  const offHp = offRed.hp;
+  const offHits = disabled.tick(RIFT_WARN_SEC, [offRed], RIFT_FIRST_SEC + RIFT_WARN_SEC, RIFT_WARN_SEC, false);
+  assert(offHits.length === 0 && disabled.snapshot() === null, '地裂模块：enabled=false 不生成');
+  assert(offRed.hp === offHp && offRed.stunRemain === 0, '地裂模块：关闭时不应伤害');
 
   const [invRed] = pair();
   invRed.x = RIFT_RADIUS;
@@ -286,7 +417,7 @@ export function verifyEightKill(): void {
   const invRift = createRiftHazard(() => 0);
   invRift.tick(0, [invRed], RIFT_FIRST_SEC, 0, true);
   const invHits = invRift.tick(RIFT_WARN_SEC, [invRed], RIFT_FIRST_SEC + 2, 2, true);
-  assert(invHits.length === 0 && invRed.hp === MAX_HP && invRed.stunRemain === 0, '八杀：回场无敌应免疫地裂');
+  assert(invHits.length === 0 && invRed.hp === MAX_HP && invRed.stunRemain === 0, '地裂模块：回场无敌应免疫地裂');
 
   const dim = createBallBody({ x: RIFT_RADIUS, y: RIFT_RADIUS, color: 0xe24a4a, team: 'red' });
   const dimRift = createRiftHazard(() => 0);
@@ -297,7 +428,7 @@ export function verifyEightKill(): void {
   const dimRift2 = createRiftHazard(() => 0);
   dimRift2.tick(0, [dim], RIFT_FIRST_SEC, 10.3, true);
   dimRift2.tick(RIFT_WARN_SEC, [dim], RIFT_FIRST_SEC + 2, 10.3, true);
-  assert(dim.stunRemain < firstStun * 0.6 && dim.stunRemain > 0.2, '八杀：1.5s 内二次地裂硬直应减半');
+  assert(dim.stunRemain < firstStun * 0.6 && dim.stunRemain > 0.2, '地裂模块：1.5s 内二次地裂硬直应减半');
 
   const prevPillars = arenaPillarsEnabled();
   try {
@@ -361,7 +492,9 @@ export function verifyEightKill(): void {
   help.setMode('eightKill');
   help.open();
   const eightCopy = helpHost.querySelector('.helpCardBody')?.textContent ?? '';
-  assert(eightCopy.includes('先到 8 杀') && eightCopy.includes('地裂矛阵'), '八杀：说明卡应写八杀规则');
+  assert(eightCopy.includes('先到 8 杀') && eightCopy.includes('正式开战第 10 秒'), '八杀：说明卡应写八杀规则与 10s 首瓶');
+  assert(eightCopy.includes('无随机环境伤害圈'), '八杀：说明卡应写无随机环境伤害圈');
+  assert(!eightCopy.includes('地裂矛阵'), '八杀：说明卡不应再写地裂矛阵');
   assert(!eightCopy.includes('先到 100 分'), '八杀：说明卡不应写占点百分');
   help.setMode('controlPoint');
   const pointCopy = helpHost.querySelector('.helpCardBody')?.textContent ?? '';
