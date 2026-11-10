@@ -4,6 +4,8 @@ import type { SkillSlot } from '../input/actionTypes';
 import { HERO_IDS } from '../heroes/heroIds';
 import { skillNames, skillShorts } from '../heroes/kitLabels';
 import {
+  CHAIN_ULT_ICON_BYTES,
+  CHAIN_ULT_ICON_FILE,
   HOOK_ULT_ICON_BYTES,
   HOOK_ULT_ICON_FILE,
   RING_ULT_ICON_BYTES,
@@ -34,12 +36,12 @@ function firePointer(el: Element, type: string): void {
   );
 }
 
-/** 28 张普通技能图 + 钩刺/磁环必杀全幅插画：映射、切英雄换图、缺图短名、必杀非 CD。 */
+/** 28 张普通技能图 + 钩刺/磁环/链生必杀全幅插画：映射、切英雄换图、缺图短名、必杀非 CD。 */
 export function verifySkillIcons(): void {
   const files = Object.values(SKILL_ICON_FILES).flat();
   assert(files.length === SKILL_ICON_COUNT, '技能图标：应为 28 张');
   assert(new Set(files).size === SKILL_ICON_COUNT, '技能图标：文件名应互不重复');
-  assert(SKILL_ICON_BYTES === 799512, '技能图标：7×4 成品总量应为 799512 字节');
+  assert(SKILL_ICON_BYTES === 1165200, '技能图标：7×4 成品总量应为 1165200 字节');
   assert(HOOK_ULT_ICON_FILE === 'skill-hook-5-ult.webp', '技能图标：钩刺必杀文件名应对上');
   assert(HOOK_ULT_ICON_BYTES === 102152, '技能图标：钩刺必杀应为预览同一张 102152 字节');
   assert(skillIconFile('hook', 5) === HOOK_ULT_ICON_FILE, '技能图标：钩刺 5 应映射无畏冲锋图');
@@ -48,7 +50,10 @@ export function verifySkillIcons(): void {
   assert(RING_ULT_ICON_BYTES === 87150, '技能图标：磁环必杀应为预览同一张 87150 字节');
   assert(skillIconFile('ring', 5) === RING_ULT_ICON_FILE, '技能图标：磁环 5 应映射沉磁井图');
   assert(skillIconUrl('ring', 5).endsWith(RING_ULT_ICON_FILE), '技能图标：磁环 5 URL 应走 Pages 资源路径');
-  assert(skillIconFile('chain', 5) === '' && skillIconUrl('chain', 5) === '', '技能图标：链生第五键仍不挂图');
+  assert(CHAIN_ULT_ICON_FILE === 'skill-chain-5-ult.webp', '技能图标：链生必杀文件名应对上');
+  assert(CHAIN_ULT_ICON_BYTES === 97352, '技能图标：链生必杀应为附件同一张 97352 字节');
+  assert(skillIconFile('chain', 5) === CHAIN_ULT_ICON_FILE, '技能图标：链生 5 应映射均血图');
+  assert(skillIconUrl('chain', 5).endsWith(CHAIN_ULT_ICON_FILE), '技能图标：链生 5 URL 应走 Pages 资源路径');
   assert(skillIconFile('nail', 5) === '', '技能图标：钉壳第五键仍不挂图');
   assert(skillIconFile('arc', 5) === '', '技能图标：闪弧第五键仍不挂图');
   assert(skillIconFile('well', 5) === '', '技能图标：井绳第五键仍不挂图');
@@ -146,6 +151,26 @@ export function verifySkillIcons(): void {
   assert(bus.sample(0, 0).skillPress === 2, '技能图标：点键仍应进技能按下');
   firePointer(btns[1], 'pointerup');
 
+  pad.sync({ aimingSlot: 0, skillCds: [8, 6, 10, 12], fineTuneOn: false, hero: 'chain', energy: 42 });
+  const chainImgs = [...btns].map((btn) => btn.querySelector<HTMLImageElement>('img.touchSkillIcon'));
+  assert(!!chainImgs[0]?.src.includes('skill-chain-1-heal.webp'), '技能图标：切到链生后 1 槽应为愈链图');
+  assert(!!chainImgs[1]?.src.includes('skill-chain-2-leech.webp'), '技能图标：切到链生后 2 槽应为盾脉图');
+  assert(!!chainImgs[2]?.src.includes('skill-chain-3-yank.webp'), '技能图标：切到链生后 3 槽应为援勾图');
+  assert(!!chainImgs[3]?.src.includes('skill-chain-4-silence.webp'), '技能图标：切到链生后 4 槽应为扰锋图');
+  assert(btns[0].querySelector('.touchSkillName')?.textContent === '愈', '技能图标：链生 1 短名应为愈');
+  assert(btns[0].classList.contains('isCd'), '技能图标：链生 1 应走真实 CD');
+  assert(!!ultImg?.src.includes(CHAIN_ULT_ICON_FILE) && !ultImg.hidden, '技能图标：切到链生后必杀应挂均血图');
+  assert(!ultImg?.src.includes(HOOK_ULT_ICON_FILE), '技能图标：链生必杀不应残留无畏冲锋图');
+  assert(!ultImg?.src.includes(RING_ULT_ICON_FILE), '技能图标：链生必杀不应残留沉磁井图');
+  assert(!ultBtn?.classList.contains('isCd'), '技能图标：均血不应走技能 CD');
+  assert(!ultBtn?.querySelector('.touchSkillCdWipe'), '技能图标：均血不应有 CD 径向遮罩');
+  assert(ultRing?.style.getPropertyValue('--ult-energy') === '0.4200', '技能图标：链生能量环应按能量比例');
+  assert(ultBtn?.getAttribute('aria-label') === '均血', '技能图标：链生第五键无障碍名应为均血');
+  assert(
+    chainImgs.every((img) => img && !img.src.includes('skill-hook-') && !img.src.includes('skill-ring-')),
+    '技能图标：链生四键不应残留钩刺或磁环图',
+  );
+
   const miss = hookImgs[0];
   if (!miss) {
     throw new Error('技能图标：应有可测缺图 img');
@@ -160,8 +185,10 @@ export function verifySkillIcons(): void {
     '技能图标：井绳 1 应为索爆图',
   );
   assert(!btns[0].querySelector<HTMLImageElement>('img.touchSkillIcon')?.src.includes('skill-ring-'), '技能图标：切走磁环后 1 槽不应残留辉环');
+  assert(!btns[0].querySelector<HTMLImageElement>('img.touchSkillIcon')?.src.includes('skill-chain-'), '技能图标：切走链生后 1 槽不应残留愈链');
   assert(!!ultImg && (ultImg.hidden || ultImg.classList.contains('isMiss')), '技能图标：切到无挂图英雄后必杀图应藏');
   assert(!ultImg?.src.includes(RING_ULT_ICON_FILE) || ultImg.hidden, '技能图标：切走磁环后必杀不应仍显示沉磁井');
+  assert(!ultImg?.src.includes(CHAIN_ULT_ICON_FILE) || ultImg.hidden, '技能图标：切走链生后必杀不应仍显示均血');
   pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: 'mirror' });
   assert(
     !!btns[3].querySelector<HTMLImageElement>('img.touchSkillIcon')?.src.includes('skill-mirror-4-wall.webp'),
@@ -170,9 +197,11 @@ export function verifySkillIcons(): void {
   pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: 'hook', energy: 100 });
   assert(!!ultImg?.src.includes(HOOK_ULT_ICON_FILE) && !ultImg.hidden, '技能图标：切回钩刺后必杀图应回来');
   assert(!ultImg?.src.includes(RING_ULT_ICON_FILE), '技能图标：切回钩刺后必杀不应残留沉磁井图');
+  assert(!ultImg?.src.includes(CHAIN_ULT_ICON_FILE), '技能图标：切回钩刺后必杀不应残留均血图');
   assert(!ultBtn?.classList.contains('isCd'), '技能图标：切回后必杀仍不是 CD');
   assert(!!btns[0].querySelector<HTMLImageElement>('img.touchSkillIcon')?.src.includes('skill-hook-1-spear.webp'), '技能图标：切回钩刺后 1 槽应为钩矛');
   assert(!btns[0].querySelector<HTMLImageElement>('img.touchSkillIcon')?.src.includes('skill-ring-'), '技能图标：切回钩刺后 1 槽不应残留磁环图');
+  assert(!btns[0].querySelector<HTMLImageElement>('img.touchSkillIcon')?.src.includes('skill-chain-'), '技能图标：切回钩刺后 1 槽不应残留链生图');
   if (!ultBtn) {
     throw new Error('技能图标：应有第五键可点');
   }
