@@ -22,10 +22,29 @@ function fireOn(el: EventTarget, type: string, init: PointerEventInit): void {
     new PointerEvent(type, {
       bubbles: true,
       cancelable: true,
+      composed: true,
+      view: window,
       pointerId: 1,
       ...init,
     }),
   );
+}
+
+function withoutCapture(fn: () => void): void {
+  const set = Element.prototype.setPointerCapture;
+  const has = Element.prototype.hasPointerCapture;
+  Element.prototype.setPointerCapture = function setPointerCaptureStub() {
+    throw new Error('no capture');
+  };
+  Element.prototype.hasPointerCapture = function hasPointerCaptureStub() {
+    return false;
+  };
+  try {
+    fn();
+  } finally {
+    Element.prototype.setPointerCapture = set;
+    Element.prototype.hasPointerCapture = has;
+  }
 }
 
 function localBox(el: HTMLElement, host: HTMLElement): {
@@ -55,7 +74,7 @@ function overlaps(
   return a.left < b.right - 0.5 && a.right > b.left + 0.5 && a.top < b.bottom - 0.5 && a.bottom > b.top + 0.5;
 }
 
-/** 左下瞄准摇杆：单位方向、死区、钳制、回中、移动中朝向不漂、多指、松手不放技能。 */
+/** 左下瞄准摇杆：单位方向、死区、钳制、回中、移动中朝向不漂、多指、松手不放技能；滑出/window cancel/陈旧 id 可再抓。 */
 export function verifyAimStick(): void {
   const r = 50;
   const dead = readStickOffset(r * 0.05, 0, r);
@@ -223,6 +242,155 @@ export function verifyAimStick(): void {
     pad.releaseStick();
     const restarted = bus.sample(10, 10);
     assert(!restarted.hasAim && !restarted.confirmRelease, '摇杆：重开应清掉残留');
+
+    withoutCapture(() => {
+      fireOn(stick, 'pointerdown', {
+        pointerType: 'touch',
+        pointerId: 31,
+        button: 0,
+        buttons: 1,
+        clientX: cx + 36,
+        clientY: cy,
+      });
+      assert(bus.sample(10, 10).hasAim, '摇杆：关捕获后按下仍应改向');
+      fireOn(canvas, 'pointerup', {
+        pointerType: 'touch',
+        pointerId: 31,
+        button: 0,
+        buttons: 0,
+        clientX: 0,
+        clientY: cy,
+      });
+      fireOn(window, 'pointerup', {
+        pointerType: 'touch',
+        pointerId: 31,
+        button: 0,
+        buttons: 0,
+        clientX: 0,
+        clientY: cy,
+      });
+      const outsideUp = bus.sample(10, 10);
+      assert(!outsideUp.hasAim && !outsideUp.confirmRelease, '摇杆：关捕获后在 canvas/window 松手应回中');
+      assert(head.style.transform === 'translate(0px, 0px)' || head.style.transform === '', '摇杆：关捕获滑出松手摇杆头应回中');
+      fireOn(stick, 'pointerdown', {
+        pointerType: 'touch',
+        pointerId: 32,
+        button: 0,
+        buttons: 1,
+        clientX: cx + 36,
+        clientY: cy,
+      });
+      const recapture = bus.sample(10, 10);
+      assert(recapture.hasAim && near(recapture.aimX, 1, 0.08), '摇杆：滑出松手后应能再抓');
+      fireOn(window, 'pointerup', {
+        pointerType: 'touch',
+        pointerId: 32,
+        button: 0,
+        buttons: 0,
+        clientX: cx + 36,
+        clientY: cy,
+      });
+      assert(!bus.sample(10, 10).hasAim, '摇杆：window pointerup 应回中');
+    });
+
+    withoutCapture(() => {
+      fireOn(stick, 'pointerdown', {
+        pointerType: 'touch',
+        pointerId: 33,
+        button: 0,
+        buttons: 1,
+        clientX: cx + 36,
+        clientY: cy,
+      });
+      fireOn(window, 'pointercancel', {
+        pointerType: 'touch',
+        pointerId: 33,
+        button: 0,
+        buttons: 0,
+        clientX: 0,
+        clientY: cy,
+      });
+      const winCancel = bus.sample(10, 10);
+      assert(!winCancel.hasAim && !winCancel.confirmRelease, '摇杆：window pointercancel 应回中');
+    });
+
+    withoutCapture(() => {
+      fireOn(stick, 'pointerdown', {
+        pointerType: 'touch',
+        pointerId: 34,
+        button: 0,
+        buttons: 1,
+        clientX: cx + 36,
+        clientY: cy,
+      });
+      assert(bus.sample(10, 10).hasAim, '摇杆：陈旧 id 前应仍按住');
+      fireOn(stick, 'pointerdown', {
+        pointerType: 'touch',
+        pointerId: 35,
+        button: 0,
+        buttons: 1,
+        clientX: cx,
+        clientY: cy - 32,
+      });
+      const stole = bus.sample(10, 10);
+      assert(stole.hasAim && stole.aimY < -0.7, '摇杆：陈旧 pointerId 再按下应接管');
+      fireOn(window, 'pointerup', {
+        pointerType: 'touch',
+        pointerId: 35,
+        button: 0,
+        buttons: 0,
+        clientX: cx,
+        clientY: cy - 32,
+      });
+    });
+
+    fireOn(stick, 'pointerdown', {
+      pointerType: 'touch',
+      pointerId: 36,
+      button: 0,
+      buttons: 1,
+      clientX: cx + 36,
+      clientY: cy,
+    });
+    window.dispatchEvent(new Event('orientationchange'));
+    assert(!bus.sample(10, 10).hasAim, '摇杆：orientationchange 应清掉残留');
+
+    fireOn(stick, 'pointerdown', {
+      pointerType: 'touch',
+      pointerId: 37,
+      button: 0,
+      buttons: 1,
+      clientX: cx + 36,
+      clientY: cy,
+    });
+    const visHeld = bus.sample(10, 10);
+    assert(visHeld.hasAim, '摇杆：切后台前应仍按住');
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    assert(!bus.sample(10, 10).hasAim, '摇杆：切后台应清掉残留');
+    Reflect.deleteProperty(document, 'visibilityState');
+
+    const coast = createBallBody({ x: 10, y: 10, color: 1, vx: 8, vy: 0, facingX: 1, facingY: 0 });
+    fireOn(stick, 'pointerdown', {
+      pointerType: 'touch',
+      pointerId: 38,
+      button: 0,
+      buttons: 1,
+      clientX: cx + 36,
+      clientY: cy,
+    });
+    fireOn(stick, 'pointerup', {
+      pointerType: 'touch',
+      pointerId: 38,
+      button: 0,
+      buttons: 0,
+      clientX: cx + 36,
+      clientY: cy,
+    });
+    const coastSample = bus.sample(coast.x, coast.y);
+    assert(!coastSample.hasAim, '摇杆：松手后 hasAim 应为 false');
+    control.tick(coast, coastSample, 1 / 60);
+    assert(Math.hypot(coast.vx, coast.vy) > 7, '摇杆：松手后不应清掉现有速度');
 
     aiming = 1;
     fireOn(canvas, 'pointerdown', {

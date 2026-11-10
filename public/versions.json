@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.67-aim-stick-release",
+    "version": "0.0.67",
+    "date": "2026-11-10",
+    "summary": "横屏摇杆松手按 pointerId 在 window 收 pointerup/cancel，捕获丢失后可再抓；位置/死区/惯性/技能不变"
+  },
+  {
     "id": "v0.0.66-mirror-fullbleed-icons",
     "version": "0.0.66",
     "date": "2026-11-10",

@@ -79,6 +79,14 @@ export function createAimStick(host: HTMLElement, bus: ActionBus, opts: { forceO
     }
   };
 
+  const hasCapture = (id: number): boolean => {
+    try {
+      return root.hasPointerCapture(id);
+    } catch {
+      return false;
+    }
+  };
+
   const endStick = (): void => {
     if (pointerId === null) {
       restHead();
@@ -88,7 +96,7 @@ export function createAimStick(host: HTMLElement, bus: ActionBus, opts: { forceO
     const id = pointerId;
     pointerId = null;
     try {
-      if (root.hasPointerCapture(id)) {
+      if (hasCapture(id)) {
         root.releasePointerCapture(id);
       }
     } catch {
@@ -99,10 +107,18 @@ export function createAimStick(host: HTMLElement, bus: ActionBus, opts: { forceO
   };
 
   const onDown = (ev: PointerEvent): void => {
-    if (!enabled || pointerId !== null) {
+    if (!enabled) {
       ev.preventDefault();
       ev.stopPropagation();
       return;
+    }
+    if (pointerId !== null) {
+      if (hasCapture(pointerId)) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        return;
+      }
+      endStick();
     }
     ev.preventDefault();
     ev.stopPropagation();
@@ -140,7 +156,18 @@ export function createAimStick(host: HTMLElement, bus: ActionBus, opts: { forceO
     endStick();
   };
 
+  const onWindowUp = (ev: PointerEvent): void => {
+    if (pointerId === null || ev.pointerId !== pointerId) {
+      return;
+    }
+    endStick();
+  };
+
   const onBlur = (): void => {
+    endStick();
+  };
+
+  const onOrient = (): void => {
     endStick();
   };
 
@@ -174,7 +201,10 @@ export function createAimStick(host: HTMLElement, bus: ActionBus, opts: { forceO
   root.addEventListener('contextmenu', (ev: Event) => {
     ev.preventDefault();
   });
+  window.addEventListener('pointerup', onWindowUp, true);
+  window.addEventListener('pointercancel', onWindowUp, true);
   window.addEventListener('blur', onBlur);
+  window.addEventListener('orientationchange', onOrient);
   document.addEventListener('visibilitychange', onVis);
   window.addEventListener('pointerdown', onTouchShow);
   syncCoarse();
@@ -196,7 +226,10 @@ export function createAimStick(host: HTMLElement, bus: ActionBus, opts: { forceO
       root.removeEventListener('pointerup', onUp);
       root.removeEventListener('pointercancel', onUp);
       root.removeEventListener('lostpointercapture', onLost);
+      window.removeEventListener('pointerup', onWindowUp, true);
+      window.removeEventListener('pointercancel', onWindowUp, true);
       window.removeEventListener('blur', onBlur);
+      window.removeEventListener('orientationchange', onOrient);
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('pointerdown', onTouchShow);
       root.remove();
