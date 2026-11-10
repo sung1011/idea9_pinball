@@ -47,6 +47,22 @@ export function createSkillCdFace(btn: HTMLButtonElement, label: string): SkillC
   return { icon, name, wipe, time };
 }
 
+/** 第五键只挂图标槽，不建 CD 面。 */
+export function mountUltIcon(btn: HTMLButtonElement): HTMLImageElement {
+  let img = btn.querySelector<HTMLImageElement>('img.touchSkillIcon');
+  if (!img) {
+    img = document.createElement('img');
+    img.className = 'touchSkillIcon';
+    img.alt = '';
+    img.draggable = false;
+    img.decoding = 'async';
+    img.setAttribute('aria-hidden', 'true');
+    img.style.pointerEvents = 'none';
+    btn.insertBefore(img, btn.firstChild);
+  }
+  return img;
+}
+
 /** 换图时只改 src；失败则藏图标，短名兜底。 */
 export function bindSkillIcon(face: SkillCdFace, url: string): void {
   if (face.icon.dataset.iconUrl === url) {

@@ -4,6 +4,8 @@ import type { SkillSlot } from '../input/actionTypes';
 import { HERO_IDS } from '../heroes/heroIds';
 import { skillNames, skillShorts } from '../heroes/kitLabels';
 import {
+  HOOK_ULT_ICON_BYTES,
+  HOOK_ULT_ICON_FILE,
   SKILL_ICON_BYTES,
   SKILL_ICON_COUNT,
   SKILL_ICON_FILES,
@@ -30,12 +32,17 @@ function firePointer(el: Element, type: string): void {
   );
 }
 
-/** 28 张技能图标：7 英雄×4 槽映射、切英雄换图、缺图短名兜底、不挡点击。 */
+/** 28 张普通技能图 + 钩刺必杀全幅插画：映射、切英雄换图、缺图短名、必杀非 CD。 */
 export function verifySkillIcons(): void {
   const files = Object.values(SKILL_ICON_FILES).flat();
   assert(files.length === SKILL_ICON_COUNT, '技能图标：应为 28 张');
   assert(new Set(files).size === SKILL_ICON_COUNT, '技能图标：文件名应互不重复');
-  assert(SKILL_ICON_BYTES === 96134, '技能图标：圆形 v1 成品总量应为 96134 字节');
+  assert(SKILL_ICON_BYTES === 451522, '技能图标：7×4 成品总量应为 451522 字节');
+  assert(HOOK_ULT_ICON_FILE === 'skill-hook-5-ult.webp', '技能图标：钩刺必杀文件名应对上');
+  assert(HOOK_ULT_ICON_BYTES === 102152, '技能图标：钩刺必杀应为预览同一张 102152 字节');
+  assert(skillIconFile('hook', 5) === HOOK_ULT_ICON_FILE, '技能图标：钩刺 5 应映射无畏冲锋图');
+  assert(skillIconUrl('hook', 5).endsWith(HOOK_ULT_ICON_FILE), '技能图标：钩刺 5 URL 应走 Pages 资源路径');
+  assert(skillIconFile('ring', 5) === '' && skillIconUrl('ring', 5) === '', '技能图标：非钩刺第五键不应挂图');
 
   for (const hero of HERO_IDS) {
     const names = skillNames(hero);
@@ -65,7 +72,18 @@ export function verifySkillIcons(): void {
   const btns = host.querySelectorAll<HTMLButtonElement>('button.touchSkillBtn');
   assert(btns.length === 4, '技能图标：仍为四键');
   const ultBtn = host.querySelector<HTMLButtonElement>('button.touchUltBtn');
-  assert(!!ultBtn && !ultBtn.querySelector('img.touchSkillIcon'), '技能图标：第五键必杀不接头像包、不改能量键');
+  const ultRing = host.querySelector<HTMLElement>('.touchUltRing');
+  assert(!!ultBtn, '技能图标：应有第五键');
+  assert(!!ultRing, '技能图标：必杀能量环应仍在');
+  pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: 'hook', energy: 100 });
+  const ultImg = ultBtn?.querySelector<HTMLImageElement>('img.touchSkillIcon');
+  assert(!!ultImg?.src.includes(HOOK_ULT_ICON_FILE), '技能图标：钩刺第五键应挂无畏冲锋图');
+  assert(!ultBtn?.classList.contains('isCd'), '技能图标：必杀不应走技能 CD');
+  assert(!ultBtn?.querySelector('.touchSkillCdWipe'), '技能图标：必杀不应有 CD 径向遮罩');
+  assert(ultRing?.style.getPropertyValue('--ult-energy') === '1.0000', '技能图标：满能量环应仍是能量不是 CD');
+  pad.sync({ aimingSlot: 0, skillCds: [8, 6, 10, 12], fineTuneOn: false, hero: 'hook', energy: 42 });
+  assert(!ultBtn?.classList.contains('isCd'), '技能图标：未满能量时必杀仍不是 CD');
+  assert(ultRing?.style.getPropertyValue('--ult-energy') === '0.4200', '技能图标：能量环应按能量比例');
   pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: 'hook' });
   const hookImgs = [...btns].map((btn) => btn.querySelector<HTMLImageElement>('img.touchSkillIcon'));
   assert(hookImgs.every((img) => !!img), '技能图标：每键应有 img');
@@ -98,6 +116,8 @@ export function verifySkillIcons(): void {
   assert(btns[0].querySelector('.touchSkillName')?.textContent === '辉', '技能图标：切英雄短名应跟着换');
   assert(btns[0].classList.contains('isCd'), '技能图标：换图后 CD 遮罩仍在');
   assert(btns[1].classList.contains('isAiming'), '技能图标：瞄准高亮仍在');
+  assert(!!ultImg && (ultImg.hidden || ultImg.classList.contains('isMiss')), '技能图标：切走钩刺后必杀图应藏');
+  assert(!ringImgs[0]?.src.includes('skill-hook-1-spear.webp'), '技能图标：切英雄后 1 槽不应残留钩矛');
   const cancel = host.querySelector<HTMLButtonElement>('button.touchCancel');
   assert(!!cancel && !cancel.hidden, '技能图标：瞄准中取消键仍出现');
 
@@ -123,4 +143,13 @@ export function verifySkillIcons(): void {
     !!btns[3].querySelector<HTMLImageElement>('img.touchSkillIcon')?.src.includes('skill-mirror-4-wall.webp'),
     '技能图标：镜卫 4 应为镜壁图',
   );
+  pad.sync({ aimingSlot: 0, skillCds: [0, 0, 0, 0], fineTuneOn: false, hero: 'hook', energy: 100 });
+  assert(!!ultImg?.src.includes(HOOK_ULT_ICON_FILE) && !ultImg.hidden, '技能图标：切回钩刺后必杀图应回来');
+  assert(!ultBtn?.classList.contains('isCd'), '技能图标：切回后必杀仍不是 CD');
+  if (!ultBtn) {
+    throw new Error('技能图标：应有第五键可点');
+  }
+  firePointer(ultBtn, 'pointerdown');
+  assert(bus.sample(0, 0).skillPress === 5, '技能图标：点必杀键仍应进技能按下');
+  firePointer(ultBtn, 'pointerup');
 }

@@ -1,7 +1,7 @@
 import type { SkillSlot } from '../input/actionTypes';
 import type { HeroId } from './heroIds';
 
-/** 圆形剪影 v1：public/skillIcons 下 256×256 WebP（圆外透明、无木环），按英雄×槽显式映射。第五键必杀不在本包。 */
+/** 7×4 普通技能：public/skillIcons 下 WebP，按英雄×槽显式映射。钩刺四键为全幅插画 512 WebP。 */
 export const SKILL_ICON_FILES: Record<HeroId, readonly [string, string, string, string]> = {
   hook: [
     'skill-hook-1-spear.webp',
@@ -59,9 +59,16 @@ export const SKILL_ICON_LABELS: Record<HeroId, readonly [string, string, string,
 };
 
 export const SKILL_ICON_COUNT = 28;
-export const SKILL_ICON_BYTES = 96134;
+export const SKILL_ICON_BYTES = 451522;
+
+/** 钩刺第五键无畏冲锋：与预览 readyToIntegrate 同一张 512 WebP，不改能量环。 */
+export const HOOK_ULT_ICON_FILE = 'skill-hook-5-ult.webp';
+export const HOOK_ULT_ICON_BYTES = 102152;
 
 export function skillIconFile(hero: HeroId, slot: SkillSlot): string {
+  if (slot === 5) {
+    return hero === 'hook' ? HOOK_ULT_ICON_FILE : '';
+  }
   return SKILL_ICON_FILES[hero][slot - 1] ?? '';
 }
 

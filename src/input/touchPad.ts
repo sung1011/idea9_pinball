@@ -6,6 +6,7 @@ import { skillIconUrl } from '../heroes/skillIcons';
 import {
   bindSkillIcon,
   createSkillCdFace,
+  mountUltIcon,
   nextSkillCdTotal,
   syncSkillCdFace,
   type SkillCdFace,
@@ -89,6 +90,8 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
   const ultNeed = document.createElement('span');
   ultNeed.className = 'touchUltNeed';
   ultNeed.setAttribute('aria-hidden', 'true');
+  const ultIcon = mountUltIcon(ultBtn);
+  const ultFace: SkillCdFace = { icon: ultIcon, name: ultNameEl, wipe: ultNeed, time: ultNeed };
   ultBtn.append(ultNameEl, ultNeed);
   const ultTodo = document.createElement('div');
   ultTodo.className = 'touchUltTodo';
@@ -257,6 +260,17 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
       }
       const energy = Math.max(0, Math.min(ULT_ENERGY_MAX, status.energy ?? 0));
       const filled = energy >= ULT_ENERGY_MAX - 1e-6;
+      const ultUrl = skillIconUrl(hero, 5);
+      if (ultUrl) {
+        bindSkillIcon(ultFace, ultUrl);
+      } else {
+        if (ultIcon.dataset.iconUrl) {
+          ultIcon.dataset.iconUrl = '';
+          ultIcon.removeAttribute('src');
+        }
+        ultIcon.hidden = true;
+        ultIcon.classList.add('isMiss');
+      }
       ultNameEl.textContent = ultShort(hero);
       ultBtn.setAttribute('aria-label', ultName(hero));
       ultBtn.classList.toggle('isAiming', status.aimingSlot === 5 || status.windupSlot === 5);
