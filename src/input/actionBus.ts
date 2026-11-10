@@ -13,6 +13,10 @@ export function createActionBus() {
   let pointerX = 0;
   let pointerY = 0;
   let hasPointer = false;
+  let stickHeld = false;
+  let stickAim = false;
+  let stickX = 0;
+  let stickY = 0;
 
   const pushSkill = (slot: SkillSlot): void => {
     skillPress = slot;
@@ -32,12 +36,37 @@ export function createActionBus() {
     hasPointer = true;
   };
 
+  const holdStick = (dirX?: number, dirY?: number): void => {
+    stickHeld = true;
+    if (dirX === undefined || dirY === undefined) {
+      stickAim = false;
+      return;
+    }
+    const len = Math.hypot(dirX, dirY);
+    if (len <= POINTER_LIVE) {
+      stickAim = false;
+      return;
+    }
+    stickX = dirX / len;
+    stickY = dirY / len;
+    stickAim = true;
+  };
+
+  const releaseStick = (): void => {
+    stickHeld = false;
+    stickAim = false;
+  };
+
   const sample = (playerX: number, playerY: number): ActionSample => {
     let aimX = 0;
     let aimY = 0;
     let hasAim = false;
 
-    if (hasPointer) {
+    if (stickHeld && stickAim) {
+      aimX = stickX;
+      aimY = stickY;
+      hasAim = true;
+    } else if (!stickHeld && hasPointer) {
       const dx = pointerX - playerX;
       const dy = pointerY - playerY;
       const len = Math.hypot(dx, dy);
@@ -70,6 +99,7 @@ export function createActionBus() {
     skillPress = 0;
     confirmRelease = false;
     cancelAim = false;
+    releaseStick();
   };
 
   return {
@@ -77,6 +107,8 @@ export function createActionBus() {
     pushRelease,
     pushCancel,
     setPointerLogical,
+    holdStick,
+    releaseStick,
     sample,
     reset,
   };

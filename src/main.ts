@@ -35,6 +35,7 @@ import { verifySelfMark } from './core/verifySelfMark';
 import { verifyWorldViewLock } from './core/verifyWorldViewLock';
 import { verifyRespawnHud } from './core/verifyRespawnHud';
 import { verifyUlt } from './core/verifyUlt';
+import { verifyAimStick } from './core/verifyAimStick';
 import { creditUltCombat } from './core/ultEnergy';
 import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
@@ -93,6 +94,7 @@ async function boot(): Promise<void> {
   verifyWorldViewLock();
   verifyRespawnHud();
   verifyUlt();
+  verifyAimStick();
 
   const host = document.querySelector<HTMLDivElement>('#app');
   if (!host) {
@@ -277,6 +279,7 @@ async function boot(): Promise<void> {
     match.reset();
     control.reset();
     bus.reset();
+    touchPad.releaseStick();
     for (const { ai } of botHandles) {
       ai.reset();
     }
@@ -464,6 +467,7 @@ async function boot(): Promise<void> {
       fineTuneOn: player.fineTuneRemain > 0,
       hero: player.hero,
       energy: player.ultEnergy,
+      stickEnabled: player.inPlay && next.phase !== 'result',
     });
     fields.sync(balls, { potion: next.potion, rift: next.rift });
     aimPreview.sync(player, aimingSlot, sample, windup, aimHint);

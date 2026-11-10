@@ -310,7 +310,7 @@ export function verifyHudLayout(): void {
 
   const host = document.createElement('div');
   const hud = createMatchHud(host);
-  const pad = createTouchPad(host, createActionBus());
+  const pad = createTouchPad(host, createActionBus(), { forceStick: true });
   const statsUi = createCombatStatsPanel(host, createCombatStats());
   statsUi.sync([], 0);
   const cluster = host.querySelector<HTMLElement>('.matchHudCluster');
@@ -411,6 +411,7 @@ export function verifyHudLayout(): void {
   assert(!hasRotatePromptCopy(settingsHint), 'HUD：设置页不应写竖屏/转屏提示');
   assert(!helpCopy.includes('左上可换自己或队友'), 'HUD：说明卡不应再写左上换自己/队友');
   assert(helpCopy.includes('设置常规页可换自己的英雄'), 'HUD：说明卡应写从常规页换自己');
+  assert(helpCopy.includes('瞄准摇杆'), 'HUD：说明卡应提到触屏左下瞄准摇杆');
   assert(!settingsHint.includes('左上可换自己或队友'), 'HUD：常规页提示不应再写左上换队友');
   assert(leftDir === 'column', 'HUD：左上模式应竖排');
   assert(skillsDisplay === 'flex' && skillsDir === 'row', 'HUD：四键应一行横排');
@@ -418,6 +419,18 @@ export function verifyHudLayout(): void {
   const skillSize = skillBtns[0].getBoundingClientRect();
   assert(skillSize.width >= 56 && skillSize.width <= 64, `HUD：技能键应约 60px（实际 ${skillSize.width}）`);
   assert(Math.abs(skillSize.width - skillSize.height) < 1, 'HUD：技能键应保持圆形');
+  const stick = host.querySelector<HTMLElement>('.touchStick');
+  if (!stick) {
+    throw new Error('HUD：左下应有瞄准摇杆');
+  }
+  const stickBox = localBox(stick, host);
+  const skillsForStick = localBox(skills, host);
+  assert(stickBox.right - stickBox.left >= 96 && stickBox.right - stickBox.left <= 112, 'HUD：瞄准摇杆外径应约 96–112');
+  assert(stickBox.left < 24, 'HUD：瞄准摇杆应贴视窗左下');
+  assert(host.clientHeight - stickBox.bottom < 24, 'HUD：瞄准摇杆应贴视窗底');
+  assert(stickBox.right < host.clientWidth * 0.45, 'HUD：瞄准摇杆不应伸进中场');
+  assert(!overlaps(stickBox, skillsForStick), 'HUD：瞄准摇杆不应叠右下技能');
+  assert(stick.getAttribute('data-touch-control') === 'stick', 'HUD：摇杆点击应标 touch-control');
   pad.sync({
     aimingSlot: 2,
     skillCds: [0, 0, 0, 0],

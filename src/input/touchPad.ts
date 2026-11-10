@@ -11,6 +11,7 @@ import {
   type SkillCdFace,
 } from '../ui/skillCdMask';
 import { createSkillTip, SKILL_TIP_HOLD_MS } from '../ui/skillTip';
+import { createAimStick } from './aimStick';
 import type { ActionBus } from './actionBus';
 import type { SkillSlot } from './actionTypes';
 
@@ -21,16 +22,21 @@ export type TouchPadStatus = {
   fineTuneOn: boolean;
   hero?: HeroId;
   energy?: number;
+  /** 死亡 / 结算时关摇杆，避免残留改向。默认开。 */
+  stickEnabled?: boolean;
 };
 
 export type TouchPad = {
   sync: (status: TouchPadStatus) => void;
   showTodo: () => void;
+  releaseStick: () => void;
 };
 
 export type TouchPadOpts = {
   /** 测试可设 0：按下立刻出提示。正式约 0.4s。 */
   holdMs?: number;
+  /** 测试强制常显摇杆（桌面自测没有 coarse pointer）。 */
+  forceStick?: boolean;
 };
 
 function preventPageGestures(): void {
@@ -212,6 +218,7 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
 
   cancelBtn = cancel;
   skills.appendChild(cancel);
+  const stick = createAimStick(root, bus, { forceOn: opts.forceStick === true });
   root.append(skills);
   host.appendChild(root);
   preventPageGestures();
@@ -228,9 +235,13 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
 
   return {
     showTodo,
+    releaseStick: () => {
+      stick.release();
+    },
     sync: (status: TouchPadStatus) => {
       hero = status.hero ?? 'hook';
       root.classList.toggle('isFineTune', status.fineTuneOn);
+      stick.setEnabled(status.stickEnabled !== false);
       placeCancel(status.aimingSlot);
       const shorts = skillShorts(hero);
       const names = skillNames(hero);
