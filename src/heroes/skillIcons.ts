@@ -1,7 +1,7 @@
 import type { SkillSlot } from '../input/actionTypes';
 import type { HeroId } from './heroIds';
 
-/** 7×4 普通技能：public/skillIcons 下 WebP，按英雄×槽显式映射。钩刺、磁环、链生、钉壳四键为全幅插画 512 WebP。 */
+/** 7×4 普通技能：public/skillIcons 下 WebP，按英雄×槽显式映射。钩刺、磁环、链生、钉壳、闪弧四键为全幅插画 512 WebP。 */
 export const SKILL_ICON_FILES: Record<HeroId, readonly [string, string, string, string]> = {
   hook: [
     'skill-hook-1-spear.webp',
@@ -59,7 +59,7 @@ export const SKILL_ICON_LABELS: Record<HeroId, readonly [string, string, string,
 };
 
 export const SKILL_ICON_COUNT = 28;
-export const SKILL_ICON_BYTES = 1516078;
+export const SKILL_ICON_BYTES = 1857936;
 
 /** 钩刺第五键无畏冲锋：与预览 readyToIntegrate 同一张 512 WebP，不改能量环。 */
 export const HOOK_ULT_ICON_FILE = 'skill-hook-5-ult.webp';
