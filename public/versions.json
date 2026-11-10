@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.63-nail-fullbleed-icons",
+    "version": "0.0.63",
+    "date": "2026-11-10",
+    "summary": "钉壳四技能接入已确认全幅插画（512 WebP）；第五键必杀仍空槽不挂图；按钮外框/CD/能量环不变，钩刺/磁环/链生五图不动"
+  },
+  {
     "id": "v0.0.62-chain-fullbleed-icons",
     "version": "0.0.62",
     "date": "2026-11-10",
