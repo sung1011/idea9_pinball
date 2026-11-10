@@ -27,6 +27,8 @@ export type CollisionHit = {
   threshold: number;
   /** 地裂矛阵等环境伤害：击破不计任何一方击杀 */
   environment?: boolean;
+  /** 必杀直伤：不给施法者回充能量 */
+  noUltCredit?: boolean;
 };
 
 const EPS = 1e-8;

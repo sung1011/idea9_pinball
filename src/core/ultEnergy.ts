@@ -44,7 +44,7 @@ export function tickUltEnergy(ball: BallBody, dt: number): void {
 /** 有效伤害/治疗入账：环境、自伤、无施法者不计；药水治疗不走这里。 */
 export function creditUltCombat(balls: readonly BallBody[], hits: readonly CollisionHit[], heals: readonly HealPulse[] = []): void {
   for (const hit of hits) {
-    if (hit.damage <= 0 || hit.environment || hit.sourceId === hit.victimId) {
+    if (hit.damage <= 0 || hit.environment || hit.noUltCredit || hit.sourceId === hit.victimId) {
       continue;
     }
     const source = balls.find((ball) => ball.id === hit.sourceId);

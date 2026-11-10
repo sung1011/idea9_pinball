@@ -1,7 +1,7 @@
 import type { SkillCds } from '../core/skillCaster';
 import { ULT_ENERGY_MAX } from '../core/ultEnergy';
 import type { HeroId } from '../heroes/heroIds';
-import { skillNames, skillShorts, skillTipCopy, ultName, ultShort, ULT_TODO_COPY } from '../heroes/kitLabels';
+import { heroHasUlt, skillNames, skillShorts, skillTipCopy, ultName, ultShort, ULT_TODO_COPY } from '../heroes/kitLabels';
 import { skillIconUrl } from '../heroes/skillIcons';
 import {
   bindSkillIcon,
@@ -260,8 +260,8 @@ export function createTouchPad(host: HTMLElement, bus: ActionBus, opts: TouchPad
       ultNameEl.textContent = ultShort(hero);
       ultBtn.setAttribute('aria-label', ultName(hero));
       ultBtn.classList.toggle('isAiming', status.aimingSlot === 5 || status.windupSlot === 5);
-      ultBtn.classList.toggle('isReady', filled && hero === 'hook');
-      ultWrap.classList.toggle('isHook', hero === 'hook');
+      ultBtn.classList.toggle('isReady', filled && heroHasUlt(hero));
+      ultWrap.classList.toggle('isHook', heroHasUlt(hero));
       ultRing.style.setProperty('--ult-energy', (energy / ULT_ENERGY_MAX).toFixed(4));
       ultNeed.textContent = filled ? '' : String(Math.floor(energy));
       if (tip.isOn() && isSkillSlot(holdSlot)) {

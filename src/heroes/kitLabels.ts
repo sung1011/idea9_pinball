@@ -153,16 +153,38 @@ export type SkillTipCopy = {
 
 export const ULT_TODO_COPY = 'todo';
 
+export function heroHasUlt(hero: HeroId): boolean {
+  return hero === 'hook' || hero === 'ring';
+}
+
 export function ultShort(hero: HeroId): string {
-  return hero === 'hook' ? '无畏' : '必杀';
+  if (hero === 'hook') {
+    return '无畏';
+  }
+  if (hero === 'ring') {
+    return '沉磁';
+  }
+  return '必杀';
 }
 
 export function ultName(hero: HeroId): string {
-  return hero === 'hook' ? '无畏冲锋' : '必杀';
+  if (hero === 'hook') {
+    return '无畏冲锋';
+  }
+  if (hero === 'ring') {
+    return '沉磁井';
+  }
+  return '必杀';
 }
 
 export function ultTip(hero: HeroId): string {
-  return hero === 'hook' ? '后退三步后沿枪尖加速穿刺，碰敌不回头' : ULT_TODO_COPY;
+  if (hero === 'hook') {
+    return '后退三步后沿枪尖加速穿刺，碰敌不回头';
+  }
+  if (hero === 'ring') {
+    return '前方选点落地后强吸 3 秒再爆炸，半径 4 格';
+  }
+  return ULT_TODO_COPY;
 }
 
 export function skillTipCopy(hero: HeroId, slot: SkillSlot): SkillTipCopy {
@@ -184,7 +206,7 @@ export function kitHudLine(hero: HeroId): string {
 
 export function kitHelpSkills(hero: HeroId): string {
   if (hero === 'ring') {
-    return '技能 1–4：1 辉环（身周磁场） / 2 斥波 / 3 壁行 / 4 囚环（物理关死出不去）。第五键必杀占位。';
+    return '技能 1–4：1 辉环（身周磁场） / 2 斥波 / 3 壁行 / 4 囚环（物理关死出不去）。第五键沉磁井（前方选点，最远 6 格，半径 4，落地即吸 3 秒后爆炸）。';
   }
   if (hero === 'chain') {
     return '技能 1–4：1 愈链（治疗链） / 2 盾脉 / 3 援勾 / 4 扰锋（范围沉默）。第五键必杀占位。';
@@ -206,7 +228,7 @@ export function kitHelpSkills(hero: HeroId): string {
 
 export function kitSettingsHint(hero: HeroId): string {
   if (hero === 'ring') {
-    return '技能 1 辉环 / 2 斥波 / 3 壁行 / 4 囚环 / 5 必杀。按下进瞄，再按同键或左键释放。';
+    return '技能 1 辉环 / 2 斥波 / 3 壁行 / 4 囚环 / 5 沉磁井。按下进瞄，再按同键或左键释放。';
   }
   if (hero === 'chain') {
     return '技能 1 愈链 / 2 盾脉 / 3 援勾 / 4 扰锋 / 5 必杀。按下进瞄，再按同键或左键释放。';

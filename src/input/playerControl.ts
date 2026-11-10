@@ -10,6 +10,7 @@ import {
 import { applyFloorSpeed, applySteerToward } from '../core/skillStub';
 import { clearUltEnergy, tickUltEnergy } from '../core/ultEnergy';
 import type { HeroId } from '../heroes/heroIds';
+import { heroHasUlt } from '../heroes/kitLabels';
 import type { ActionSample, SkillSlot } from './actionTypes';
 
 export type PlayerTickOpts = {
@@ -54,7 +55,7 @@ export function createPlayerControl(initial: HeroId = 'hook', opts: PlayerContro
       const skillsOn = tickOpts.skills !== false;
       const steerOn = tickOpts.steer !== false;
       let input = sample;
-      if (sample.skillPress === 5 && caster.getHero() !== 'hook') {
+      if (sample.skillPress === 5 && !heroHasUlt(caster.getHero())) {
         opts.onUltTodo?.();
         input = { ...sample, skillPress: 0 };
       }

@@ -23,6 +23,7 @@ import { NAIL_ARMOR, NAIL_PIN } from '../heroes/nailKit';
 import type { HealPulse } from './combatFloat';
 import { applyCollisionCombat, type CollisionHit } from './collisionDamage';
 import { FRICTION } from './constants';
+import { applyMagnetWellPull, tickMagnetWellBlasts } from './magnetWells';
 import { applyFloorSpeed } from './skillStub';
 import { resolveAllMirrorWalls, tickAllMirrorWalls } from './mirrorWalls';
 import { resolveAllStakes } from './ropeStakes';
@@ -82,7 +83,7 @@ export type PhysicsStepResult = {
   wallHitIds: number[];
 };
 
-/** 每帧：积分位移 → 墙/柱/球/困圈夹边 → 枪尖碰撞掉血弹开 → 摩擦 / 保底 → 速度盖帽。 */
+/** 每帧：沉磁井吸力 → 积分位移 → 墙/柱/球/困圈夹边 → 枪尖碰撞掉血弹开 → 摩擦 / 保底 → 速度盖帽 → 沉磁井爆炸。 */
 export function stepPhysics(
   balls: readonly BallBody[],
   dt: number,
@@ -90,6 +91,7 @@ export function stepPhysics(
 ): PhysicsStepResult {
   const stepDt = Math.min(Math.max(dt, 0), MAX_DT);
   tickAllMirrorWalls(stepDt);
+  applyMagnetWellPull(balls, stepDt);
   const live = balls.filter((ball) => ball.inPlay);
 
   for (const ball of live) {
@@ -227,6 +229,8 @@ export function stepPhysics(
       openFineTune(ball);
     }
   }
+
+  hits.push(...tickMagnetWellBlasts(balls, stepDt));
 
   return { hits, heals, collidedIds: [...collided], wallHitIds: [...wallHits] };
 }

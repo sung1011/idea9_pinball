@@ -6,10 +6,12 @@ import {
   RING_FIELD,
   RING_SLIDE,
   RING_TRAP,
+  RING_ULT,
   RING_WAVE,
   ringIsDisplace,
   ringSkillCd,
   ringTrapCenter,
+  ringUltCenter,
   ringWindup,
 } from '../heroes/ringKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
@@ -17,6 +19,8 @@ import { applySkillDamage } from './skillHits';
 import { pickFanEnemies, unitVec } from './skillQuery';
 import type { SkillCaster, SkillCds, WindupInfo } from './skillCaster';
 import { setFacingFrom } from './skillStub';
+import { placeMagnetWell } from './magnetWells';
+import { canSpendUlt, spendUltEnergy } from './ultEnergy';
 import { clearTrapZone, isInEnemyTrap, markTrapOccupants, setTrapZone, tickTrapZone } from './trapZones';
 
 const TIME_EPS = 1e-7;
@@ -49,6 +53,10 @@ function aimOf(ball: BallBody, sample: ActionSample): { x: number; y: number } {
 
 function markOf(ball: BallBody, sample: ActionSample): { x: number; y: number } {
   return ringTrapCenter(ball, sample.pointerX, sample.pointerY, sample.hasPointer);
+}
+
+function ultMarkOf(ball: BallBody, sample: ActionSample): { x: number; y: number } {
+  return ringUltCenter(ball, sample.pointerX, sample.pointerY, sample.hasPointer);
 }
 
 /** 磁环施放：按下进瞄可无限持有；释放后才走前摇，再出效果。 */
@@ -186,6 +194,27 @@ export function createRingCaster(): SkillCaster {
       return;
     }
     const slot = aimingSlot;
+    if (slot === 5) {
+      if (!canSpendUlt(ball, RING_ULT.energyCost)) {
+        return;
+      }
+      const aim = aimOf(ball, sample);
+      if (!setFacingFrom(ball, aim.x, aim.y)) {
+        return;
+      }
+      if (!spendUltEnergy(ball, RING_ULT.energyCost)) {
+        return;
+      }
+      aimingSlot = 0;
+      const mark = ultMarkOf(ball, sample);
+      placeMagnetWell({
+        ownerId: ball.id,
+        ownerTeam: ball.team,
+        x: mark.x,
+        y: mark.y,
+      });
+      return;
+    }
     if (cds[slot - 1] > 0) {
       return;
     }
@@ -232,7 +261,11 @@ export function createRingCaster(): SkillCaster {
     if (sample.skillPress) {
       if (aimingSlot === sample.skillPress) {
         tryRelease(ball, sample, roster);
-      } else if (cds[sample.skillPress - 1] <= 0 && !effect) {
+      } else if (sample.skillPress === 5) {
+        if (canSpendUlt(ball, RING_ULT.energyCost) && !effect) {
+          aimingSlot = 5;
+        }
+      } else if ((cds[sample.skillPress - 1] ?? 1) <= 0 && !effect) {
         aimingSlot = sample.skillPress;
       }
     }

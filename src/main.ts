@@ -36,9 +36,11 @@ import { verifyFineTuneRing } from './core/verifyFineTuneRing';
 import { verifyWorldViewLock } from './core/verifyWorldViewLock';
 import { verifyRespawnHud } from './core/verifyRespawnHud';
 import { verifyUlt } from './core/verifyUlt';
+import { verifyRingUlt } from './core/verifyRingUlt';
 import { verifyAimStick } from './core/verifyAimStick';
 import { verifyHookRider } from './core/verifyHookRider';
 import { creditUltCombat } from './core/ultEnergy';
+import { resetMagnetWells } from './core/magnetWells';
 import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
@@ -79,6 +81,7 @@ async function boot(): Promise<void> {
   verifyEightKill();
   verifyM5();
   verifyRing();
+  verifyRingUlt();
   verifyChain();
   verifyNail();
   verifyArc();
@@ -275,6 +278,7 @@ async function boot(): Promise<void> {
   const restart = (): void => {
     rollOpeningBots();
     resetTrapZones();
+    resetMagnetWells();
     resetStakes();
     resetMirrorWalls();
     resetBoomFlashes();
@@ -297,6 +301,7 @@ async function boot(): Promise<void> {
 
   const onPairDebug = (): void => {
     resetTrapZones();
+    resetMagnetWells();
     resetStakes();
     resetMirrorWalls();
     resetBoomFlashes();
