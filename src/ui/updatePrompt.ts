@@ -34,13 +34,6 @@ export function createUpdatePrompt(host: HTMLElement, versions: AppVersions): Up
     }
     card.classList.add('isOn');
     card.appendChild(el('p', 'updatePromptTitle', '有新版本'));
-    const list = el('ul', 'updatePromptList');
-    for (const group of pending) {
-      for (const line of group.summaries) {
-        list.appendChild(el('li', '', line));
-      }
-    }
-    card.appendChild(list);
     const apply = el('button', 'updatePromptBtn', '更新');
     apply.type = 'button';
     apply.addEventListener('click', (ev) => {
@@ -49,6 +42,13 @@ export function createUpdatePrompt(host: HTMLElement, versions: AppVersions): Up
       void versions.applyUpdate();
     });
     card.appendChild(apply);
+    const list = el('ul', 'updatePromptList');
+    for (const group of pending) {
+      for (const line of group.summaries) {
+        list.appendChild(el('li', '', line));
+      }
+    }
+    card.appendChild(list);
   };
 
   const unsub = versions.subscribe(render);

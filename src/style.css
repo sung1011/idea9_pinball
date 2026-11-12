@@ -963,7 +963,7 @@ canvas {
   z-index: 29;
   width: min(280px, 42vw);
   max-height: min(50vh, 360px);
-  overflow: auto;
+  overflow: hidden;
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid #9af6f655;
@@ -980,12 +980,14 @@ canvas {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow: hidden;
 }
 
 .updatePromptTitle {
   margin: 0;
   font-weight: 700;
   font-size: 15px;
+  flex-shrink: 0;
 }
 
 .updatePromptList {
@@ -994,6 +996,9 @@ canvas {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
 }
 
 .updatePromptBtn {
@@ -1005,6 +1010,7 @@ canvas {
   color: #e8ffff;
   font: 700 15px/1.2 "WenQuanYi Micro Hei", "Droid Sans Fallback", system-ui, sans-serif;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .updatePromptBtn:hover {

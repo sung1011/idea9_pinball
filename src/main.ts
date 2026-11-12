@@ -44,6 +44,7 @@ import { verifyHookRider } from './core/verifyHookRider';
 import { verifyHookRiderRun } from './core/verifyHookRiderRun';
 import { verifyTechTree } from './core/verifyTechTree';
 import { verifyGm } from './core/verifyGm';
+import { verifyUpdatePrompt } from './core/verifyUpdatePrompt';
 import { verifyHookBrakeConvoy } from './core/verifyHookBrakeConvoy';
 import { creditUltCombat } from './core/ultEnergy';
 import { resetMagnetWells } from './core/magnetWells';
@@ -118,6 +119,7 @@ async function boot(): Promise<void> {
   verifyHookRider();
   verifyTechTree();
   verifyGm();
+  verifyUpdatePrompt();
   verifyHookBrakeConvoy();
   document.documentElement.dataset.verifyBoot = 'ok';
 

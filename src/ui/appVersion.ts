@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '有新版本弹框的更新按钮移到顶部、版本列表之前，打开即见；无更新与点更新逻辑不变' },
   { title: 'GM 新增初始化：二次确认后清空本机进度并恢复新档 100 点/仅钩刺/未点亮科技，取消不改存档；常规页去掉重开本局与练习入口' },
   { title: '全新存档初始科技点 0→100；GM 每次点击 +1→+100，按钮与漂字同步；已有有效存档含 0 点老档不补发不重置' },
   { title: '横屏摇杆松手按 pointerId 在 window 收 pointerup/cancel，捕获丢失后可再抓；位置/死区/惯性/技能不变' },
