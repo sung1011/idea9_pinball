@@ -48,7 +48,7 @@ function bodyGfx(view: ReturnType<typeof createBallView>): Graphics {
 function markLayer(view: ReturnType<typeof createBallView>): Graphics {
   const child = view.root.children[0];
   if (!(child instanceof Graphics)) {
-    throw new Error('微调圈：身份圈应是最底层 Graphics');
+    throw new Error('微调圈：自身标记应是最底层 Graphics');
   }
   return child;
 }
@@ -128,7 +128,7 @@ export function verifyFineTuneRing(): void {
   assert(FINE_TUNE_RING.extraRadius === 0.16, '微调圈：旧半径偏移仅作自检对照');
   assert(SPEAR_TIP_DIST === 2.24, '微调圈：枪尖距仍应为 2.24');
   assert(BALL_RADIUS === 1, '微调圈：碰撞半径仍应为 1');
-  assert(SELF_MARK.milk === 0xf6e7a3, '微调圈：本人奶黄身份圈应保留');
+  assert(SELF_MARK.gold === 0xffd24a, '微调圈：本人金色倒三角应保留');
 
   const tuned = sample({ x: 8, y: 8, color: 0xe24a4a, vx: 4, vy: 0, facingX: 1, facingY: 0 });
   assert(steerRateRad(tuned) === WEAK_STEER_RAD_PER_SEC, '微调圈：未开窗应为弱拧');
@@ -293,7 +293,7 @@ export function verifyFineTuneRing(): void {
   const fallback = createBallView(idle, { selfMark: true });
   idle.fineTuneRemain = FINE_TUNE_WINDOW;
   fallback.sync(idle, { selfMark: true });
-  assert(markLayer(fallback).visible, '微调圈：本人身份圈在微调窗内仍在');
+  assert(markLayer(fallback).visible, '微调圈：本人倒三角在微调窗内仍在');
   assert(!hasColor(bodyGfx(fallback), FINE_TUNE_RING.color), '微调圈：缺图回退也不应画青圈');
   idle.fineTuneRemain = 0;
   idle.healRemain = 1;
@@ -317,8 +317,8 @@ export function verifyFineTuneRing(): void {
     assert(emptyish(bodyGfx(otherView)), '微调圈：非本人撞后也不应多画青圈');
     assert(!hasColor(bodyGfx(riderView), FINE_TUNE_RING.color), '微调圈：本人主体不得含旧青色');
     assert(!hasColor(bodyGfx(otherView), FINE_TUNE_RING.color), '微调圈：非本人主体不得含旧青色');
-    assert(markLayer(riderView).visible, '微调圈：本人单层身份圈应保留');
-    assert(!markLayer(otherView).visible, '微调圈：非本人无常驻身份圈');
+    assert(markLayer(riderView).visible, '微调圈：本人金色倒三角应保留');
+    assert(!markLayer(otherView).visible, '微调圈：非本人无常驻倒三角');
 
     const rings: Array<{ apply: (ball: BallBody) => void; color: number; label: string }> = [
       { apply: (ball) => { ball.invincibleRemain = 1.2; }, color: 0xffffff, label: '无敌白圈' },

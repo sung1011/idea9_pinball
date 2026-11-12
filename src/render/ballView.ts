@@ -18,7 +18,7 @@ import {
 
 export type BallViewSyncOpts = {
   charging?: boolean;
-  /** 仅本地玩家脚下单层身份圈；队友/敌方不要传 true */
+  /** 仅本地玩家血条上方金色倒三角；队友/敌方不要传 true */
   selfMark?: boolean;
   /** 分层四蹄。分层已加载时默认开；显式 false 回退整图。 */
   showRun?: boolean;
@@ -44,27 +44,49 @@ export const FINE_TUNE_RING = {
   color: 0x7ee8ff,
   extraRadius: 0.16,
 } as const;
-/** 本人脚下单层身份圈：奶黄环 + 深棕细描边。半径约盾径 1.3 倍，略大于主体、不放大碰撞。 */
+
+/** 骑士皮世界尺寸相对初版半径 0.5 的倍率，与碰撞圆同步 */
+const SKIN = BALL_RADIUS / 0.5;
+const HP_BAR_WIDTH = 0.92 * SKIN;
+const HP_BAR_HEIGHT = 0.1 * SKIN;
+const HP_BAR_Y = -0.74 * SKIN;
+export const HP_BAR_LAYOUT = {
+  y: HP_BAR_Y,
+  width: HP_BAR_WIDTH,
+  height: HP_BAR_HEIGHT,
+} as const;
+
+/**
+ * 本人血条上方亮金实心倒三角（尖朝血条）+ 深色描边。
+ * 轻微上下浮动，不随朝向转，不放大碰撞。旧奶黄脚底环不再绘制。
+ */
 export const SELF_MARK = {
-  /** 旧内环半径，合并单层后不再绘制。 */
-  innerRadius: BALL_RADIUS * 1.16,
-  outerRadius: BALL_RADIUS * 1.3,
-  milk: 0xf6e7a3,
+  gold: 0xffd24a,
   brown: 0x3a2210,
-  band: 0.045 * (BALL_RADIUS / 0.5),
-  outline: 0.016 * (BALL_RADIUS / 0.5),
+  halfWidth: 0.28 * SKIN,
+  height: 0.26 * SKIN,
+  gap: 0.09 * SKIN,
+  bob: 0.045 * SKIN,
+  period: 1.4,
+  outline: 0.038 * SKIN,
 } as const;
 
 export function selfMarkActive(isSelf: boolean, inPlay: boolean): boolean {
   return isSelf && inPlay;
 }
 
+export function selfMarkBob(phase: number): number {
+  return Math.sin(phase) * SELF_MARK.bob;
+}
+
+export function selfMarkTipY(bob = 0): number {
+  return HP_BAR_Y - SELF_MARK.gap + bob;
+}
+
 const SLOT_FILL = 0xf8f4ea;
 const SLOT_STROKE = 0x1a1410;
 const SLOT_FONT = 72;
 const SLOT_SCALE = 0.009;
-/** 骑士皮世界尺寸相对初版半径 0.5 的倍率，与碰撞圆同步 */
-const SKIN = BALL_RADIUS / 0.5;
 
 function unit(x: number, y: number): { x: number; y: number } {
   const len = Math.hypot(x, y);
@@ -74,7 +96,7 @@ function unit(x: number, y: number): { x: number; y: number } {
   return { x: x / len, y: y / len };
 }
 
-/** 骑装队色描边：保留函数与当前红蓝 ball.color，常驻身份圈改由本人单层奶黄承担，不再套到全体。 */
+/** 骑装队色描边：保留函数与当前红蓝 ball.color；常驻自身识别改由血条上方倒三角承担，不再套到全体。 */
 export function drawTeamRing(g: Graphics, ball: BallBody): void {
   const alpha = ball.invincibleRemain > 0 || ball.phaseRemain > 0 ? 0.72 : 1;
   g.circle(0, 0, BALL_RADIUS);
@@ -190,9 +212,6 @@ function drawTargetSpear(g: Graphics, tx: number, ty: number): void {
   g.fill({ color: SPEAR_GOLD });
 }
 
-const HP_BAR_WIDTH = 0.92 * SKIN;
-const HP_BAR_HEIGHT = 0.1 * SKIN;
-const HP_BAR_Y = -0.74 * SKIN;
 const SPEAR_CD_HEIGHT = 0.042 * SKIN;
 const SPEAR_CD_GAP = 0.016 * SKIN;
 const SPEAR_CD_TRACK = 0x1a1410;
@@ -221,20 +240,29 @@ function drawHpBar(g: Graphics, hp: number, maxHp: number, spearCdRemain: number
 
 const TRAIL_MAX = 10;
 
-function strokeMilkRing(g: Graphics, radius: number): void {
-  g.circle(0, 0, radius);
+function drawSelfMarkTriangle(g: Graphics, tipX: number, tipY: number): void {
+  const baseY = tipY - SELF_MARK.height;
+  g.moveTo(tipX, tipY);
+  g.lineTo(tipX - SELF_MARK.halfWidth, baseY);
+  g.lineTo(tipX + SELF_MARK.halfWidth, baseY);
+  g.closePath();
+  g.fill({ color: SELF_MARK.gold, alpha: 1 });
+  g.moveTo(tipX, tipY);
+  g.lineTo(tipX - SELF_MARK.halfWidth, baseY);
+  g.lineTo(tipX + SELF_MARK.halfWidth, baseY);
+  g.closePath();
   g.stroke({
     color: SELF_MARK.brown,
-    width: SELF_MARK.band + SELF_MARK.outline * 2,
+    width: SELF_MARK.outline,
+    join: 'round',
     cap: 'round',
+    alpha: 1,
   });
-  g.circle(0, 0, radius);
-  g.stroke({ color: SELF_MARK.milk, width: SELF_MARK.band, cap: 'round' });
 }
 
-/** 本人脚下单层身份圈。画在主体之下，不进冲锋残影。 */
-export function drawSelfMarkRings(g: Graphics): void {
-  strokeMilkRing(g, SELF_MARK.outerRadius);
+/** 本人血条上方金色倒三角。画在独立层，不进冲锋残影、不随朝向旋转。 */
+export function drawSelfMark(g: Graphics, bob = 0): void {
+  drawSelfMarkTriangle(g, 0, selfMarkTipY(bob));
 }
 
 /** 冲锋残影：队色拖线 + 淡圆影 + 少量金尘。全英雄共用，不改成钩刺特效。 */
@@ -397,6 +425,7 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
   let marked = !!init.selfMark;
   let showRun = init.showRun !== false && !!runRig;
   let hideChrome = init.hideChrome === true;
+  let bobPhase = 0;
 
   const sync = (next: BallBody, opts: BallViewSyncOpts = {}): void => {
     if (typeof opts.selfMark === 'boolean') {
@@ -444,10 +473,14 @@ export function createBallView(ball: BallBody, init: BallViewSyncOpts = {}): Bal
     }
 
     mark.clear();
-    const showMark = selfMarkActive(marked, true);
+    mark.rotation = 0;
+    const showMark = selfMarkActive(marked, true) && !hideChrome;
     mark.visible = showMark;
+    if ((opts.runDt ?? 0) > 0) {
+      bobPhase += ((opts.runDt ?? 0) * Math.PI * 2) / SELF_MARK.period;
+    }
     if (showMark) {
-      drawSelfMarkRings(mark);
+      drawSelfMark(mark, selfMarkBob(bobPhase));
     }
 
     const dir = next.hasAim ? unit(next.aimX, next.aimY) : unit(next.facingX, next.facingY);

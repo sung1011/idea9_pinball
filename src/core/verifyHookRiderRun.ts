@@ -238,7 +238,7 @@ export function verifyHookRiderRun(): void {
     const chainView = createBallView(chainBall);
     chainView.sync(chainBall, { runDt: 0.02, selfMark: true });
     assert(runRootOf(chainView).children.length === 7, '四蹄：其他英雄同样 7 层');
-    assert(chainView.root.children[0] instanceof Graphics, '四蹄：身份圈仍在 children[0]');
+    assert(chainView.root.children[0] instanceof Graphics, '四蹄：自身标记仍在 children[0]');
     assert(chainView.root.children[1] instanceof Graphics, '四蹄：残影仍在 children[1]');
 
     hookBall.inPlay = false;
