@@ -22,3 +22,12 @@ export function saveLastHeroId(hero: HeroId): void {
     // ignore quota / private mode
   }
 }
+
+/** 只删本游戏上次英雄进度键，不碰玩法/版本等偏好。 */
+export function clearLastHeroId(storage: { removeItem: (key: string) => void } = localStorage): void {
+  try {
+    storage.removeItem(LAST_HERO_STORAGE_KEY);
+  } catch {
+    // ignore quota / private mode
+  }
+}

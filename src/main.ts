@@ -51,7 +51,7 @@ import { resetMirrorWalls } from './core/mirrorWalls';
 import { resetStakes } from './core/ropeStakes';
 import { resetTrapZones } from './core/trapZones';
 import { type HeroId } from './heroes/heroIds';
-import { loadLastHeroId, saveLastHeroId } from './heroes/lastHeroId';
+import { clearLastHeroId, loadLastHeroId, saveLastHeroId } from './heroes/lastHeroId';
 import { clearHookBleeds } from './core/hookBleed';
 import { takeHookShieldGrants } from './core/hookShield';
 import { EMPTY_COMBAT_TECHS, type CombatTechSnapshot } from './core/techIds';
@@ -409,6 +409,16 @@ async function boot(): Promise<void> {
     },
     onOpenTech: () => techOpen(),
     onGrantTechPoint: () => techStore.grantPoints(GM_TECH_POINT_GRANT).ok,
+    onResetProgress: () => {
+      const got = techStore.resetToNewSave();
+      if (!got.ok) {
+        return false;
+      }
+      practice = false;
+      clearLastHeroId();
+      restart();
+      return true;
+    },
   });
   settingsClose = settings.close;
   settingsSetHero = (hero) => settings.setHero(hero);

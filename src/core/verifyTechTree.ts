@@ -541,9 +541,14 @@ export function verifyTechTree(): void {
     lockPick.dispatchEvent(new Event('change', { bubbles: true }));
   }
   assert(lockState.hero === 'hook', '科技：正式路径不能选未解锁英雄');
-  const drillBtn = [...lockHost.querySelectorAll('button')].find((btn) => btn.textContent === '练习');
+  const drillBtn = [...lockHost.querySelectorAll('button')].find(
+    (btn) => btn.textContent === '练习' || btn.textContent === '结束练习',
+  );
   const techBtn = [...lockHost.querySelectorAll('button')].find((btn) => btn.textContent === '科技');
-  assert(!!drillBtn && !!techBtn, '科技：常规页应有练习与科技入口');
+  const restartBtn = [...lockHost.querySelectorAll('button')].find((btn) => (btn.textContent ?? '').includes('重开本局'));
+  assert(!!techBtn, '科技：常规页应有科技入口');
+  assert(!drillBtn, '科技：常规页不应再有练习入口');
+  assert(!restartBtn, '科技：常规页不应再有重开本局');
   lockSet.close();
   lockHost.remove();
 

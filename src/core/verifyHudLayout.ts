@@ -423,6 +423,11 @@ export function verifyHudLayout(): void {
     throw new Error('HUD：GM 页应有科技点 +100');
   }
   assert(gmGrant.textContent === '科技点 +100', 'HUD：GM 按钮文案应为科技点 +100');
+  const gmInit = host.querySelector<HTMLButtonElement>('[data-gm-reset="init"]');
+  if (!gmInit) {
+    throw new Error('HUD：GM 页应有初始化');
+  }
+  assert(gmInit.textContent === '初始化', 'HUD：GM 初始化文案');
   assert(!host.querySelector('input[aria-label="GM 调试"]'), 'HUD：GM 页不应再有调试开关');
   gmGrant.click();
   const generalTab = [...host.querySelectorAll<HTMLElement>('.settingsTab')].find((el) => el.dataset.tab === 'general');
@@ -433,6 +438,9 @@ export function verifyHudLayout(): void {
   assert(heroLabel === '我的英雄', 'HUD：常规页选择标签应为我的英雄');
   assert(isAimUiTarget(heroPick), 'HUD：点设置英雄选择不应抢 Aim');
   const settingsHint = [...host.querySelectorAll('.settingsHint')].map((el) => el.textContent ?? '').join('\n');
+  const generalBtns = [...host.querySelectorAll('button')].map((btn) => btn.textContent ?? '');
+  assert(!generalBtns.some((text) => text.includes('重开本局')), 'HUD：常规页不应再有重开本局');
+  assert(!generalBtns.includes('练习') && !generalBtns.includes('结束练习'), 'HUD：常规页不应再有练习入口');
   const reloadBtn = [...host.querySelectorAll('button')].find((btn) => btn.textContent === '刷新游戏');
   assert(!!reloadBtn, 'HUD：设置常规应有刷新游戏');
   reloadBtn?.click();

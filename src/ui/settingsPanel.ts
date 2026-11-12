@@ -28,6 +28,8 @@ export type SettingsActions = {
   onReload: () => void;
   /** 仅 GM 页「科技点 +100」。成功才返回 true，失败不得假报。 */
   onGrantTechPoint?: () => boolean;
+  /** 仅 GM 页「初始化」。二次确认后才调用；成功才返回 true，失败不得假报。 */
+  onResetProgress?: () => boolean;
   getHero?: () => HeroId;
   onPickHero?: (hero: HeroId) => void;
   getMode?: () => MatchModeId;
@@ -67,6 +69,7 @@ function addHint(host: HTMLElement, text: string): void {
 export function createSettingsPanel(host: HTMLElement, actions: SettingsActions): SettingsPanel {
   let tab: SettingsTab = 'general';
   let granting = false;
+  let resetConfirming = false;
 
   const fab = el('button', 'settingsFab');
   fab.type = 'button';
@@ -121,6 +124,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
   };
 
   const close = (): void => {
+    resetConfirming = false;
     setOpen(false);
   };
 
@@ -202,14 +206,6 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     heroRow.appendChild(heroPick);
     body.appendChild(heroRow);
 
-    const restart = el('button', 'settingsWide', '重开本局 · R');
-    restart.type = 'button';
-    restart.addEventListener('click', (ev) => {
-      ev.preventDefault();
-      actions.onRestart();
-      close();
-    });
-    body.appendChild(restart);
     const reload = el('button', 'settingsWide', '刷新游戏');
     reload.type = 'button';
     reload.setAttribute('aria-label', '刷新游戏');
@@ -234,24 +230,11 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
       actions.onOpenTech?.();
     });
     body.appendChild(techBtn);
-    const drill = el('button', 'settingsWide', practice ? '结束练习' : '练习');
-    drill.type = 'button';
-    drill.setAttribute('aria-label', practice ? '结束练习' : '练习');
-    drill.addEventListener('click', (ev) => {
-      ev.preventDefault();
-      if (practice) {
-        actions.onEndPractice?.();
-      } else {
-        actions.onPractice?.();
-      }
-      close();
-    });
-    body.appendChild(drill);
     addHint(body, kitSettingsHint(currentHero));
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。瞄准中触屏点空白即瞄向并释放，滑动只改朝向。右键 / Esc 取消瞄准。');
     addHint(
       body,
-      '本机固定 2v2。开局与每次 R：队友和两名敌方从含镜卫全池均匀随机（可重复）。常规页「玩法」可切八杀 / 占点，记住上次所选；换玩法立刻重开倒计时（重开不发科技点）。常规页「我的英雄」只列已解锁英雄；钩刺免费，其他用科技点解锁。练习可试用全部英雄，不解锁也不发点。不能换队友。进度只存在本机。设置 GM 页可点「科技点 +100」。',
+      '本机固定 2v2。开局与每次 R：队友和两名敌方从含镜卫全池均匀随机（可重复）。常规页「玩法」可切八杀 / 占点，记住上次所选；换玩法立刻重开倒计时（重开不发科技点）。常规页「我的英雄」只列已解锁英雄；钩刺免费，其他用科技点解锁。不能换队友。进度只存在本机。设置 GM 页可点「科技点 +100」，也可初始化清空进度并恢复新档。',
     );
   };
 
@@ -311,8 +294,8 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     }
   };
 
-  const spawnGmFloat = (row: HTMLElement): void => {
-    const node = el('span', 'settingsGmFloat', GM_TECH_GRANT_COPY);
+  const spawnGmFloat = (row: HTMLElement, text: string): void => {
+    const node = el('span', 'settingsGmFloat', text);
     node.setAttribute('aria-live', 'polite');
     node.addEventListener('animationend', () => node.remove());
     row.appendChild(node);
@@ -339,11 +322,71 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
         granting = false;
       }
       if (ok) {
-        spawnGmFloat(row);
+        spawnGmFloat(row, GM_TECH_GRANT_COPY);
       }
     });
     row.appendChild(btn);
     body.appendChild(row);
+
+    if (!resetConfirming) {
+      const initRow = el('div', 'settingsGmGrant');
+      const initBtn = el('button', 'settingsGmBtn', '初始化');
+      initBtn.type = 'button';
+      initBtn.setAttribute('data-touch-control', '');
+      initBtn.setAttribute('data-gm-reset', 'init');
+      initBtn.setAttribute('aria-label', '初始化');
+      initBtn.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        resetConfirming = true;
+        render();
+      });
+      initRow.appendChild(initBtn);
+      body.appendChild(initRow);
+      return;
+    }
+
+    addHint(body, '将清空本机进度，恢复新档 100 科技点、仅钩刺解锁、科技未点亮。确定？取消不改任何存档。');
+    const confirm = el('button', 'settingsWide', '确认初始化');
+    confirm.type = 'button';
+    confirm.setAttribute('data-touch-control', '');
+    confirm.setAttribute('data-gm-reset', 'confirm');
+    confirm.setAttribute('aria-label', '确认初始化');
+    confirm.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (granting) {
+        return;
+      }
+      granting = true;
+      let ok = false;
+      try {
+        ok = !!actions.onResetProgress?.();
+      } finally {
+        granting = false;
+      }
+      resetConfirming = false;
+      render();
+      if (ok) {
+        const initRow = body.querySelector<HTMLElement>('[data-gm-reset="init"]')?.parentElement;
+        if (initRow) {
+          spawnGmFloat(initRow, '已初始化');
+        }
+      }
+    });
+    body.appendChild(confirm);
+    const cancel = el('button', 'settingsWide', '取消');
+    cancel.type = 'button';
+    cancel.setAttribute('data-touch-control', '');
+    cancel.setAttribute('data-gm-reset', 'cancel');
+    cancel.setAttribute('aria-label', '取消初始化');
+    cancel.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      resetConfirming = false;
+      render();
+    });
+    body.appendChild(cancel);
   };
 
   const render = (): void => {

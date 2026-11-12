@@ -64,6 +64,19 @@ export type TechPointGrantFail = {
 
 export type TechPointGrantResult = TechPointGrantOk | TechPointGrantFail;
 
+export type TechResetOk = {
+  ok: true;
+  state: TechSaveState;
+};
+
+export type TechResetFail = {
+  ok: false;
+  code: 'readonly' | 'write';
+  message: string;
+};
+
+export type TechResetResult = TechResetOk | TechResetFail;
+
 export type TechLoadStatus = {
   ok: boolean;
   writable: boolean;
@@ -82,6 +95,7 @@ export type TechStore = {
   buyTech: (id: HookTechId) => TechBuyResult;
   grantPoints: (amount: number) => TechPointGrantResult;
   grantMatchReward: (input: MatchRewardInput) => TechGrantResult;
+  resetToNewSave: () => TechResetResult;
   status: () => TechLoadStatus;
   subscribe: (listener: () => void) => () => void;
 };
@@ -353,6 +367,16 @@ export function createTechStore(storage: TechStorage = browserTechStorage(), key
         return fail('write', '写入失败，未扣点也未解锁');
       }
       return { ok: true, state: cloneState(state), spent: cost, kind: 'hero', id: hero };
+    },
+    resetToNewSave() {
+      if (!writable) {
+        return { ok: false, code: 'readonly' as const, message: message || '存档不可写入，未初始化' };
+      }
+      const next = emptyTechSave();
+      if (!persist(next)) {
+        return { ok: false, code: 'write' as const, message: '写入失败，未初始化' };
+      }
+      return { ok: true, state: cloneState(state) };
     },
     grantPoints(amount) {
       if (!Number.isFinite(amount) || amount <= 0) {

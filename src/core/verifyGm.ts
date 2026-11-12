@@ -1,11 +1,13 @@
 import { bindDebugVelocity } from '../debug/debugVelocity';
 import { createActionBus } from '../input/actionBus';
 import { createTouchPad } from '../input/touchPad';
-import type { AppVersions } from '../ui/appVersion';
+import { ACKED_VERSION_KEY, type AppVersions } from '../ui/appVersion';
 import { createHelpCard } from '../ui/helpCard';
 import { createMatchHud } from '../ui/matchHud';
 import { createSettingsPanel } from '../ui/settingsPanel';
 import { createTechPanel } from '../ui/techPanel';
+import { clearLastHeroId, LAST_HERO_STORAGE_KEY } from '../heroes/lastHeroId';
+import { LAST_MODE_STORAGE_KEY } from './lastModeId';
 import {
   createTechStore,
   emptyTechSave,
@@ -52,7 +54,22 @@ function openGm(host: HTMLElement): HTMLButtonElement {
   return btn;
 }
 
-/** GM 页只留科技点 +100：旧调试键/按钮不可触发，加点走现有存档且失败不假报。 */
+function memoryBag(init: Record<string, string> = {}) {
+  const map = new Map(Object.entries(init));
+  return {
+    getItem(key: string) {
+      return map.has(key) ? (map.get(key) ?? null) : null;
+    },
+    setItem(key: string, value: string) {
+      map.set(key, value);
+    },
+    removeItem(key: string) {
+      map.delete(key);
+    },
+  };
+}
+
+/** GM 页科技点 +100 与初始化：旧调试键/按钮不可触发，加点/重置走现有存档且失败不假报。 */
 export function verifyGm(): void {
   const store = createTechStore(
     memoryTechStorage({ [TECH_SAVE_KEY]: JSON.stringify({ ...emptyTechSave(), points: 4 }) }),
@@ -90,6 +107,52 @@ export function verifyGm(): void {
 
   const invalid = store.grantPoints(0);
   assert(!invalid.ok && store.getState().points === 204, 'GM：非法数量不入账');
+
+  const richBag = memoryBag({
+    [TECH_SAVE_KEY]: JSON.stringify({
+      ...emptyTechSave(),
+      points: 250,
+      unlockedHeroes: ['hook', 'ring'],
+      litTechs: ['hookPull'],
+    }),
+    [LAST_HERO_STORAGE_KEY]: 'ring',
+    [LAST_MODE_STORAGE_KEY]: 'controlPoint',
+    [ACKED_VERSION_KEY]: 'v0.0.68-tech-start-100',
+    'otherApp.save': 'keep-me',
+  });
+  const rich = createTechStore(richBag);
+  const cancelled = { ...rich.getState() };
+  const resetOnce = rich.resetToNewSave();
+  assert(
+    resetOnce.ok &&
+      resetOnce.state.points === TECH_START_POINTS &&
+      resetOnce.state.unlockedHeroes.join() === 'hook' &&
+      resetOnce.state.litTechs.length === 0,
+    'GM：初始化应恢复新档 100 / 仅钩刺 / 未点亮',
+  );
+  assert(richBag.getItem(LAST_MODE_STORAGE_KEY) === 'controlPoint', 'GM：初始化不应清玩法偏好');
+  assert(richBag.getItem(ACKED_VERSION_KEY) === 'v0.0.68-tech-start-100', 'GM：初始化不应清版本确认');
+  assert(richBag.getItem('otherApp.save') === 'keep-me', 'GM：初始化不应删其他项目键');
+  clearLastHeroId(richBag);
+  assert(richBag.getItem(LAST_HERO_STORAGE_KEY) == null, 'GM：初始化应只清上次英雄进度键');
+  const richReload = createTechStore(richBag);
+  assert(
+    richReload.getState().points === TECH_START_POINTS &&
+      richReload.getState().unlockedHeroes.join() === 'hook' &&
+      richReload.getState().litTechs.length === 0,
+    'GM：初始化后刷新仍是新档',
+  );
+  const afterResetGrant = richReload.grantPoints(GM_TECH_POINT_GRANT);
+  assert(afterResetGrant.ok && afterResetGrant.balance === 200, 'GM：初始化后 +100 仍可用');
+  assert(cancelled.points === 250 && cancelled.unlockedHeroes.includes('ring'), 'GM：对照旧状态应仍是初始化前快照');
+
+  const corruptReset = corrupt.resetToNewSave();
+  assert(!corruptReset.ok && corruptReset.code === 'readonly', 'GM：损坏存档初始化应失败');
+  assert(corrupt.status().raw === rawCorrupt, 'GM：损坏时初始化不覆盖原始记录');
+
+  const failReset = failStore.resetToNewSave();
+  assert(!failReset.ok && failReset.code === 'write', 'GM：写入失败不能假装初始化成功');
+  assert(failStore.getState().points === 9, 'GM：写入失败初始化余额不变');
 
   let resets = 0;
   const unbind = bindDebugVelocity({
@@ -209,6 +272,104 @@ export function verifyGm(): void {
 
   const persisted = createTechStore(memoryTechStorage({ [TECH_SAVE_KEY]: JSON.stringify(uiStore.getState()) }));
   assert(persisted.getState().points === 302, 'GM：同存储再开仍保留');
+
+  const resetHost = document.createElement('div');
+  resetHost.style.cssText = host.style.cssText;
+  document.body.appendChild(resetHost);
+  const resetMem = memoryBag({
+    [TECH_SAVE_KEY]: JSON.stringify({
+      ...emptyTechSave(),
+      points: 180,
+      unlockedHeroes: ['hook', 'ring'],
+      litTechs: ['hookBrake'],
+    }),
+  });
+  const resetStore = createTechStore(resetMem);
+  let resetCalls = 0;
+  const resetSettings = createSettingsPanel(resetHost, {
+    onRestart: () => {},
+    onReload: () => {},
+    onGrantTechPoint: () => resetStore.grantPoints(GM_TECH_POINT_GRANT).ok,
+    onResetProgress: () => {
+      resetCalls += 1;
+      return resetStore.resetToNewSave().ok;
+    },
+    versions: dummyVersions(),
+  });
+  resetSettings.open();
+  const initBtn = (() => {
+    const gmTabBtn = [...resetHost.querySelectorAll<HTMLElement>('.settingsTab')].find((el) => el.dataset.tab === 'gm');
+    gmTabBtn?.click();
+    const btn = resetHost.querySelector<HTMLButtonElement>('[data-gm-reset="init"]');
+    if (!btn) {
+      throw new Error('GM：页签应有初始化');
+    }
+    return btn;
+  })();
+  assert(initBtn.textContent === '初始化', 'GM：初始化按钮文案');
+  assert(!resetHost.querySelector('[data-gm-reset="confirm"]'), 'GM：未点初始化不应出确认');
+  initBtn.click();
+  assert(resetCalls === 0 && resetStore.getState().points === 180, 'GM：点初始化未确认不应改存档');
+  const confirmHint = resetHost.querySelector('.settingsBody')?.textContent ?? '';
+  assert(confirmHint.includes('将清空本机进度'), 'GM：二次确认应提示将清空进度');
+  assert(confirmHint.includes('确定'), 'GM：二次确认应询问确定');
+  const cancelBtn = resetHost.querySelector<HTMLButtonElement>('[data-gm-reset="cancel"]');
+  if (!cancelBtn) {
+    throw new Error('GM：二次确认应有取消');
+  }
+  cancelBtn.click();
+  assert(resetCalls === 0 && resetStore.getState().points === 180, 'GM：取消初始化不改任何存档');
+  assert(resetStore.getState().unlockedHeroes.includes('ring') && resetStore.isTechLit('hookBrake'), 'GM：取消后解锁与科技仍在');
+  assert(!!resetHost.querySelector('[data-gm-reset="init"]'), 'GM：取消后应回到初始化按钮');
+  resetHost.querySelector<HTMLButtonElement>('[data-gm-reset="init"]')?.click();
+  resetHost.querySelector<HTMLButtonElement>('[data-gm-reset="confirm"]')?.click();
+  assert(resetCalls === 1, 'GM：确认初始化应只执行一次');
+  assert(
+    resetStore.getState().points === TECH_START_POINTS &&
+      resetStore.getState().unlockedHeroes.join() === 'hook' &&
+      resetStore.getState().litTechs.length === 0,
+    'GM：确认后应恢复新档 100 / 仅钩刺 / 未点亮',
+  );
+  assert(
+    [...resetHost.querySelectorAll('.settingsGmFloat')].some((el) => el.textContent === '已初始化'),
+    'GM：确认成功应漂已初始化',
+  );
+  const resetReload = createTechStore(resetMem);
+  assert(resetReload.getState().points === TECH_START_POINTS, 'GM：确认初始化后刷新仍保持');
+  const stillGrant = resetHost.querySelector<HTMLButtonElement>('[data-gm-grant="tech-plus-one"]');
+  stillGrant?.click();
+  assert(resetStore.getState().points === 200, 'GM：初始化后科技点 +100 仍可用');
+  const generalTab = [...resetHost.querySelectorAll<HTMLElement>('.settingsTab')].find((el) => el.dataset.tab === 'general');
+  generalTab?.click();
+  const generalCopy = [...resetHost.querySelectorAll('button')].map((btn) => btn.textContent ?? '');
+  assert(!generalCopy.some((text) => text.includes('重开本局')), 'GM：常规页无重开本局');
+  assert(!generalCopy.includes('练习') && !generalCopy.includes('结束练习'), 'GM：常规页无练习入口');
+  resetHost.remove();
+
+  const failResetHost = document.createElement('div');
+  document.body.appendChild(failResetHost);
+  const failResetUi = createTechStore({
+    getItem: () => JSON.stringify({ ...emptyTechSave(), points: 70, unlockedHeroes: ['hook'] }),
+    setItem: () => {
+      throw new Error('quota');
+    },
+  });
+  const failResetSettings = createSettingsPanel(failResetHost, {
+    onRestart: () => {},
+    onReload: () => {},
+    onResetProgress: () => failResetUi.resetToNewSave().ok,
+    versions: dummyVersions(),
+  });
+  failResetSettings.open();
+  [...failResetHost.querySelectorAll<HTMLElement>('.settingsTab')].find((el) => el.dataset.tab === 'gm')?.click();
+  failResetHost.querySelector<HTMLButtonElement>('[data-gm-reset="init"]')?.click();
+  failResetHost.querySelector<HTMLButtonElement>('[data-gm-reset="confirm"]')?.click();
+  assert(failResetUi.getState().points === 70, 'GM：初始化失败余额不变');
+  assert(
+    ![...failResetHost.querySelectorAll('.settingsGmFloat')].some((el) => el.textContent === '已初始化'),
+    'GM：初始化失败不得漂成功文案',
+  );
+  failResetHost.remove();
 
   host.remove();
 }

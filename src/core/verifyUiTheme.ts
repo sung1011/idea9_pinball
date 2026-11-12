@@ -336,6 +336,15 @@ export function verifyUiTheme(): void {
     throw new Error('浮层换皮：GM 页应有科技点 +100 按钮');
   }
   assert(gmBtn.textContent === '科技点 +100', 'GM 按钮：文案');
+  const gmInit = host.querySelector<HTMLElement>('[data-gm-reset="init"]');
+  if (!gmInit) {
+    host.remove();
+    throw new Error('浮层换皮：GM 页应有初始化按钮');
+  }
+  assert(gmInit.textContent === '初始化', 'GM 初始化：文案');
+  assert(sameCssColor(color(gmInit, 'backgroundColor'), UI_THEME.buttonIdle), 'GM 初始化：button_idle');
+  assert(sameCssColor(getComputedStyle(gmInit).borderTopColor, UI_THEME.woodFrame), 'GM 初始化：木框');
+  assert(!cssColorHasGold(color(gmInit, 'color')) && !cssColorHasGold(getComputedStyle(gmInit).borderTopColor), 'GM 初始化：无金闪');
   assert(!host.querySelector('.settingsSwitch'), 'GM 页：不应再有调试开关');
   assert(!host.querySelector('.settingsGmTitle'), 'GM 页：不应再有旧分组标题');
   assert(sameCssColor(color(gmBtn, 'backgroundColor'), UI_THEME.buttonIdle), 'GM 按钮：button_idle');
