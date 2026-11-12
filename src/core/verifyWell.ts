@@ -16,7 +16,7 @@ import {
 } from '../heroes/wellKit';
 import type { ActionSample, SkillSlot } from '../input/actionTypes';
 import { stepPhysics } from './physicsStep';
-import { resetBoomFlashes } from './boomFlashes';
+import { listBoomFlashes, resetBoomFlashes } from './boomFlashes';
 import { getStake, listStakes, placeStake, resetStakes } from './ropeStakes';
 import { createSkillCaster } from './skillCaster';
 import { resetTrapZones, setTrapZone } from './trapZones';
@@ -433,4 +433,18 @@ export function verifyWell(): void {
 
   resetTrapZones();
   resetStakes();
+
+  const leftover = listBoomFlashes();
+  assert(leftover.length >= 1, '井绳：困圈索爆自测应留下闪光，供收尾清理');
+  assert(
+    leftover.some(
+      (flash) =>
+        Math.abs(flash.x - 8) < 1e-6 &&
+        Math.abs(flash.y - 6) < 1e-6 &&
+        Math.abs(flash.radius - WELL_BLAST.radius) < 1e-6,
+    ),
+    '井绳：遗留索爆闪光应在 (8,6) 半径 2.2',
+  );
+  resetBoomFlashes();
+  assert(listBoomFlashes().length === 0, '井绳：自测收尾不应留下索爆闪光');
 }
