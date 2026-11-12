@@ -55,7 +55,7 @@ import { loadLastHeroId, saveLastHeroId } from './heroes/lastHeroId';
 import { clearHookBleeds } from './core/hookBleed';
 import { takeHookShieldGrants } from './core/hookShield';
 import { EMPTY_COMBAT_TECHS, type CombatTechSnapshot } from './core/techIds';
-import { createTechStore } from './core/techSave';
+import { createTechStore, GM_TECH_POINT_GRANT } from './core/techSave';
 import { createTechPanel } from './ui/techPanel';
 import type { ResultTechInfo } from './ui/resultPanel';
 import { createFieldOverlay } from './render/fieldOverlay';
@@ -408,7 +408,7 @@ async function boot(): Promise<void> {
       restart();
     },
     onOpenTech: () => techOpen(),
-    onGrantTechPoint: () => techStore.grantPoints(1).ok,
+    onGrantTechPoint: () => techStore.grantPoints(GM_TECH_POINT_GRANT).ok,
   });
   settingsClose = settings.close;
   settingsSetHero = (hero) => settings.setHero(hero);

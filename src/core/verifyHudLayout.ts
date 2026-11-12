@@ -420,9 +420,9 @@ export function verifyHudLayout(): void {
   gmTab?.click();
   const gmGrant = host.querySelector<HTMLButtonElement>('[data-gm-grant="tech-plus-one"]');
   if (!gmGrant) {
-    throw new Error('HUD：GM 页应有科技点 +1');
+    throw new Error('HUD：GM 页应有科技点 +100');
   }
-  assert(gmGrant.textContent === '科技点 +1', 'HUD：GM 按钮文案应为科技点 +1');
+  assert(gmGrant.textContent === '科技点 +100', 'HUD：GM 按钮文案应为科技点 +100');
   assert(!host.querySelector('input[aria-label="GM 调试"]'), 'HUD：GM 页不应再有调试开关');
   gmGrant.click();
   const generalTab = [...host.querySelectorAll<HTMLElement>('.settingsTab')].find((el) => el.dataset.tab === 'general');

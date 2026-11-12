@@ -40,6 +40,7 @@ export const APP_VERSION = {
 };
 
 export const CHANGE_LOG: readonly ChangeLogItem[] = [
+  { title: '全新存档初始科技点 0→100；GM 每次点击 +1→+100，按钮与漂字同步；已有有效存档含 0 点老档不补发不重置' },
   { title: '横屏摇杆松手按 pointerId 在 window 收 pointerup/cancel，捕获丢失后可再抓；位置/死区/惯性/技能不变' },
   { title: '镜卫四技能接入已确认全幅插画（512 WebP）；第五键必杀仍空槽不挂图；按钮外框/CD/能量环不变，钩刺/磁环/链生/钉壳/闪弧/井绳已上线图不动' },
   { title: '井绳四技能接入已确认全幅插画（512 WebP）；第五键必杀仍空槽不挂图；按钮外框/CD/能量环不变，钩刺/磁环/链生/钉壳/闪弧已上线图不动' },

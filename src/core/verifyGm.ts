@@ -6,7 +6,15 @@ import { createHelpCard } from '../ui/helpCard';
 import { createMatchHud } from '../ui/matchHud';
 import { createSettingsPanel } from '../ui/settingsPanel';
 import { createTechPanel } from '../ui/techPanel';
-import { createTechStore, emptyTechSave, memoryTechStorage, TECH_SAVE_KEY } from './techSave';
+import {
+  createTechStore,
+  emptyTechSave,
+  GM_TECH_GRANT_COPY,
+  GM_TECH_POINT_GRANT,
+  memoryTechStorage,
+  TECH_SAVE_KEY,
+  TECH_START_POINTS,
+} from './techSave';
 
 function assert(cond: boolean, message: string): void {
   if (!cond) {
@@ -39,29 +47,32 @@ function openGm(host: HTMLElement): HTMLButtonElement {
   gmTab?.click();
   const btn = host.querySelector<HTMLButtonElement>('[data-gm-grant="tech-plus-one"]');
   if (!btn) {
-    throw new Error('GM：页签应有科技点 +1');
+    throw new Error(`GM：页签应有${GM_TECH_GRANT_COPY}`);
   }
   return btn;
 }
 
-/** GM 页只留科技点 +1：旧调试键/按钮不可触发，加点走现有存档且失败不假报。 */
+/** GM 页只留科技点 +100：旧调试键/按钮不可触发，加点走现有存档且失败不假报。 */
 export function verifyGm(): void {
   const store = createTechStore(
     memoryTechStorage({ [TECH_SAVE_KEY]: JSON.stringify({ ...emptyTechSave(), points: 4 }) }),
   );
-  const once = store.grantPoints(1);
-  assert(once.ok && once.amount === 1 && once.balance === 5, 'GM：存档 +1 应成功入账');
-  const again = store.grantPoints(1);
-  assert(again.ok && again.balance === 6, 'GM：连续加点应各记一次');
+  const once = store.grantPoints(GM_TECH_POINT_GRANT);
+  assert(once.ok && once.amount === GM_TECH_POINT_GRANT && once.balance === 104, 'GM：存档 +100 应成功入账');
+  const again = store.grantPoints(GM_TECH_POINT_GRANT);
+  assert(again.ok && again.balance === 204, 'GM：连续加点应各记一次');
   const reopened = createTechStore(memoryTechStorage({ [TECH_SAVE_KEY]: JSON.stringify(store.getState()) }));
-  assert(reopened.getState().points === 6, 'GM：刷新后应仍保留加点');
+  assert(reopened.getState().points === 204, 'GM：刷新后应仍保留加点');
 
   const rawCorrupt = '{not-json';
   const corruptMem = memoryTechStorage({ [TECH_SAVE_KEY]: rawCorrupt });
   const corrupt = createTechStore(corruptMem);
-  const corruptGrant = corrupt.grantPoints(1);
+  const corruptGrant = corrupt.grantPoints(GM_TECH_POINT_GRANT);
   assert(!corruptGrant.ok && corruptGrant.code === 'readonly', 'GM：损坏存档加点应失败');
-  assert(corrupt.getState().points === 0 && corrupt.status().raw === rawCorrupt, 'GM：损坏时不覆盖原始记录');
+  assert(
+    corrupt.getState().points === TECH_START_POINTS && corrupt.status().raw === rawCorrupt,
+    'GM：损坏时不覆盖原始记录',
+  );
 
   let writes = 0;
   const failWrite = {
@@ -72,13 +83,13 @@ export function verifyGm(): void {
     },
   };
   const failStore = createTechStore(failWrite);
-  const failGrant = failStore.grantPoints(1);
+  const failGrant = failStore.grantPoints(GM_TECH_POINT_GRANT);
   assert(!failGrant.ok && failGrant.code === 'write', 'GM：写入失败不能假装加点成功');
   assert(failStore.getState().points === 9, 'GM：写入失败余额不变');
   assert(writes >= 1, 'GM：应尝试写入');
 
   const invalid = store.grantPoints(0);
-  assert(!invalid.ok && store.getState().points === 6, 'GM：非法数量不入账');
+  assert(!invalid.ok && store.getState().points === 204, 'GM：非法数量不入账');
 
   let resets = 0;
   const unbind = bindDebugVelocity({
@@ -110,7 +121,7 @@ export function verifyGm(): void {
     onReload: () => {},
     onGrantTechPoint: () => {
       grants += 1;
-      const got = uiStore.grantPoints(1);
+      const got = uiStore.grantPoints(GM_TECH_POINT_GRANT);
       return got.ok;
     },
     versions: dummyVersions(),
@@ -123,14 +134,14 @@ export function verifyGm(): void {
   tech.open();
   assert(!host.querySelector('[data-gm-grant]'), 'GM：科技页不应有加点按钮');
   assert(
-    ![...host.querySelectorAll('button')].some((btn) => btn.textContent === '科技点 +1' && btn.closest('.techPanel')),
+    ![...host.querySelectorAll('button')].some((btn) => btn.textContent === GM_TECH_GRANT_COPY && btn.closest('.techPanel')),
     'GM：科技页无加点入口',
   );
   tech.close();
 
   settings.open();
   const grantBtn = openGm(host);
-  assert(grantBtn.textContent === '科技点 +1', 'GM：按钮文案应为科技点 +1');
+  assert(grantBtn.textContent === GM_TECH_GRANT_COPY, 'GM：按钮文案应为科技点 +100');
   assert(!host.querySelector('input[aria-label="GM 调试"]'), 'GM：不应再有调试开关');
   const gmBody = host.querySelector('.settingsBody')?.textContent ?? '';
   for (const text of OLD_GM_COPY) {
@@ -140,16 +151,16 @@ export function verifyGm(): void {
   grantBtn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
   assert(grants === 0 && uiStore.getState().points === 2, 'GM：按下未抬起不应入账');
   grantBtn.click();
-  assert(grants === 1 && uiStore.getState().points === 3, 'GM：一次点击应只加 1');
+  assert(grants === 1 && uiStore.getState().points === 102, 'GM：一次点击应只加 100');
   assert(
-    [...host.querySelectorAll('.settingsGmFloat')].filter((el) => el.textContent === '科技点 +1').length === 1,
-    'GM：成功后应在按钮旁漂科技点 +1',
+    [...host.querySelectorAll('.settingsGmFloat')].filter((el) => el.textContent === GM_TECH_GRANT_COPY).length === 1,
+    'GM：成功后应在按钮旁漂科技点 +100',
   );
   grantBtn.click();
   grantBtn.click();
-  assert(grants === 3 && uiStore.getState().points === 5, 'GM：连点应各加 1、无多加');
+  assert(grants === 3 && uiStore.getState().points === 302, 'GM：连点应各加 100、无多加');
   assert(
-    [...host.querySelectorAll('.settingsGmFloat')].filter((el) => el.textContent === '科技点 +1').length === 3,
+    [...host.querySelectorAll('.settingsGmFloat')].filter((el) => el.textContent === GM_TECH_GRANT_COPY).length === 3,
     'GM：连点应各出一条漂字',
   );
 
@@ -182,7 +193,7 @@ export function verifyGm(): void {
   const failSettings = createSettingsPanel(failHost, {
     onRestart: () => {},
     onReload: () => {},
-    onGrantTechPoint: () => failUi.grantPoints(1).ok,
+    onGrantTechPoint: () => failUi.grantPoints(GM_TECH_POINT_GRANT).ok,
     versions: dummyVersions(),
   });
   failSettings.open();
@@ -193,11 +204,11 @@ export function verifyGm(): void {
 
   settings.close();
   tech.open();
-  assert((host.querySelector('.techBalance')?.textContent ?? '') === '科技点 5', 'GM：科技页应读到刷新后的余额');
+  assert((host.querySelector('.techBalance')?.textContent ?? '') === '科技点 302', 'GM：科技页应读到刷新后的余额');
   tech.close();
 
   const persisted = createTechStore(memoryTechStorage({ [TECH_SAVE_KEY]: JSON.stringify(uiStore.getState()) }));
-  assert(persisted.getState().points === 5, 'GM：同存储再开仍保留');
+  assert(persisted.getState().points === 302, 'GM：同存储再开仍保留');
 
   host.remove();
 }

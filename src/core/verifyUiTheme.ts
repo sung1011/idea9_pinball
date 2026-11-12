@@ -333,9 +333,9 @@ export function verifyUiTheme(): void {
   const gmBtn = host.querySelector<HTMLElement>('.settingsGmBtn');
   if (!gmBtn) {
     host.remove();
-    throw new Error('浮层换皮：GM 页应有科技点 +1 按钮');
+    throw new Error('浮层换皮：GM 页应有科技点 +100 按钮');
   }
-  assert(gmBtn.textContent === '科技点 +1', 'GM 按钮：文案');
+  assert(gmBtn.textContent === '科技点 +100', 'GM 按钮：文案');
   assert(!host.querySelector('.settingsSwitch'), 'GM 页：不应再有调试开关');
   assert(!host.querySelector('.settingsGmTitle'), 'GM 页：不应再有旧分组标题');
   assert(sameCssColor(color(gmBtn, 'backgroundColor'), UI_THEME.buttonIdle), 'GM 按钮：button_idle');

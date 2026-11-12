@@ -88,10 +88,16 @@ export type TechStore = {
 
 const MAX_POINTS = 1_000_000_000;
 
+/** 全新空存储只发一次；已有有效存档（含 0 点老档）不补发。 */
+export const TECH_START_POINTS = 100;
+/** GM 页每次实际点击入账量；按钮与漂字文案同步。 */
+export const GM_TECH_POINT_GRANT = 100;
+export const GM_TECH_GRANT_COPY = `科技点 +${GM_TECH_POINT_GRANT}`;
+
 export function emptyTechSave(): TechSaveState {
   return {
     version: TECH_SAVE_VERSION,
-    points: 0,
+    points: TECH_START_POINTS,
     unlockedHeroes: ['hook'],
     litTechs: [],
     lastRewardMatchId: null,
@@ -303,6 +309,9 @@ export function createTechStore(storage: TechStorage = browserTechStorage(), key
   };
 
   load();
+  if (writable && (raw == null || raw === '')) {
+    persist(emptyTechSave());
+  }
 
   const fail = (code: TechBuyFail['code'], msg: string): TechBuyFail => ({
     ok: false,

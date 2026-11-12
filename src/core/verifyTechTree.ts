@@ -29,6 +29,7 @@ import {
   memoryTechStorage,
   parseTechSave,
   TECH_SAVE_KEY,
+  TECH_START_POINTS,
   emptyTechSave,
 } from './techSave';
 import { planMatchTechReward } from './techReward';
@@ -149,15 +150,36 @@ export function verifyTechTree(): void {
   assert(HOOK_BRAKE.popSpeed === 16.5 && HOOK_BRAKE.brakeTime === 2.6, '科技：蓄势基础值未改');
   assert(HERO_IDS.length === 7 && heroZh('mirror') === '镜卫', '科技：七英雄池完整，含镜卫');
 
-  const fresh = createTechStore(memoryTechStorage());
-  assert(fresh.getState().points === 0, '科技：新档 0 点');
+  const freshMem = memoryTechStorage();
+  const fresh = createTechStore(freshMem);
+  assert(fresh.getState().points === TECH_START_POINTS, '科技：新档 100 点');
   assert(fresh.getState().unlockedHeroes.join() === 'hook', '科技：新档仅钩刺免费');
   assert(!fresh.isHeroUnlocked('ring') && !fresh.isHeroUnlocked('mirror'), '科技：旧档迁移不送其他英雄');
   assert(fresh.heroUnlockCost() === HERO_UNLOCK_COST_FIRST, '科技：第一次付费英雄 30 点');
-  const poor = fresh.buyHero('ring');
-  assert(!poor.ok && poor.code === 'poor', '科技：资源不足不能解锁');
+  const freshRaw = fresh.status().raw;
+  assert(!!freshRaw && JSON.parse(freshRaw).points === TECH_START_POINTS, '科技：空存储应写入初始 100');
+  const freshReload = createTechStore(freshMem);
+  assert(freshReload.getState().points === TECH_START_POINTS, '科技：刷新不重复领初始点');
   const hookAgain = fresh.buyHero('hook');
   assert(!hookAgain.ok && hookAgain.code === 'owned', '科技：钩刺免费已解锁不扣点');
+
+  const oldZeroMem = memoryTechStorage({
+    [TECH_SAVE_KEY]: JSON.stringify({ ...emptyTechSave(), points: 0 }),
+  });
+  const oldZero = createTechStore(oldZeroMem);
+  assert(oldZero.getState().points === 0, '科技：0 点老档不补发');
+  const oldZeroReload = createTechStore(oldZeroMem);
+  assert(oldZeroReload.getState().points === 0, '科技：0 点老档刷新仍为 0');
+  const poor = oldZero.buyHero('ring');
+  assert(!poor.ok && poor.code === 'poor', '科技：资源不足不能解锁');
+
+  const oldNonzeroMem = memoryTechStorage({
+    [TECH_SAVE_KEY]: JSON.stringify({ ...emptyTechSave(), points: 40 }),
+  });
+  const oldNonzero = createTechStore(oldNonzeroMem);
+  assert(oldNonzero.getState().points === 40, '科技：非零老档余额不变');
+  const oldNonzeroReload = createTechStore(oldNonzeroMem);
+  assert(oldNonzeroReload.getState().points === 40, '科技：非零老档刷新仍不变');
 
   const richStore = createTechStore(
     memoryTechStorage({ [TECH_SAVE_KEY]: JSON.stringify({ ...emptyTechSave(), points: 300, unlockedHeroes: ['hook'] }) }),
@@ -236,7 +258,7 @@ export function verifyTechTree(): void {
   const corruptMem = memoryTechStorage({ [TECH_SAVE_KEY]: rawCorrupt });
   const corrupt = createTechStore(corruptMem);
   assert(!corrupt.status().writable && (corrupt.status().raw === rawCorrupt), '科技：损坏不覆盖原始记录');
-  assert(corrupt.getState().points === 0, '科技：损坏时本次按新档处理');
+  assert(corrupt.getState().points === TECH_START_POINTS, '科技：损坏时本次按新档处理');
   const corruptBuy = corrupt.buyHero('ring');
   assert(!corruptBuy.ok && corrupt.status().raw === rawCorrupt, '科技：损坏时购买失败且不覆盖');
   assert(parseTechSave({ version: 1, points: -1, unlockedHeroes: ['hook'], litTechs: [] }) == null, '科技：负点数应拒');
@@ -264,7 +286,9 @@ export function verifyTechTree(): void {
   assert(planMatchTechReward({ mode: 'eightKill', winner: null }).amount === TECH_REWARD_EIGHT_FIRST, '科技：八杀并列第一 20');
   assert(planMatchTechReward({ mode: 'eightKill', winner: 'red', practice: true }).skip, '科技：练习零奖');
 
-  const rewardStore = createTechStore(memoryTechStorage({ [TECH_SAVE_KEY]: JSON.stringify(emptyTechSave()) }));
+  const rewardStore = createTechStore(
+    memoryTechStorage({ [TECH_SAVE_KEY]: JSON.stringify({ ...emptyTechSave(), points: 0 }) }),
+  );
   const g1 = rewardStore.grantMatchReward({ mode: 'controlPoint', winner: 'red', matchId: 'm1' });
   assert(g1.granted && g1.amount === 20 && g1.balance === 20, '科技：胜利发 20');
   const g1b = rewardStore.grantMatchReward({ mode: 'controlPoint', winner: 'red', matchId: 'm1' });

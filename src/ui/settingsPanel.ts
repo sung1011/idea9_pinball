@@ -5,6 +5,7 @@ import {
   MATCH_MODE_LABEL,
   type MatchModeId,
 } from '../core/matchMode';
+import { GM_TECH_GRANT_COPY } from '../core/techSave';
 import { HERO_IDS, heroZh, isHeroId, type HeroId } from '../heroes/heroIds';
 import { kitSettingsHint } from '../heroes/kitLabels';
 import { APP_VERSION, CHANGE_LOG, type AppVersions } from './appVersion';
@@ -25,7 +26,7 @@ export type SettingsActions = {
   onRestart: () => void;
   /** 硬刷新当前页；不清存档、不重开本局。 */
   onReload: () => void;
-  /** 仅 GM 页「科技点 +1」。成功才返回 true，失败不得假报。 */
+  /** 仅 GM 页「科技点 +100」。成功才返回 true，失败不得假报。 */
   onGrantTechPoint?: () => boolean;
   getHero?: () => HeroId;
   onPickHero?: (hero: HeroId) => void;
@@ -250,7 +251,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
     addHint(body, '点地 / 鼠标只纠偏方向，不加油门。瞄准中触屏点空白即瞄向并释放，滑动只改朝向。右键 / Esc 取消瞄准。');
     addHint(
       body,
-      '本机固定 2v2。开局与每次 R：队友和两名敌方从含镜卫全池均匀随机（可重复）。常规页「玩法」可切八杀 / 占点，记住上次所选；换玩法立刻重开倒计时（重开不发科技点）。常规页「我的英雄」只列已解锁英雄；钩刺免费，其他用科技点解锁。练习可试用全部英雄，不解锁也不发点。不能换队友。进度只存在本机。设置 GM 页可点「科技点 +1」。',
+      '本机固定 2v2。开局与每次 R：队友和两名敌方从含镜卫全池均匀随机（可重复）。常规页「玩法」可切八杀 / 占点，记住上次所选；换玩法立刻重开倒计时（重开不发科技点）。常规页「我的英雄」只列已解锁英雄；钩刺免费，其他用科技点解锁。练习可试用全部英雄，不解锁也不发点。不能换队友。进度只存在本机。设置 GM 页可点「科技点 +100」。',
     );
   };
 
@@ -311,7 +312,7 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
   };
 
   const spawnGmFloat = (row: HTMLElement): void => {
-    const node = el('span', 'settingsGmFloat', '科技点 +1');
+    const node = el('span', 'settingsGmFloat', GM_TECH_GRANT_COPY);
     node.setAttribute('aria-live', 'polite');
     node.addEventListener('animationend', () => node.remove());
     row.appendChild(node);
@@ -319,11 +320,11 @@ export function createSettingsPanel(host: HTMLElement, actions: SettingsActions)
 
   const renderGm = (): void => {
     const row = el('div', 'settingsGmGrant');
-    const btn = el('button', 'settingsGmBtn', '科技点 +1');
+    const btn = el('button', 'settingsGmBtn', GM_TECH_GRANT_COPY);
     btn.type = 'button';
     btn.setAttribute('data-touch-control', '');
     btn.setAttribute('data-gm-grant', 'tech-plus-one');
-    btn.setAttribute('aria-label', '科技点 +1');
+    btn.setAttribute('aria-label', GM_TECH_GRANT_COPY);
     btn.addEventListener('click', (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
