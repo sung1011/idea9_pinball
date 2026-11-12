@@ -459,11 +459,10 @@ export function verifyHudLayout(): void {
   assert(!hasRotatePromptCopy(settingsHint), 'HUD：设置页不应写竖屏/转屏提示');
   assert(!helpCopy.includes('左上可换自己或队友'), 'HUD：说明卡不应再写左上换自己/队友');
   assert(!helpCopy.includes('左上最上方可切'), 'HUD：说明卡不应再写左上切玩法');
-  assert(helpCopy.includes('设置常规页「玩法」可切「八杀 / 占点」'), 'HUD：说明卡应写从常规页切玩法');
-  assert(helpCopy.includes('设置常规页可换自己的英雄'), 'HUD：说明卡应写从常规页换自己');
   assert(!helpCopy.includes('GM H'), 'HUD：说明卡不应再写 GM H');
-  assert(helpCopy.includes('瞄准摇杆'), 'HUD：说明卡应提到触屏左下瞄准摇杆');
-  assert(helpCopy.includes('顶右「科」'), 'HUD：说明卡应写科技入口');
+  assert(helpCopy.includes('骑士自动滑行') && helpCopy.includes('八杀：先到 8 杀获胜'), 'HUD：说明卡应为精简五条且缺省八杀');
+  assert(!helpCopy.includes('练习可试用'), 'HUD：说明卡不应再写已删除的练习入口');
+  assert(!helpCopy.includes('顶右「科」'), 'HUD：说明卡不应再写科技细则');
   assert(!settingsHint.includes('左上可换自己或队友'), 'HUD：常规页提示不应再写左上换队友');
   assert(settingsHint.includes('常规页「玩法」可切八杀 / 占点'), 'HUD：常规页提示应写玩法入口');
   assert(skillsDisplay === 'flex' && skillsDir === 'row', 'HUD：四键应一行横排');

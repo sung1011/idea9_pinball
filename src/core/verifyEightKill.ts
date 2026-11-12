@@ -566,13 +566,13 @@ export function verifyEightKill(): void {
   help.setMode('eightKill');
   help.open();
   const eightCopy = helpHost.querySelector('.helpCardBody')?.textContent ?? '';
-  assert(eightCopy.includes('先到 8 杀') && eightCopy.includes('正式开战第 10 秒'), '八杀：说明卡应写八杀规则与 10s 首瓶');
-  assert(eightCopy.includes('无随机环境伤害圈'), '八杀：说明卡应写无随机环境伤害圈');
+  assert(eightCopy.includes('八杀：先到 8 杀获胜，时间到比杀数。'), '八杀：说明卡末条应为精简八杀句');
+  assert(!eightCopy.includes('正式开战第 10 秒'), '八杀：说明卡不应再写药水细则');
   assert(!eightCopy.includes('地裂矛阵'), '八杀：说明卡不应再写地裂矛阵');
   assert(!eightCopy.includes('先到 100 分'), '八杀：说明卡不应写占点百分');
   help.setMode('controlPoint');
   const pointCopy = helpHost.querySelector('.helpCardBody')?.textContent ?? '';
-  assert(pointCopy.includes('先到 100 分') && pointCopy.includes('领地'), '占点：说明卡应写占点规则');
-  assert(pointCopy.includes('无药水'), '占点：说明卡应写无药水');
+  assert(pointCopy.includes('击破和占圈获得积分，先到 100 分获胜，时间到比分。'), '占点：说明卡末条应为精简占点句');
+  assert(!pointCopy.includes('先到 8 杀'), '占点：说明卡不应残留八杀句');
   help.close();
 }

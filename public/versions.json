@@ -1,5 +1,11 @@
 [
   {
+    "id": "v0.0.71-help-card-short",
+    "version": "0.0.71",
+    "date": "2026-11-12",
+    "summary": "怎么玩改为 5 条精简说明，末条随八杀/占点切换；? 与设置入口、关闭方式不变"
+  },
+  {
     "id": "v0.0.70-update-prompt-btn-top",
     "version": "0.0.70",
     "date": "2026-11-12",

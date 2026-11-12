@@ -218,9 +218,8 @@ export function verifyUiTheme(): void {
   const helpCard = host.querySelector<HTMLElement>('.helpCard');
   const helpTitle = helpCard?.querySelector<HTMLElement>('h2') ?? null;
   const helpClose = host.querySelector<HTMLElement>('.helpCardClose');
-  const helpH3 = host.querySelector<HTMLElement>('.helpCardBlock h3');
   const helpLi = host.querySelector<HTMLElement>('.helpCardBlock li');
-  if (!helpCard || !helpTitle || !helpClose || !helpH3 || !helpLi) {
+  if (!helpCard || !helpTitle || !helpClose || !helpLi) {
     host.remove();
     throw new Error('浮层换皮：应有说明卡标题、关闭钮与正文');
   }
@@ -237,7 +236,6 @@ export function verifyUiTheme(): void {
     `说明卡：wood_frame（实际 ${helpCs.borderTopColor}）`,
   );
   assert(sameCssColor(color(helpTitle, 'color'), UI_THEME.ink), '说明卡标题：ink，非金');
-  assert(sameCssColor(color(helpH3, 'color'), UI_THEME.ink), '说明卡小节：ink');
   assert(sameCssColor(color(helpLi, 'color'), UI_THEME.ink), '说明卡正文：ink');
   assert(!cssColorHasGold(color(helpTitle, 'color')) && !cssColorHasGold(helpCs.borderTopColor), '说明卡：无金边/金标题');
   const helpCloseCs = getComputedStyle(helpClose);
