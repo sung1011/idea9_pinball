@@ -42,6 +42,8 @@ import { resetMatchFieldFx } from './core/matchFieldReset';
 import { verifyAimStick } from './core/verifyAimStick';
 import { verifyHookRider } from './core/verifyHookRider';
 import { verifyHookRiderRun } from './core/verifyHookRiderRun';
+import { verifyHoofDust } from './core/verifyHoofDust';
+import { createHoofDustView } from './render/hoofDust';
 import { verifyTechTree } from './core/verifyTechTree';
 import { verifyGm } from './core/verifyGm';
 import { verifyHelpCard } from './core/verifyHelpCard';
@@ -119,6 +121,7 @@ async function boot(): Promise<void> {
   verifyUpdatePrompt();
   verifyHookBrakeConvoy();
   verifyMatchFieldReset();
+  verifyHoofDust();
   document.documentElement.dataset.verifyBoot = 'ok';
 
   const host = document.querySelector<HTMLDivElement>('#app');
@@ -173,6 +176,8 @@ async function boot(): Promise<void> {
   };
   applyWorldRules(matchMode);
   const match = createMatchSession(balls, { mode: matchMode });
+  const hoofDust = createHoofDustView();
+  world.addChild(hoofDust.root);
   const views = balls.map((ball) => createBallView(ball, { selfMark: ball.id === player.id }));
   for (const view of views) {
     world.addChild(view.root);
@@ -325,6 +330,7 @@ async function boot(): Promise<void> {
     rollOpeningBots();
     resetMatchFieldFx();
     combatFloats.clear();
+    hoofDust.clear();
     combatStats.reset();
     combatStatsPanel.sync(balls, player.id);
     match.setPractice(practice);
@@ -516,6 +522,7 @@ async function boot(): Promise<void> {
       ...floatsFromShield([...takeShieldAbsorbs(), ...takeHookShieldGrants()]),
     ]);
     combatFloats.tick(dt);
+    hoofDust.sync(balls, dt);
     combatStatsPanel.sync(balls, player.id);
     const next = match.snapshot();
     if (next.phase === 'playing' || next.phase === 'overtime') {
