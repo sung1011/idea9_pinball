@@ -67,8 +67,14 @@ export function verifyHoofDust(): void {
   assert(FLOOR_SPEED === 2.5 && SPEED_CAP === 8, '扬尘：速度帽/保底速不得被扬尘改掉');
   assert(HOOF_DUST.same < HOOF_DUST.side && HOOF_DUST.side < HOOF_DUST.reverse, '扬尘：同向<侧滑<反向');
   assert(HOOF_DUST.maxAlpha < 0.4, '扬尘：透明度应限制，避免遮血条/三角/技能圈');
-  assert(HOOF_DUST.cap >= 48 && HOOF_DUST.cap <= 96, '扬尘：粒子应有上限');
+  assert(HOOF_DUST.cap >= 96 && HOOF_DUST.cap <= 160, '扬尘：增强后上限应抬高，避免反向挤爆闪烁');
+  assert(HOOF_DUST.ownerCap * 4 >= HOOF_DUST.cap, '扬尘：四人反向配额应能铺满池而不互抢到 0');
+  assert(HOOF_DUST.ownerCap >= 24, '扬尘：单人配额应够反向短尘团');
+  assert(HOOF_DUST.emitPerSec > 22, '扬尘：出尘量应高于 0.0.74');
+  assert(HOOF_DUST.minSize > 0.09 && HOOF_DUST.sizeSpan > 0.15, '扬尘：尘团应大于 0.0.74');
+  assert(HOOF_DUST.minLife > 0.26 && HOOF_DUST.lifeSpan >= 0.16, '扬尘：消散时间应略长于 0.0.74');
   assert(HOOF_DUST.rest === REST_SPEED, '扬尘：近静止门槛应跟 REST_SPEED，避免只看角度');
+  assert(hoofDustPuffSize(1) > 0.24, '扬尘：反向满强度尘团应大于 0.0.74 的 0.24');
 
   const fwd = sample(8, 0, 1, 0);
   const side = sample(8, 0, 0, -1);
@@ -229,6 +235,10 @@ export function verifyHoofDust(): void {
     assert(countLive(view) <= HOOF_DUST.cap, '扬尘：粒子数不得超过上限');
   }
   assert(countLive(view) > 8, '扬尘：满速反向应能复用到可见量');
+  for (const ball of crowd) {
+    assert(view.ownerLive(ball.id) > 4, `扬尘：反向时每人应保有尘尾，不得被挤空 ${ball.id}=${view.ownerLive(ball.id)}`);
+    assert(view.ownerLive(ball.id) <= HOOF_DUST.ownerCap, '扬尘：单人不得超过配额');
+  }
   view.clear();
   assert(countLive(view) === 0, '扬尘：clear 应清空生命周期');
   assert(fillCount(gfx) === 0, '扬尘：clear 后不得留绘制');

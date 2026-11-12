@@ -8,18 +8,19 @@ const HP_CLEAR_Y = -0.74 * (BALL_RADIUS / 0.5) + 0.1 * (BALL_RADIUS / 0.5);
 
 /** 后蹄贴地扬尘：只视觉。同向少、侧滑中、反向多，再乘实际速度；近静止无尘。 */
 export const HOOF_DUST = {
-  cap: 72,
+  cap: 128,
+  ownerCap: 32,
   jumpClear: 1.6,
   rest: REST_SPEED,
-  same: 0.22,
-  side: 0.58,
+  same: 0.3,
+  side: 0.62,
   reverse: 1,
-  emitPerSec: 22,
-  minSize: 0.09,
-  sizeSpan: 0.15,
-  maxAlpha: 0.36,
-  minLife: 0.26,
-  lifeSpan: 0.16,
+  emitPerSec: 36,
+  minSize: 0.14,
+  sizeSpan: 0.22,
+  maxAlpha: 0.38,
+  minLife: 0.36,
+  lifeSpan: 0.2,
   colors: [0xd4c196, 0xb89a62, 0x8d7348] as const,
 } as const;
 
@@ -38,6 +39,7 @@ export type HoofDustView = {
   sync: (balls: readonly BallBody[], dt: number) => void;
   clear: () => void;
   liveCount: () => number;
+  ownerLive: (id: number) => number;
 };
 
 type Puff = {
@@ -206,19 +208,64 @@ export function createHoofDustView(): HoofDustView {
     accrue.set(owner, 0);
   };
 
-  const alloc = (): Puff => {
+  const ownerLive = (id: number): number => {
+    let n = 0;
+    for (const puff of puffs) {
+      if (puff.live && puff.owner === id) {
+        n += 1;
+      }
+    }
+    return n;
+  };
+
+  const oldestOf = (id: number): Puff | null => {
+    let oldest: Puff | null = null;
+    let oldestAge = -1;
+    for (const puff of puffs) {
+      if (!puff.live || puff.owner !== id) {
+        continue;
+      }
+      const age = puff.age / puff.life;
+      if (age > oldestAge) {
+        oldest = puff;
+        oldestAge = age;
+      }
+    }
+    return oldest;
+  };
+
+  const alloc = (owner: number): Puff | null => {
     for (const puff of puffs) {
       if (!puff.live) {
         return puff;
       }
     }
-    let oldest = puffs[0];
+    const own = ownerLive(owner);
+    if (own >= HOOF_DUST.ownerCap) {
+      return oldestOf(owner);
+    }
+    if (own > 0) {
+      return oldestOf(owner);
+    }
+    const counts = new Map<number, number>();
     for (const puff of puffs) {
-      if (puff.age / puff.life > oldest.age / oldest.life) {
-        oldest = puff;
+      if (!puff.live) {
+        continue;
+      }
+      counts.set(puff.owner, (counts.get(puff.owner) ?? 0) + 1);
+    }
+    let richest = -1;
+    let richestN = 0;
+    for (const [id, n] of counts) {
+      if (n > richestN) {
+        richest = id;
+        richestN = n;
       }
     }
-    return oldest;
+    if (richestN > HOOF_DUST.ownerCap) {
+      return oldestOf(richest);
+    }
+    return null;
   };
 
   const emit = (ball: BallBody, intensity: number, drag: { x: number; y: number }, dt: number): void => {
@@ -241,18 +288,21 @@ export function createHoofDustView(): HoofDustView {
       const origin = origins[stamp & 1];
       const side = hash01(stamp) - 0.5;
       const along = 0.35 + 0.55 * hash01(stamp + 17);
-      const puff = alloc();
+      const puff = alloc(ball.id);
+      if (!puff) {
+        continue;
+      }
       puff.live = true;
       puff.owner = ball.id;
-      puff.x = origin.x + drag.y * side * 0.12;
-      puff.y = origin.y - drag.x * side * 0.12;
+      puff.x = origin.x + drag.y * side * 0.16;
+      puff.y = origin.y - drag.x * side * 0.16;
       puff.vx = drag.x * (0.55 + 0.9 * along) * (0.35 + 0.08 * speed);
       puff.vy = drag.y * (0.55 + 0.9 * along) * (0.35 + 0.08 * speed);
       puff.size = size * (0.78 + 0.4 * hash01(stamp + 3));
       puff.growth = 0.7 + 0.5 * intensity;
       puff.life = HOOF_DUST.minLife + HOOF_DUST.lifeSpan * intensity;
       puff.age = 0;
-      puff.alpha = Math.min(HOOF_DUST.maxAlpha, 0.14 + 0.24 * intensity);
+      puff.alpha = Math.min(HOOF_DUST.maxAlpha, 0.17 + 0.21 * intensity);
       puff.color = HOOF_DUST.colors[stamp % HOOF_DUST.colors.length];
     }
   };
@@ -308,5 +358,5 @@ export function createHoofDustView(): HoofDustView {
 
   const liveCount = (): number => puffs.reduce((n, puff) => n + (puff.live ? 1 : 0), 0);
 
-  return { root, sync, clear, liveCount };
+  return { root, sync, clear, liveCount, ownerLive };
 }
